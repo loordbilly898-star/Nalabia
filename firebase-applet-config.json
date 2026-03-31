@@ -1,0 +1,11 @@
+{
+  "apiKey": "AIzaSyCtN0i8enoywqltn1EsMThRxOxB-8UkpOE",
+  "authDomain": "cristal-prime.firebaseapp.com",
+  "databaseURL": "https://cristal-prime-default-rtdb.firebaseio.com",
+  "projectId": "cristal-prime",
+  "storageBucket": "cristal-prime.firebasestorage.app",
+  "messagingSenderId": "516707495635",
+  "appId": "1:516707495635:web:fc3a788170bfc22b036e26",
+  "measurementId": "G-T881K2M8X8",
+  "firestoreDatabaseId": "(default)"
+}

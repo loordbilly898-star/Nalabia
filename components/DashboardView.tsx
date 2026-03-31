@@ -1,0 +1,380 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, auth } from '../services/firebase';
+import { handleFirestoreError, OperationType, Message, ProcessingState, Profile, AppSettings } from '../types';
+import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send } from 'lucide-react';
+import { getGeminiAI, handleGeminiError } from '../services/gemini';
+import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+
+interface DashboardViewProps {
+  activeProfile: Profile;
+  updateActiveProfileMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void;
+  settings: AppSettings;
+  userAIProfile?: any;
+}
+
+const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActiveProfileMessages, settings, userAIProfile }) => {
+  const { userData } = useAuth();
+  const [stats, setStats] = useState({
+    conversations: 0,
+    stories: 0,
+    responses: 0,
+    loading: true
+  });
+
+  const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'STATS');
+  const [input, setInput] = useState('');
+  const [status, setStatus] = useState<ProcessingState>(ProcessingState.IDLE);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!userData) return;
+      
+      try {
+        const q = query(collection(db, 'conversations'), where('userID', '==', userData.userID));
+        const querySnapshot = await getDocs(q);
+        
+        let stories = 0;
+        let convos = 0;
+        let responses = 0;
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.analysis?.detectedMode === 'STORY_REPLY') {
+            stories++;
+          } else {
+            convos++;
+          }
+          if (data.responses) {
+            responses += data.responses.length;
+          }
+        });
+        
+        setStats({
+          conversations: convos,
+          stories: stories,
+          responses: responses,
+          loading: false
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, 'conversations', auth);
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchStats();
+  }, [userData]);
+
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!input.trim() || status !== ProcessingState.IDLE) return;
+
+    const userMsg = input;
+    setInput('');
+    
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: userMsg,
+      timestamp: Date.now(),
+      mode: 'STATS'
+    };
+    
+    updateActiveProfileMessages(prev => [...prev, newMessage]);
+    setStatus(ProcessingState.ANALYZING);
+
+    const stateTimer1 = setTimeout(() => setStatus(ProcessingState.PROCESSING), 1000);
+    const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
+
+    try {
+      const ai = getGeminiAI(settings);
+      
+      const currentModeMessages = [...messages, newMessage];
+      const rawContents = currentModeMessages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content || '' }]
+      })).filter(c => c.parts[0].text.trim() !== '');
+
+      const contents: any[] = [];
+      for (const c of rawContents) {
+        if (contents.length > 0 && contents[contents.length - 1].role === c.role) {
+          contents[contents.length - 1].parts.push(...c.parts);
+        } else {
+          contents.push(c);
+        }
+      }
+
+      if (contents.length > 0 && contents[0].role === 'model') {
+        contents.shift();
+      }
+
+      if (contents.length === 0) {
+        throw new Error("No content to send.");
+      }
+
+      let userAIProfileInstruction = "";
+      if (userAIProfile) {
+        userAIProfileInstruction = `
+        🧠 USER PROFILE (CONTEXTO PERMANENTE):
+        Objetivo: ${userAIProfile.goal}
+        Nível de Experiência: ${userAIProfile.experienceLevel}
+        Estilo de Comunicação: ${userAIProfile.communicationStyle}
+        Nível de Flerte Preferido: ${userAIProfile.flirtLevel}
+        Tamanho de Resposta Preferido: ${userAIProfile.responseLength}
+        Plataforma Principal: ${userAIProfile.mainPlatform}
+        Objetivo da Conversa: ${userAIProfile.conversationGoal}
+        Tipo de Personalidade: ${userAIProfile.personalityType}
+        `;
+      }
+
+      const systemPrompt = `Você é o analista de dados da Nalábia.
+O usuário está visualizando suas estatísticas:
+- Conversas Analisadas: ${stats.conversations}
+- Stories Analisados: ${stats.stories}
+- Respostas Geradas: ${stats.responses}
+- Nível Atual: ${userData?.level}
+- XP: ${userData?.xp}
+
+${userAIProfileInstruction}
+
+Analise friamente o desempenho dele. Dê conselhos baseados em números e probabilidade. Seja direto, calculista e focado em otimização de conversão social.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: contents,
+        config: {
+          systemInstruction: systemPrompt,
+          maxOutputTokens: 8192,
+          safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+          ]
+        }
+      });
+
+      clearTimeout(stateTimer1);
+      clearTimeout(stateTimer2);
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response.text || '...',
+        timestamp: Date.now(),
+        mode: 'STATS'
+      };
+      updateActiveProfileMessages(prev => [...prev, assistantMessage]);
+      setStatus(ProcessingState.IDLE);
+    } catch (error: any) {
+      clearTimeout(stateTimer1);
+      clearTimeout(stateTimer2);
+      console.error("Chatbot Error:", error);
+      setStatus(ProcessingState.ERROR);
+      setTimeout(() => setStatus(ProcessingState.IDLE), 3000);
+      
+      let finalError = error;
+      try {
+        await handleGeminiError(error);
+      } catch (e) {
+        finalError = e;
+      }
+
+      let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
+      if (typeof finalError?.message === 'string') {
+        if (finalError.message.includes("API Key") || finalError.message.includes("cota") || finalError.message.includes("janela") || finalError.message.includes("modelo")) {
+          errorMessage = finalError.message;
+        } else {
+          errorMessage = `Erro: ${finalError.message}`;
+        }
+      } else if (typeof finalError === 'string') {
+        errorMessage = `Erro: ${finalError}`;
+      } else {
+        try { errorMessage = `Erro: ${JSON.stringify(finalError)}`; } catch (e) {}
+      }
+
+      const errMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: errorMessage,
+        timestamp: Date.now(),
+        mode: 'STATS'
+      };
+      updateActiveProfileMessages(prev => [...prev, errMessage]);
+    }
+  };
+
+  if (!userData) return null;
+
+  const nextLevelXp = userData.level * 1000;
+  const progress = (userData.xp / nextLevelXp) * 100;
+
+  const getThemeInputBg = () => {
+    switch (settings.theme) {
+      case 'ultra-dark': return 'bg-[#0a0a0a] text-gray-200';
+      case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
+      case 'midnight': return 'bg-[#1e293b] text-gray-200';
+      case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
+      case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
+      case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
+      case 'dark':
+      default: return 'bg-[#0a0a0a] text-gray-200';
+    }
+  };
+
+  const getThemeHeaderBg = () => {
+    switch (settings.theme) {
+      case 'ultra-dark': return 'bg-[#050505]';
+      case 'light': return 'bg-[#ffffff]';
+      case 'midnight': return 'bg-[#1e293b]';
+      case 'dracula': return 'bg-[#44475a]';
+      case 'hacker': return 'bg-[#000000]';
+      case 'cyberpunk': return 'bg-[#000000]';
+      case 'dark':
+      default: return 'bg-[#0a0a0a]';
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-none p-6 space-y-6 overflow-y-auto max-h-[50%] border-b border-nalabia-800">
+        <div className="flex items-center space-x-4">
+          <div className="w-16 h-16 rounded-full bg-nalabia-900 border-2 border-nalabia-gold flex items-center justify-center">
+            <Crown size={28} className="text-nalabia-gold" />
+          </div>
+          <div>
+            <h2 className="text-xl font-mono text-white font-bold">{userData.name}</h2>
+            <p className="text-sm text-nalabia-gold font-mono">Nível {userData.level} • Apex</p>
+          </div>
+        </div>
+
+        <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-6 space-y-4`}>
+          <div className="flex justify-between items-end">
+            <span className="text-xs font-mono text-gray-500 uppercase">Progresso de XP</span>
+            <span className="text-sm font-mono text-nalabia-gold">{userData.xp} / {nextLevelXp}</span>
+          </div>
+          <div className="h-2 bg-nalabia-900 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-nalabia-gold transition-all duration-1000 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-5 flex items-center justify-between`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+              <MessageCircle size={20} className="text-green-500" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold font-mono text-white">NALÁBIA Nalábia CLUB</h3>
+              <p className="text-[10px] text-gray-500 font-mono uppercase">Comunidade VIP</p>
+            </div>
+          </div>
+          {userData.status === 'ativo' || userData.nalabiaPrimeAcess ? (
+            <a
+              href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-green-500/10 border border-green-500/30 text-green-500 hover:bg-green-500/20"
+            >
+              ACESSAR
+            </a>
+          ) : (
+            <button
+              onClick={() => alert('Assine o Nalábia ∞ (IG) para acessar a comunidade VIP no WhatsApp!')}
+              className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-gray-800/50 border border-gray-700 text-gray-500 cursor-not-allowed"
+            >
+              BLOQUEADO
+            </button>
+          )}
+        </div>
+
+        {stats.loading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 size={32} className="animate-spin text-nalabia-gold" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
+              <MessageCircle size={24} className="text-gray-400" />
+              <span className="text-2xl font-mono text-white">{stats.conversations}</span>
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">Conversas<br/>Analisadas</span>
+            </div>
+            <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
+              <Camera size={24} className="text-gray-400" />
+              <span className="text-2xl font-mono text-white">{stats.stories}</span>
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">Stories<br/>Analisados</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center opacity-30 pointer-events-none p-8">
+            <Activity size={48} className="mb-6 text-gray-800" />
+            <div className="text-center space-y-2">
+              <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">ANÁLISE DE DADOS</h2>
+              <p className="text-xs text-gray-700 font-light">
+                Pergunte sobre seu desempenho e receba insights táticos.
+              </p>
+            </div>
+          </div>
+        )}
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`max-w-[85%] ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+              <div className={`px-4 py-2 rounded-2xl inline-block ${
+                msg.role === 'user' 
+                  ? `${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-300 rounded-tr-sm` 
+                  : 'bg-nalabia-900/30 border border-nalabia-gold/30 text-nalabia-gold rounded-tl-sm'
+              }`}>
+                <p className="text-xs font-mono whitespace-pre-wrap">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+        {status !== ProcessingState.IDLE && status !== ProcessingState.ERROR && (
+          <div className="flex justify-start">
+            <div className="bg-nalabia-900/30 border border-nalabia-gold/30 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center space-x-3">
+              <Loader2 size={14} className="animate-spin text-nalabia-gold" />
+              <span className="text-xs font-mono text-nalabia-gold">Analisando métricas...</span>
+            </div>
+          </div>
+        )}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className={`flex-none p-4 border-t border-nalabia-800 ${getThemeHeaderBg()}`}>
+        <form onSubmit={handleSend} className="flex items-center space-x-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Pedir análise de desempenho..."
+            className="flex-1 bg-black border border-nalabia-800 rounded-full px-4 py-3 text-sm text-white focus:outline-none focus:border-nalabia-gold/50 font-mono"
+            disabled={status !== ProcessingState.IDLE}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || status !== ProcessingState.IDLE}
+            className="w-12 h-12 rounded-full bg-nalabia-gold text-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nalabia-gold-glow transition-colors"
+          >
+            <Send size={18} />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardView;
