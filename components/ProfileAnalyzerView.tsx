@@ -12,7 +12,7 @@ interface ProfileAnalyzerViewProps {
 
 const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) => {
   const { user, userData, incrementFreeMessages } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.amorimPrimeAcess;
+  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
 
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [status, setStatus] = useState<ProcessingState>(ProcessingState.IDLE);
@@ -61,7 +61,7 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
       const deviceAllowed = await checkDeviceUsage();
       
       if (userFreeMessages >= 2 || !deviceAllowed) {
-        setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o AMORIM INC OS.");
+        setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.");
         return;
       }
     }

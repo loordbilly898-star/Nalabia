@@ -16,7 +16,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = data.title || 'Nalábia ∞ (IG)';
+  const title = data.title || 'NaLábia ∞ (IG)';
   const options = {
     body: data.body || 'Nova notificação do sistema.',
     icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg',

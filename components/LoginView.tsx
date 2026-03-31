@@ -36,15 +36,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-gray-200 font-sans p-4">
-      <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-amorim-800 shadow-2xl flex flex-col items-center">
+      <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-nalabia-800 shadow-2xl flex flex-col items-center">
         <InfinityIcon className="text-gold mb-6" size={48} />
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold tracking-[0.2em] font-mono text-white">AMORIM INC</h1>
+          <h1 className="text-2xl font-bold tracking-[0.2em] font-mono text-white">NaLábia</h1>
           <p className="text-xs font-mono tracking-widest mt-2 text-gold opacity-70">HUMAN ATTRACTION OS ∞</p>
           {isRegistering && (
             <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
               <p className="text-sm text-green-400 font-medium">
-                Assine e ganhe acesso imediato à comunidade VIP no WhatsApp: <br/><span className="font-bold">AMORIM INC CLUB</span>
+                Assine e ganhe acesso imediato à comunidade VIP no WhatsApp: <br/><span className="font-bold">NaLábia CLUB</span>
               </p>
             </div>
           )}
@@ -64,7 +64,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
               placeholder="Nome de usuário"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[#111] border border-amorim-800/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+              className="w-full bg-[#111] border border-nalabia-800/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
               required
             />
           )}
@@ -73,7 +73,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-[#111] border border-amorim-800/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+            className="w-full bg-[#111] border border-nalabia-800/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
             required
           />
           <input
@@ -81,7 +81,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
             placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-[#111] border border-amorim-800/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+            className="w-full bg-[#111] border border-nalabia-800/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
             required
           />
           <button

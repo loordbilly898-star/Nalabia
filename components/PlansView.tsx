@@ -8,9 +8,9 @@ const PLANS = [
     name: 'Mensal',
     price: 'R$ 19,90',
     period: '/mês',
-    description: 'Acesso completo para testar o poder da AMORIM INC.',
+    description: 'Acesso completo para testar o poder da NaLábia.',
     features: [
-      'Acesso ilimitado à IA AMORIM INC',
+      'Acesso ilimitado à IA NaLábia',
       'Análise avançada de imagens e perfis',
       'Simulador de conversas realista',
       'Histórico de conversas salvo',
@@ -92,9 +92,6 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
     setLoadingPlan(planId);
     setError(null);
 
-    // Open a blank window immediately to bypass iOS popup blockers
-    const newWindow = window.open('', '_blank');
-
     try {
       // Create subscription via our backend using Cakto
       const response = await fetch('/api/cakto/create-checkout', {
@@ -119,14 +116,8 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
       const data = await response.json();
       
       if (data.checkout_url) {
-        if (newWindow) {
-          newWindow.location.href = data.checkout_url;
-        } else {
-          // Fallback if popup was blocked
-          window.location.href = data.checkout_url;
-        }
+        window.location.href = data.checkout_url;
       } else {
-        if (newWindow) newWindow.close();
         throw new Error('Link de pagamento não recebido.');
       }
       
@@ -135,7 +126,6 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
         setLoadingPlan(null);
       }, 2000);
     } catch (err: any) {
-      if (newWindow) newWindow.close();
       console.error('Subscription error:', err);
       setError(err.message || 'Ocorreu um erro ao redirecionar para o pagamento.');
       setLoadingPlan(null);
@@ -211,7 +201,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
         )}
         <div className="text-center mb-12 space-y-4 mt-8 md:mt-0">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-gray-500">
-            Desbloqueie a AMORIM INC
+            Desbloqueie a NaLábia
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
             Escolha o plano ideal para você e tenha acesso completo à inteligência social mais avançada do mercado.
@@ -226,7 +216,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
           <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm max-w-md mx-auto">
             <p className="font-medium">
               🎁 BÔNUS EXCLUSIVO: <br/>
-              Assine qualquer plano e ganhe acesso imediato à comunidade VIP no WhatsApp: <span className="font-bold">AMORIM INC CLUB</span>
+              Assine qualquer plano e ganhe acesso imediato à comunidade VIP no WhatsApp: <span className="font-bold">NaLábia CLUB</span>
             </p>
           </div>
 

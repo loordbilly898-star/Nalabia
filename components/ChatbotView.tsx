@@ -16,7 +16,7 @@ interface ChatbotViewProps {
 
 const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, userAIProfile, updateActiveProfileMessages }) => {
   const { user, userData, incrementFreeMessages } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.amorimPrimeAcess;
+  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
   
   const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'CHATBOT');
   const [input, setInput] = useState('');
@@ -53,7 +53,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o AMORIM INC OS.",
+          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.",
           timestamp: Date.now(),
           mode: 'CHATBOT'
         };

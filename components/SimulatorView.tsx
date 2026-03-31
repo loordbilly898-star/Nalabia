@@ -22,7 +22,7 @@ const SCENARIOS = [
 
 const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActiveProfileMessages, settings, userAIProfile }) => {
   const { user, userData, incrementFreeMessages } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.amorimPrimeAcess;
+  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
 
   const [scenario, setScenario] = useState(SCENARIOS[0].id);
   const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'SIMULATOR');
@@ -59,7 +59,7 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o AMORIM INC OS.",
+          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.",
           timestamp: Date.now(),
           mode: 'SIMULATOR'
         };

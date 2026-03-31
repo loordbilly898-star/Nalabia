@@ -4,7 +4,7 @@ import { Infinity as InfinityIcon, ArrowRight, Check } from 'lucide-react';
 
 const SLIDES = [
   {
-    title: "Bem-vindo ao AMORIM INC",
+    title: "Bem-vindo ao NaLábia",
     subtitle: "Seu assistente de inteligência social.",
   },
   {
@@ -158,7 +158,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
   if (step === 'presentation') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-gray-200 font-sans p-4">
-        <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-amorim-800 shadow-2xl flex flex-col items-center text-center min-h-[400px] justify-between transition-all duration-500 relative">
+        <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-nalabia-800 shadow-2xl flex flex-col items-center text-center min-h-[400px] justify-between transition-all duration-500 relative">
           <button 
             onClick={onSkip}
             className="absolute top-4 right-4 text-xs font-mono text-gray-500 hover:text-gold transition-colors"
@@ -200,7 +200,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-gray-200 font-sans p-4">
-      <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-amorim-800 shadow-2xl flex flex-col">
+      <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-nalabia-800 shadow-2xl flex flex-col">
         
         <div className="flex justify-between items-center mb-8">
           <span className="text-xs font-mono text-gold">PERFIL IA</span>

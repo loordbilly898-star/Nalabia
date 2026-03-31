@@ -20,7 +20,7 @@ export const TutorialModal: React.FC<{ onComplete: () => void, settings?: any }>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-6 max-w-md w-full shadow-2xl`}>
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-white">Bem-vindo ao Nalábia</h3>
+          <h3 className="text-xl font-bold text-white">Bem-vindo ao NaLábia</h3>
           <button onClick={onComplete} className="text-gray-500 hover:text-white">
             <X size={20} />
           </button>

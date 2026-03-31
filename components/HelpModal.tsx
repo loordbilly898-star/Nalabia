@@ -86,7 +86,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ mode, onClose, settings }) => {
 
           <button 
             onClick={onClose}
-            className="w-full bg-amorim-900 border border-gray-800 hover:border-gold/40 text-gray-400 hover:text-white py-3 rounded text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-nalabia-900 border border-gray-800 hover:border-gold/40 text-gray-400 hover:text-white py-3 rounded text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
           >
             Entendi <ArrowRight size={12} />
           </button>

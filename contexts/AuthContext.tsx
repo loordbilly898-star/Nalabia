@@ -32,7 +32,7 @@ interface UserData {
   plano?: string;
   status?: string;
   expiraEm?: string;
-  amorimPrimeAcess?: boolean;
+  nalabiaPrimeAcess?: boolean;
   darkPackAccess?: boolean;
   coursesAccess?: boolean;
   mpCustomerId?: string;
@@ -90,19 +90,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const data = docSnap.data() as UserData;
               // Developer bypass
               if (currentUser.email === 'loordbilly898@gmail.com') {
-                data.amorimPrimeAcess = true;
+                data.nalabiaPrimeAcess = true;
                 data.darkPackAccess = true;
                 data.coursesAccess = true;
                 data.status = 'ativo';
                 data.plano = 'Desenvolvedor';
               } else if (currentUser.email === 'kauanhenrique171822@gmail.com') {
-                data.amorimPrimeAcess = true;
+                data.nalabiaPrimeAcess = true;
                 data.darkPackAccess = true;
                 data.coursesAccess = true;
                 data.status = 'ativo';
                 data.plano = 'Mensal';
               } else if (currentUser.email === 'gamerbilly898@gmail.com') {
-                data.amorimPrimeAcess = true;
+                data.nalabiaPrimeAcess = true;
                 // Cursos pagos agora, removido acesso gratuito
                 // Não forçamos darkPackAccess para permitir testes de pagamento
                 data.status = 'ativo';
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com' && data.plano !== 'Mensal' && data.plano !== 'Expirado') {
                 const expDate = new Date();
                 expDate.setDate(expDate.getDate() + 30);
-                data.amorimPrimeAcess = true;
+                data.nalabiaPrimeAcess = true;
                 data.status = 'ativo';
                 data.plano = 'Mensal';
                 data.expiraEm = expDate.toISOString();
@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 data.coursesAccess = false;
                 try {
                   await updateDoc(userRef, {
-                    amorimPrimeAcess: true,
+                    nalabiaPrimeAcess: true,
                     status: 'ativo',
                     plano: 'Mensal',
                     expiraEm: expDate.toISOString(),
@@ -136,13 +136,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } else if (currentUser.email === 'hhudson714@gmail.com' && data.plano !== 'Teste Grátis (7 Dias)' && data.plano !== 'Expirado') {
                 const expDate = new Date();
                 expDate.setDate(expDate.getDate() + 7);
-                data.amorimPrimeAcess = true;
+                data.nalabiaPrimeAcess = true;
                 data.status = 'ativo';
                 data.plano = 'Teste Grátis (7 Dias)';
                 data.expiraEm = expDate.toISOString();
                 try {
                   await updateDoc(userRef, {
-                    amorimPrimeAcess: true,
+                    nalabiaPrimeAcess: true,
                     status: 'ativo',
                     plano: 'Teste Grátis (7 Dias)',
                     expiraEm: expDate.toISOString()
@@ -153,13 +153,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } else if (currentUser.email?.toLowerCase() === 'luqinziky@hotmail.com' && data.plano !== 'Mensal' && data.plano !== 'Expirado') {
                 const expDate = new Date();
                 expDate.setDate(expDate.getDate() + 30);
-                data.amorimPrimeAcess = true;
+                data.nalabiaPrimeAcess = true;
                 data.status = 'ativo';
                 data.plano = 'Mensal';
                 data.expiraEm = expDate.toISOString();
                 try {
                   await updateDoc(userRef, {
-                    amorimPrimeAcess: true,
+                    nalabiaPrimeAcess: true,
                     status: 'ativo',
                     plano: 'Mensal',
                     expiraEm: expDate.toISOString()
@@ -167,13 +167,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 } catch (e) {
                   console.error("Failed to activate 30-day access", e);
                 }
-              } else if (data.plano === 'Teste Grátis' && data.amorimPrimeAcess && !data.expiraEm) {
-                data.amorimPrimeAcess = false;
+              } else if (data.plano === 'Teste Grátis' && data.nalabiaPrimeAcess && !data.expiraEm) {
+                data.nalabiaPrimeAcess = false;
                 data.status = 'pendente';
                 data.plano = 'Expirado';
                 try {
                   await updateDoc(userRef, {
-                    amorimPrimeAcess: false,
+                    nalabiaPrimeAcess: false,
                     status: 'pendente',
                     plano: 'Expirado'
                   });
@@ -182,13 +182,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               } else if (data.expiraEm) {
                 const expDate = new Date(data.expiraEm);
-                if (expDate < new Date() && data.amorimPrimeAcess) {
-                  data.amorimPrimeAcess = false;
+                if (expDate < new Date() && data.nalabiaPrimeAcess) {
+                  data.nalabiaPrimeAcess = false;
                   data.status = 'pendente';
                   data.plano = 'Expirado';
                   try {
                     await updateDoc(userRef, {
-                      amorimPrimeAcess: false,
+                      nalabiaPrimeAcess: false,
                       status: 'pendente',
                       plano: 'Expirado'
                     });
@@ -321,7 +321,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           plano: isDeveloper ? 'Desenvolvedor' : (isLegacyPremium ? 'Mensal' : ''),
           status: (isDeveloper || isLegacyPremium) ? 'ativo' : 'pendente',
           expiraEm: '',
-          amorimPrimeAcess: (isDeveloper || isLegacyPremium),
+          nalabiaPrimeAcess: (isDeveloper || isLegacyPremium),
           mpCustomerId: customerId,
           freeMessagesUsed: 0,
         };
@@ -388,7 +388,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         plano: isDeveloper ? 'Desenvolvedor' : (isLegacyPremium ? 'Mensal' : ''),
         status: (isDeveloper || isLegacyPremium) ? 'ativo' : 'pendente',
         expiraEm: '',
-        amorimPrimeAcess: (isDeveloper || isLegacyPremium),
+        nalabiaPrimeAcess: (isDeveloper || isLegacyPremium),
         mpCustomerId: customerId,
         freeMessagesUsed: 0,
       };
@@ -450,7 +450,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserData(null);
       setUserAIProfile(null);
     try {
-      localStorage.removeItem('amorim_settings_v1');
+      localStorage.removeItem('nalabia_settings_v1');
     } catch (e) {}
       // Force reload to clear all React state and memory
       window.location.reload();
@@ -572,7 +572,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `amorim_backup_${Date.now()}.json`;
+    a.download = `nalabia_backup_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -634,21 +634,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const VALID_INVITE_CODES = [
-    'AMORIM-7X9P-2K4M',
-    'AMORIM-3B8N-5V1C',
-    'AMORIM-9M2Q-8L6Z',
-    'AMORIM-4F1W-7T3Y',
-    'AMORIM-6H5R-9J2D',
-    'AMORIM-1K8C-4N7X',
-    'AMORIM-5V3M-2B9L',
-    'AMORIM-8T6Y-1W4F',
-    'AMORIM-2J9D-6H5R',
-    'AMORIM-7P4M-3X8N',
-    'AMORIM-9L1C-5V2Q',
-    'AMORIM-3W8Z-7T4F',
-    'AMORIM-6N2X-1K9C',
-    'AMORIM-4R5D-8J3H',
-    'AMORIM-5M7P-2B6L'
+    'NaLábia-7X9P-2K4M',
+    'NaLábia-3B8N-5V1C',
+    'NaLábia-9M2Q-8L6Z',
+    'NaLábia-4F1W-7T3Y',
+    'NaLábia-6H5R-9J2D',
+    'NaLábia-1K8C-4N7X',
+    'NaLábia-5V3M-2B9L',
+    'NaLábia-8T6Y-1W4F',
+    'NaLábia-2J9D-6H5R',
+    'NaLábia-7P4M-3X8N',
+    'NaLábia-9L1C-5V2Q',
+    'NaLábia-3W8Z-7T4F',
+    'NaLábia-6N2X-1K9C',
+    'NaLábia-4R5D-8J3H',
+    'NaLábia-5M7P-2B6L'
   ];
 
   const unlockFreeTrial = async (code: string) => {

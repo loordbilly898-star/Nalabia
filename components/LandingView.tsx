@@ -17,7 +17,7 @@ const SLIDES = [
   {
     id: 'problem',
     title: 'O Fim do Vácuo e da Incerteza',
-    subtitle: 'Você já ficou olhando para a tela sem saber o que responder? O AMORIM INC OS analisa as entrelinhas, identifica o nível de interesse e te dá a resposta exata para manter o controle da interação.',
+    subtitle: 'Você já ficou olhando para a tela sem saber o que responder? O NaLábia analisa as entrelinhas, identifica o nível de interesse e te dá a resposta exata para manter o controle da interação.',
     icon: Brain,
     features: [
       'Análise de Risco de Vácuo',
@@ -52,7 +52,7 @@ const SLIDES = [
   {
     id: 'community',
     title: 'Comunidade Exclusiva',
-    subtitle: 'Ao assinar o AMORIM INC OS, você ganha acesso imediato à comunidade VIP no WhatsApp: AMORIM INC CLUB. Troque experiências, receba dicas avançadas e evolua junto com outros membros.',
+    subtitle: 'Ao assinar o NaLábia, você ganha acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB. Troque experiências, receba dicas avançadas e evolua junto com outros membros.',
     icon: MessageCircle,
     features: [
       'Networking de Alto Nível',
@@ -63,7 +63,7 @@ const SLIDES = [
   {
     id: 'cta',
     title: 'A Vantagem Injusta',
-    subtitle: 'O acesso ao AMORIM INC OS é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: AMORIM INC CLUB.',
+    subtitle: 'O acesso ao NaLábia é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB.',
     icon: Star,
     cta: 'CRIAR MINHA CONTA AGORA'
   }
@@ -130,7 +130,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <InfinityIcon className="text-gold-glow" size={24} />
-            <span className="font-mono font-bold tracking-[0.2em] text-white text-sm uppercase">AMORIM INC</span>
+            <span className="font-mono font-bold tracking-[0.2em] text-white text-sm uppercase">NaLábia</span>
           </div>
           <button 
             onClick={onGetStarted}

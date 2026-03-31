@@ -44,7 +44,7 @@ const TABS: { id: AnalysisMode; label: string; icon: React.FC<any>; desc: string
   { id: 'ONE_LINER', label: '1 Linha', icon: Bolt, desc: 'Impacto Extremo' },
   { id: 'NSFW', label: 'Modo +18', icon: Flame, desc: 'Tensão Sexual e Flerte Agressivo' },
   { id: 'MANIPULATION', label: 'Manipulação', icon: Brain, desc: 'Controle Psicológico Absoluto' },
-  { id: 'COURSES', label: 'Cursos', icon: BookOpen, desc: 'Academia AMORIM INC' },
+  { id: 'COURSES', label: 'Cursos', icon: BookOpen, desc: 'Academia NaLábia' },
   { id: 'SIMULATOR', label: 'Simulador', icon: Users, desc: 'Treino com IA' },
   { id: 'VAULT', label: 'Cofre', icon: Lock, desc: 'Respostas Salvas' },
   { id: 'STATS', label: 'Estatísticas', icon: Crown, desc: 'Dashboard do Usuário' },
@@ -99,10 +99,10 @@ const App: React.FC = () => {
         return JSON.parse(saved);
       }
     } catch (e) {}
-    return [{ id: 'general', name: 'AMORIM INC', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
+    return [{ id: 'general', name: 'NaLábia', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
   });
   const [activeProfileId, setActiveProfileId] = useState<string>('general');
-  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || { id: 'general', name: 'AMORIM INC', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' };
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || { id: 'general', name: 'NaLábia', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' };
 
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -184,7 +184,7 @@ const App: React.FC = () => {
       // User logged out, reset to defaults to prevent data leaks
       setSettings(DEFAULT_SETTINGS);
       setProfiles([
-        { id: 'general', name: 'AMORIM INC', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }
+        { id: 'general', name: 'NaLábia', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }
       ]);
       setActiveProfileId('general');
       hasLoadedUserData.current = false;
@@ -497,7 +497,7 @@ const App: React.FC = () => {
 
       if (settings.notifications?.push) {
         sendNotification('Análise Concluída', {
-          body: 'O AMORIM INC gerou novas respostas para você.',
+          body: 'O NaLábia gerou novas respostas para você.',
         });
       }
 
@@ -732,7 +732,7 @@ const App: React.FC = () => {
         onDeleteProfile={(id) => {
           setProfiles(prev => {
             const newProfiles = prev.filter(p => p.id !== id);
-            return newProfiles.length > 0 ? newProfiles : [{ id: 'general', name: 'AMORIM INC', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
+            return newProfiles.length > 0 ? newProfiles : [{ id: 'general', name: 'NaLábia', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
           });
           if (activeProfileId === id) setActiveProfileId('general');
         }}
@@ -830,7 +830,7 @@ const App: React.FC = () => {
       />
 
       {/* HEADER */}
-      <header className={`flex-none ${getThemeHeaderBg()} z-20 pt-4 pb-2 px-4 flex justify-between items-center border-b border-amorim-800`}>
+      <header className={`flex-none ${getThemeHeaderBg()} z-20 pt-4 pb-2 px-4 flex justify-between items-center border-b border-nalabia-800`}>
         <div className="flex items-center space-x-3">
           {activeTab !== 'HOME' && (
             <button 
@@ -926,7 +926,7 @@ const App: React.FC = () => {
             </div>
             
              <div className={`mt-12 text-[10px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}>
-              AMORIM INC OS • Inteligência Social
+              NaLábia • Inteligência Social
             </div>
           </div>
         )}
@@ -936,12 +936,12 @@ const App: React.FC = () => {
             {msg.role === 'user' && (
               <div className="max-w-[85%] text-right">
                  {msg.image && (
-                  <div className="mb-2 rounded border border-amorim-800 inline-block overflow-hidden">
+                  <div className="mb-2 rounded border border-nalabia-800 inline-block overflow-hidden">
                     <img src={msg.image} alt="Upload" className="max-h-48 object-cover opacity-90" />
                   </div>
                 )}
                 {msg.content && (
-                  <div className={`${getThemeInputBg().split(' ')[0]} border border-amorim-800 text-gray-300 px-4 py-2 rounded-2xl rounded-tr-sm inline-block`}>
+                  <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-300 px-4 py-2 rounded-2xl rounded-tr-sm inline-block`}>
                     <p className="text-xs font-mono">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
                   </div>
                 )}
@@ -1014,10 +1014,10 @@ const App: React.FC = () => {
       </main>
 
       {/* FOOTER */}
-      <footer className={`flex-none ${getThemeHeaderBg()} border-t border-amorim-800 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] z-20`}>
+      <footer className={`flex-none ${getThemeHeaderBg()} border-t border-nalabia-800 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] z-20`}>
         
         {/* PROFILES & SLIDERS */}
-        <div className="px-5 py-4 border-b border-amorim-800/50">
+        <div className="px-5 py-4 border-b border-nalabia-800/50">
           
           {/* Profiles Styles */}
           <div className="flex space-x-3 mb-4 overflow-x-auto pb-2">
@@ -1031,7 +1031,7 @@ const App: React.FC = () => {
                     className={`flex-none flex items-center space-x-1.5 px-3 py-1.5 rounded-full border text-[10px] font-mono uppercase tracking-wide transition-all ${
                       isActive 
                       ? `${getAccentColor()}` 
-                      : 'bg-transparent border-amorim-800 text-gray-600 hover:border-gray-600'
+                      : 'bg-transparent border-nalabia-800 text-gray-600 hover:border-gray-600'
                     }`}
                  >
                    <Icon size={10} />
@@ -1049,7 +1049,7 @@ const App: React.FC = () => {
                 <span>Flirt</span>
                 <span className={getAccentText()}>{flirtLevel}</span>
               </div>
-              <input type="range" min="0" max="10" value={flirtLevel} onChange={(e) => setFlirtLevel(parseInt(e.target.value))} className="w-full h-1 bg-amorim-800 rounded-lg appearance-none cursor-pointer accent-gold" />
+              <input type="range" min="0" max="10" value={flirtLevel} onChange={(e) => setFlirtLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
             </div>
 
             {/* Dominance */}
@@ -1058,7 +1058,7 @@ const App: React.FC = () => {
                 <span>Dominância</span>
                 <span className={getAccentText()}>{dominanceLevel}</span>
               </div>
-              <input type="range" min="0" max="10" value={dominanceLevel} onChange={(e) => setDominanceLevel(parseInt(e.target.value))} className="w-full h-1 bg-amorim-800 rounded-lg appearance-none cursor-pointer accent-gold" />
+              <input type="range" min="0" max="10" value={dominanceLevel} onChange={(e) => setDominanceLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
             </div>
 
              {/* Mystery */}
@@ -1067,14 +1067,14 @@ const App: React.FC = () => {
                 <span>Mistério</span>
                 <span className={getAccentText()}>{mysteryLevel}</span>
               </div>
-              <input type="range" min="0" max="10" value={mysteryLevel} onChange={(e) => setMysteryLevel(parseInt(e.target.value))} className="w-full h-1 bg-amorim-800 rounded-lg appearance-none cursor-pointer accent-gold" />
+              <input type="range" min="0" max="10" value={mysteryLevel} onChange={(e) => setMysteryLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
             </div>
 
             {/* Speed Toggle */}
             <div className="flex items-end h-full pb-1">
                <button 
                  onClick={() => setSpeed(s => s === 'short' ? 'normal' : s === 'normal' ? 'fluid' : 'short')}
-                 className="w-full flex justify-between items-center bg-amorim-800/50 px-2 py-1 rounded border border-amorim-800 hover:border-amorim-600 text-[9px] font-mono text-gray-400 uppercase"
+                 className="w-full flex justify-between items-center bg-nalabia-800/50 px-2 py-1 rounded border border-nalabia-800 hover:border-nalabia-600 text-[9px] font-mono text-gray-400 uppercase"
                >
                  <span>Velocidade</span>
                  <span className={getAccentText()}>{speed === 'short' ? 'Curta' : speed === 'normal' ? 'Normal' : 'Fluida'}</span>
@@ -1086,7 +1086,7 @@ const App: React.FC = () => {
         {/* INPUT */}
         <div className="p-3 max-w-4xl mx-auto">
           {selectedImage && (
-            <div className={`flex items-center ${getThemeInputBg().split(' ')[0]} p-2 rounded border border-amorim-800 w-fit mb-2`}>
+            <div className={`flex items-center ${getThemeInputBg().split(' ')[0]} p-2 rounded border border-nalabia-800 w-fit mb-2`}>
               <img src={selectedImage} alt="Preview" className="h-8 w-8 object-cover rounded mr-2 opacity-80" />
               <button onClick={() => {setSelectedImage(null); if(fileInputRef.current) fileInputRef.current.value=''}} className="text-gray-600 hover:text-white">
                 <X size={14} />
@@ -1095,7 +1095,7 @@ const App: React.FC = () => {
           )}
 
           {needsSubscription ? (
-            <div className={`flex items-center justify-between ${getThemeInputBg().split(' ')[0]} border border-amorim-800 rounded-xl py-3 px-4`}>
+            <div className={`flex items-center justify-between ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-xl py-3 px-4`}>
               <span className="text-gray-500 text-sm">Assinatura necessária para enviar mensagens</span>
               <button 
                 onClick={() => setIsPlansDismissed(false)}
@@ -1117,7 +1117,7 @@ const App: React.FC = () => {
               <button 
                 type="button" 
                 onClick={() => setIsProfilesOpen(true)}
-                className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-amorim-800 text-gray-500 transition-all hover:text-white hover:border-white/20`}
+                className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-500 transition-all hover:text-white hover:border-white/20`}
               >
                 <Users size={18} />
               </button>
@@ -1125,7 +1125,7 @@ const App: React.FC = () => {
                <button 
                 type="button" 
                 onClick={() => fileInputRef.current?.click()}
-                className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-amorim-800 text-gray-500 transition-all hover:text-white`}
+                className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-500 transition-all hover:text-white`}
                 disabled={status !== ProcessingState.IDLE}
               >
                 <ImageIcon size={18} />
@@ -1137,7 +1137,7 @@ const App: React.FC = () => {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder={activeTab === 'STORY_REPLY' ? "Anexar Story ou descrever..." : `Comando para modo ${activeTabData.label}...`}
-                  className={`w-full ${getThemeInputBg()} placeholder-gray-700 rounded-xl py-3 px-4 border border-amorim-800 focus:border-white/20 focus:ring-1 focus:ring-white/10 focus:outline-none transition-all font-sans text-sm`}
+                  className={`w-full ${getThemeInputBg()} placeholder-gray-700 rounded-xl py-3 px-4 border border-nalabia-800 focus:border-white/20 focus:ring-1 focus:ring-white/10 focus:outline-none transition-all font-sans text-sm`}
                   disabled={status !== ProcessingState.IDLE}
                 />
               </div>
@@ -1146,7 +1146,7 @@ const App: React.FC = () => {
                 type="submit" 
                 className={`p-3 rounded-xl transition-all flex items-center justify-center border ${
                   (!inputText && !selectedImage) || status !== ProcessingState.IDLE
-                    ? `${getThemeInputBg().split(' ')[0]} border-amorim-800 text-gray-700` 
+                    ? `${getThemeInputBg().split(' ')[0]} border-nalabia-800 text-gray-700` 
                     : `${getAccentBg()} text-black border-transparent hover:opacity-90 shadow-lg`
                 }`}
                 disabled={(!inputText && !selectedImage) || status !== ProcessingState.IDLE}
@@ -1158,7 +1158,7 @@ const App: React.FC = () => {
           
           <div className="flex justify-between items-center mt-2 px-2">
             <span className={`text-[8px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}>
-              AMORIM INC OS v3.0 • Premium
+              NaLábia v3.0 • Premium
             </span>
              <span className={`text-[8px] font-mono tracking-widest uppercase animate-pulse ${getAccentText()} opacity-50`}>
               ● Online

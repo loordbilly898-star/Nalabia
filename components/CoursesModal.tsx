@@ -27,8 +27,6 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
     setIsProcessing(true);
     setError(null);
 
-    const newWindow = window.open('', '_blank');
-
     try {
       const response = await fetch('/api/cakto/create-checkout', {
         method: 'POST',
@@ -52,17 +50,11 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
       const data = await response.json();
       
       if (data.checkout_url) {
-        if (newWindow) {
-          newWindow.location.href = data.checkout_url;
-        } else {
-          window.location.href = data.checkout_url;
-        }
+        window.location.href = data.checkout_url;
       } else {
-        if (newWindow) newWindow.close();
         throw new Error('Link de pagamento não recebido.');
       }
     } catch (err: any) {
-      if (newWindow) newWindow.close();
       setError(err.message || 'Erro ao redirecionar para o pagamento.');
     } finally {
       setIsProcessing(false);
@@ -113,7 +105,7 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
           
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <BookOpen className="text-blue-500" size={24} />
-            ACADEMIA NALÁBIA
+            ACADEMIA NaLÁBIA
           </h2>
           <p className="text-gray-400 text-sm mt-2">
             Acesso completo a todos os cursos de psicologia sombria, sedução e manipulação.
@@ -179,7 +171,7 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
             </button>
 
             <p className="text-[10px] text-gray-500 text-center px-4">
-              <strong className="text-gray-400">Importante:</strong> Para liberação automática, certifique-se de usar o mesmo e-mail da sua conta Nalábia (<span className="text-white">{user?.email}</span>) na hora do pagamento.
+              <strong className="text-gray-400">Importante:</strong> Para liberação automática, certifique-se de usar o mesmo e-mail da sua conta NaLábia (<span className="text-white">{user?.email}</span>) na hora do pagamento.
             </p>
 
             <button

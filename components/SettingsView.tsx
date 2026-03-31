@@ -165,7 +165,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
         showAlert('Permissão Negada', 'Permissão para notificações negada ou não suportada pelo navegador.');
         return;
       } else {
-        sendNotification('AMORIM INC OS', {
+        sendNotification('NaLábia', {
           body: 'Notificações ativadas com sucesso!',
         });
       }
@@ -293,7 +293,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="text-center pt-8 pb-4 opacity-50">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">AMORIM INC • System Config</div>
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">NaLábia • System Config</div>
         <div className="text-[9px] text-gray-600">Build 3.0.0 • Secure Enclave</div>
       </div>
     </div>
@@ -660,7 +660,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `amorim_messages_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `nalabia_messages_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

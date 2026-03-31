@@ -133,7 +133,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
         `;
       }
 
-      const systemPrompt = `Você é o analista de dados da AMORIM INC.
+      const systemPrompt = `Você é o analista de dados da NaLábia.
 O usuário está visualizando suas estatísticas:
 - Conversas Analisadas: ${stats.conversations}
 - Stories Analisados: ${stats.stories}
@@ -274,11 +274,11 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
               <MessageCircle size={20} className="text-green-500" />
             </div>
             <div>
-              <h3 className="text-sm font-bold font-mono text-white">AMORIM INC CLUB</h3>
+              <h3 className="text-sm font-bold font-mono text-white">NaLábia CLUB</h3>
               <p className="text-[10px] text-gray-500 font-mono uppercase">Comunidade VIP</p>
             </div>
           </div>
-          {userData.status === 'ativo' || userData.amorimPrimeAcess ? (
+          {userData.status === 'ativo' || userData.nalabiaPrimeAcess ? (
             <a
               href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
               target="_blank"
@@ -289,7 +289,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
             </a>
           ) : (
             <button
-              onClick={() => alert('Assine o AMORIM INC OS para acessar a comunidade VIP no WhatsApp!')}
+              onClick={() => alert('Assine o NaLábia para acessar a comunidade VIP no WhatsApp!')}
               className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-gray-800/50 border border-gray-700 text-gray-500 cursor-not-allowed"
             >
               BLOQUEADO

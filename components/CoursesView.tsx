@@ -42,7 +42,7 @@ const COURSES: Course[] = [
   {
     id: 'manual-proibido',
     title: 'O Manual Proibido',
-    author: 'Nalábia Exclusivo',
+    author: 'NaLábia Exclusivo',
     description: 'Técnicas avançadas para controlar, seduzir e manipular. Conteúdo restrito para quem busca domínio absoluto.',
     modules: [
       { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
@@ -66,7 +66,7 @@ const COURSES: Course[] = [
   {
     id: 'manipulacao-teste-infinito',
     title: 'Manipulação Feminina: O Teste Infinito 2',
-    author: 'Nalábia Exclusivo',
+    author: 'NaLábia Exclusivo',
     description: 'Como identificar, neutralizar e reverter os testes que as mulheres fazem constantemente.',
     modules: [
       { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
@@ -102,7 +102,7 @@ const COURSES: Course[] = [
   {
     id: 'manipular-linda',
     title: 'Como Manipular uma Mulher Linda',
-    author: 'Nalábia Exclusivo',
+    author: 'NaLábia Exclusivo',
     description: 'Estratégias específicas para lidar com mulheres de alto valor, criando uma relação benéfica para ambos.',
     modules: [
       { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
@@ -114,7 +114,7 @@ const COURSES: Course[] = [
   {
     id: 'rei-da-cama',
     title: 'O Rei da Cama: Mestre dos Orgasmos',
-    author: 'Nalábia Exclusivo',
+    author: 'NaLábia Exclusivo',
     description: 'O segredo para levar qualquer mulher ao orgasmo. Técnicas físicas e mentais para prazer extremo.',
     isNew: true,
     modules: [
@@ -127,7 +127,7 @@ const COURSES: Course[] = [
   {
     id: '16-frases',
     title: '16 Frases para Esquentar o Papo',
-    author: 'Nalábia Exclusivo',
+    author: 'NaLábia Exclusivo',
     description: 'Frases prontas e testadas para transicionar a conversa para o sexo de forma natural e irresistível.',
     modules: [
       { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
@@ -269,7 +269,7 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
       <div className="p-6 space-y-2 border-b border-white/10">
         <h1 className="text-2xl font-black flex items-center gap-2">
           <BookOpen className="text-blue-500" size={28} />
-          Academia Nalábia
+          Academia NaLábia
         </h1>
         <p className="text-gray-400 text-sm">
           Domine a psicologia sombria, sedução e manipulação com os melhores materiais do mercado.

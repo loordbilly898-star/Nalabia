@@ -1,12 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import { MercadoPagoConfig, PreApproval, Payment, Customer } from 'mercadopago';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import dotenv from 'dotenv';
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import axios from 'axios';
 
 dotenv.config();
 
@@ -29,9 +27,11 @@ try {
     }
     
     if (serviceAccount) {
-      initializeApp({
-        credential: cert(serviceAccount)
-      });
+      if (getApps().length === 0) {
+        initializeApp({
+          credential: cert(serviceAccount)
+        });
+      }
       db = getFirestore();
       console.log('Firebase Admin initialized successfully.');
     }
@@ -41,10 +41,21 @@ try {
 }
 
 // Initialize Mercado Pago
-const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || '' });
-const preapproval = new PreApproval(client);
-const payment = new Payment(client);
-const customer = new Customer(client);
+let client: MercadoPagoConfig | null = null;
+let preapproval: PreApproval | null = null;
+let payment: Payment | null = null;
+let customer: Customer | null = null;
+
+try {
+  if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+    preapproval = new PreApproval(client);
+    payment = new Payment(client);
+    customer = new Customer(client);
+  }
+} catch (error) {
+  console.error('Failed to initialize Mercado Pago:', error);
+}
 
 // API Routes
 app.get('/api/health', (req, res) => {
@@ -56,6 +67,7 @@ app.post('/api/create-customer', async (req, res) => {
     const { email, name } = req.body;
     if (!email) return res.status(400).json({ error: 'Missing email' });
     
+    if (!customer) return res.status(500).json({ error: 'Mercado Pago not configured' });
     let customerId = '';
     try {
       const nameParts = (name || 'User').trim().split(' ');
@@ -88,9 +100,10 @@ app.post('/api/create-subscription', async (req, res) => {
     const { planId, userId, userEmail } = req.body;
     if (!planId || !userId) return res.status(400).json({ error: 'Missing planId or userId' });
 
+    if (!preapproval) return res.status(500).json({ error: 'Mercado Pago not configured' });
     const result = await preapproval.create({
       body: {
-        reason: `Nalábia - Subscription`,
+        reason: `NaLábia - Subscription`,
         external_reference: userId,
         payer_email: userEmail,
         back_url: `${process.env.APP_URL || 'https://nalabia-prime.run.app'}/dashboard`,
@@ -126,6 +139,7 @@ app.post('/api/webhook/mercadopago', async (req, res) => {
 
     if (subscriptionId) {
       try {
+        if (!preapproval) throw new Error('Mercado Pago not configured');
         const subData = await preapproval.get({ id: subscriptionId });
         await processSubscriptionUpdate(subData);
       } catch (err: any) {
@@ -133,6 +147,7 @@ app.post('/api/webhook/mercadopago', async (req, res) => {
       }
     } else if (paymentId) {
       try {
+        if (!payment) throw new Error('Mercado Pago not configured');
         const payData = await payment.get({ id: paymentId });
         if (payData.status === 'approved' || payData.status === 'authorized') {
           await processSubscriptionUpdate({
@@ -140,7 +155,7 @@ app.post('/api/webhook/mercadopago', async (req, res) => {
             external_reference: payData.external_reference,
             payer_email: payData.payer?.email,
             status: 'authorized',
-            reason: payData.description || 'Nalábia - Subscription',
+            reason: payData.description || 'NaLábia - Subscription',
             transaction_amount: payData.transaction_amount
           });
         }
@@ -159,6 +174,7 @@ app.post('/api/verify-payment', async (req, res) => {
     const { userId, type } = req.body;
     if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
+    if (!payment) return res.status(500).json({ error: 'Mercado Pago not configured' });
     let searchResult = await payment.search({
       options: { external_reference: userId, status: 'approved', sort: 'date_created', criteria: 'desc' }
     });
@@ -180,7 +196,7 @@ app.post('/api/verify-payment', async (req, res) => {
           external_reference: p.external_reference || userId,
           payer_email: p.payer?.email,
           status: 'authorized',
-          reason: p.description || 'Nalábia - Subscription',
+          reason: p.description || 'NaLábia - Subscription',
           transaction_amount: p.transaction_amount
         });
       }
@@ -264,7 +280,7 @@ async function processSubscriptionUpdate(subscription: any) {
   const status = subscription.status;
   const reason = subscription.reason || '';
   const transactionAmount = subscription.transaction_amount;
-  const planName = reason.includes('Nalábia') ? reason.replace('Nalábia - ', '') : (reason || 'Premium');
+  const planName = reason.includes('NaLábia') ? reason.replace('NaLábia - ', '') : (reason || 'Premium');
 
   if (!db) return;
 
@@ -347,23 +363,31 @@ app.post('/api/admin/activate-user', async (req, res) => {
 
 // Vite middleware for development
 async function setupVite() {
-  if (process.env.NODE_ENV !== 'production') {
+  try {
+    const vitePkg = 'vite';
+    const { createServer: createViteServer } = await import(vitePkg);
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+  } catch (e) {
+    console.log('Vite not found, skipping dev server setup');
   }
 }
 
-if (!process.env.VERCEL) {
-  await setupVite();
+if (process.env.NODE_ENV !== 'production') {
+  setupVite().then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  });
+} else if (!process.env.VERCEL) {
+  const distPath = path.join(process.cwd(), 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });

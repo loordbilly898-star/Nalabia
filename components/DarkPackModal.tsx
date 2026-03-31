@@ -31,8 +31,6 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
     setIsProcessing(true);
     setError(null);
 
-    const newWindow = window.open('', '_blank');
-
     try {
       const response = await fetch('/api/cakto/create-checkout', {
         method: 'POST',
@@ -56,17 +54,11 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
       const data = await response.json();
       
       if (data.checkout_url) {
-        if (newWindow) {
-          newWindow.location.href = data.checkout_url;
-        } else {
-          window.location.href = data.checkout_url;
-        }
+        window.location.href = data.checkout_url;
       } else {
-        if (newWindow) newWindow.close();
         throw new Error('Link de pagamento não recebido.');
       }
     } catch (err: any) {
-      if (newWindow) newWindow.close();
       setError(err.message || 'Erro ao redirecionar para o pagamento.');
     } finally {
       setIsProcessing(false);
@@ -118,7 +110,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
             DARK PACK
           </h2>
           <p className="text-gray-400 text-sm mt-2">
-            Desbloqueie o arsenal psicológico mais avançado e letal da Nalábia.
+            Desbloqueie o arsenal psicológico mais avançado e letal da NaLábia.
           </p>
         </div>
 
@@ -184,7 +176,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
             </button>
 
             <p className="text-[10px] text-gray-500 text-center px-4">
-              <strong className="text-gray-400">Importante:</strong> Para liberação automática, certifique-se de usar o mesmo e-mail da sua conta Nalábia (<span className="text-white">{user?.email}</span>) na hora do pagamento.
+              <strong className="text-gray-400">Importante:</strong> Para liberação automática, certifique-se de usar o mesmo e-mail da sua conta NaLábia (<span className="text-white">{user?.email}</span>) na hora do pagamento.
             </p>
 
             <button

@@ -263,7 +263,7 @@ export const analyzeContent = async (
     const formattedHistory = messageHistory.map(m => {
       if (m.role === 'user') return `Usuário (Alvo): ${m.content || '[Imagem enviada]'}`;
       if (m.role === 'assistant' && m.analysis) {
-        return `AMORIM INC (Sua sugestão anterior): ${m.analysis.responses[0]?.text || 'Análise gerada'}`;
+        return `NaLábia (Sua sugestão anterior): ${m.analysis.responses[0]?.text || 'Análise gerada'}`;
       }
       return `${m.role}: ${m.content}`;
     }).join('\n');
@@ -277,7 +277,7 @@ export const analyzeContent = async (
   }
 
   const contextInstruction = `
-  ⚡ AMORIM INC - PARÂMETROS DE OPERAÇÃO:
+  ⚡ NaLábia - PARÂMETROS DE OPERAÇÃO:
   
   MODO: ${mode}
   ${profileInstruction}
@@ -286,7 +286,7 @@ export const analyzeContent = async (
   
   🎚️ SLIDERS (Intenção do Usuário):
   - Flirt: ${flirtLevel}/10
-  - AMORIM: ${wittyLevel}/10
+  - NaLábia: ${wittyLevel}/10
   - Dominância: ${dominanceLevel}/10
   - Mistério: ${mysteryLevel}/10
   
@@ -352,7 +352,7 @@ export const analyzeContent = async (
     console.log("Resposta da IA:", response);
 
     let responseText = response.text;
-    if (!responseText) throw new Error("Empty response from AMORIM INC.");
+    if (!responseText) throw new Error("Empty response from NaLábia.");
 
     // Remove potential markdown formatting
     responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
@@ -367,7 +367,7 @@ export const analyzeContent = async (
     }
 
   } catch (error) {
-    console.error("AMORIM INC Error:", error);
+    console.error("NaLábia Error:", error);
     return handleGeminiError(error);
   }
 };

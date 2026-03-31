@@ -20,7 +20,7 @@ const CATEGORIES = [
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/20',
     tools: [
-      { id: 'COURSES' as AnalysisMode, label: 'Cursos', icon: BookOpen, desc: 'Academia AMORIM INC: Livros e Estudos', tip: 'Estude a teoria profunda da sedução e manipulação.' }
+      { id: 'COURSES' as AnalysisMode, label: 'Cursos', icon: BookOpen, desc: 'Academia NaLábia: Livros e Estudos', tip: 'Estude a teoria profunda da sedução e manipulação.' }
     ]
   },
   {
@@ -121,7 +121,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
       {/* Header */}
       <div className="mb-12 mt-4 animate-fade-in relative z-10">
         <h1 className="text-4xl md:text-5xl font-light tracking-tight text-white mb-3">
-          Bem-vindo ao <span className={`font-semibold ${accentColorText}`}>AMORIM INC OS</span>
+          Bem-vindo ao <span className={`font-semibold ${accentColorText}`}>NaLábia</span>
         </h1>
         <p className="text-gray-400 text-base md:text-lg max-w-2xl leading-relaxed">
           Seu arsenal completo de atração. Escolha a ferramenta ideal para o seu momento atual na conversa.
@@ -179,7 +179,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
       {selectedTip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedTip(null)}>
           <div 
-            className={`${getThemeInputBg().split(' ')[0]} border border-amorim-800 rounded-2xl p-6 max-w-md w-full shadow-2xl`}
+            className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-6 max-w-md w-full shadow-2xl`}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-start mb-4">

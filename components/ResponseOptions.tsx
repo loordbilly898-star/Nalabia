@@ -191,7 +191,7 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
               {res.explanation && (
                 <div className="mt-3 p-2.5 bg-obsidian-lighter/50 rounded-lg border border-gold-dim/10">
                   <p className="text-[10px] text-gold-glow/80 font-mono leading-relaxed">
-                    <span className="font-bold text-gold-glow mr-1">🧠 AMORIM INC OS:</span>
+                    <span className="font-bold text-gold-glow mr-1">🧠 NaLábia:</span>
                     {res.explanation}
                   </p>
                 </div>
