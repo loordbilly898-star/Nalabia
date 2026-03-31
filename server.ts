@@ -15,6 +15,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Initialize Firebase Admin (Optional, for webhook)
 let db: Firestore | null = null;
@@ -219,17 +220,21 @@ app.post('/api/cakto/create-checkout', async (req, res) => {
 
 app.post('/api/webhook/cakto', async (req, res) => {
   try {
-    const body = req.body;
-    const status = body.status || body.event;
-    const userId = body.external_reference || body.metadata?.userId || body.tracking?.src || body.src || body.sck || body.utm_source;
-    const amount = body.amount ? body.amount / 100 : (body.transaction_amount || 0);
-    const reason = body.metadata?.planName || body.product?.name || body.offer?.name || body.items?.[0]?.title || '';
+    let payload = req.body.data || req.body;
+    if (typeof payload === 'string') {
+      try { payload = JSON.parse(payload); } catch (e) {}
+    }
+    const event = req.body.event || payload.event || payload.status;
+    const status = payload.status || event;
+    const userId = payload.external_reference || payload.reference || payload.metadata?.userId || payload.tracking?.src || payload.src || payload.sck || payload.utm_source;
+    const amount = payload.amount ? Number(payload.amount) / 100 : (Number(payload.transaction_amount) || 0);
+    const reason = payload.metadata?.planName || payload.product?.name || payload.offer?.name || payload.items?.[0]?.title || '';
 
-    if (['paid', 'approved', 'payment.paid', 'completed'].includes(status)) {
+    if (['paid', 'approved', 'payment.paid', 'payment.approved', 'completed'].includes(status)) {
       await processSubscriptionUpdate({
-        id: body.id?.toString() || body.transaction_id,
+        id: payload.id?.toString() || payload.transaction_id,
         external_reference: userId,
-        payer_email: body.customer?.email,
+        payer_email: payload.customer?.email || payload.client?.email || payload.email,
         status: 'authorized',
         reason: reason,
         transaction_amount: amount,
@@ -237,9 +242,9 @@ app.post('/api/webhook/cakto', async (req, res) => {
       });
     } else if (['cancelled', 'canceled', 'subscription.canceled'].includes(status)) {
       await processSubscriptionUpdate({
-        id: body.id?.toString() || body.transaction_id,
+        id: payload.id?.toString() || payload.transaction_id,
         external_reference: userId,
-        payer_email: body.customer?.email,
+        payer_email: payload.customer?.email || payload.client?.email || payload.email,
         status: 'cancelled',
         reason: reason,
         transaction_amount: amount,
@@ -357,10 +362,11 @@ async function setupVite() {
   }
 }
 
-await setupVite();
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  await setupVite();
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;
