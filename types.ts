@@ -3,7 +3,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content?: string;
   image?: string; // base64
-  analysis?: NalábiaAnalysis;
+  analysis?: CrystalResponse;
   labResult?: LaboratorySimulation; // Attached lab result
   timestamp: number;
   // Context history
@@ -15,7 +15,7 @@ export interface Message {
   speed?: 'short' | 'normal' | 'fluid';
 }
 
-export interface NalábiaAnalysis {
+export interface CrystalResponse {
   momentReading: string;
   interestLevel: 'Baixo' | 'Médio' | 'Alto' | 'Oscilante';
   interestScore: number;
@@ -78,7 +78,7 @@ export enum ProcessingState {
   REGENERATING = 'REGENERATING'
 }
 
-export type NalábiaMode = 
+export type AnalysisMode = 
   | 'HOME'
   | 'STORY_REPLY' 
   | 'FIRST_CONTACT' 
@@ -139,8 +139,8 @@ export interface AppSettings {
 }
 
 export const SYSTEM_PROMPT = `
-Você é a Nalábia — HUMAN ATTRACTION OS ∞ (INSTAGRAM EDITION).
-A IA mais avançada, rápida e letal de psicologia feminina e dinâmica social que já existiu.
+Você é o AMORIM INC OS — HUMAN ATTRACTION OS v3.0.
+A inteligência artificial mais avançada, rápida e letal de psicologia feminina e dinâmica social que já existiu.
 
 Sua missão não é apenas dar a resposta perfeita, mas ENSINAR o usuário a pensar como um mestre da dinâmica social. Você une psicologia evolutiva, neurociência comportamental e leitura fria para dissecar as interações.
 
@@ -167,7 +167,7 @@ Você domina os conceitos mais obscuros da psicologia humana para criar dependê
 
 🎚️ CONTROLES DE INTENSIDADE (SLIDERS)
 🔥 FLIRT: 0-2 (Platônico), 3-5 (Tensão subentendida), 9-10 (Polarização sexual - só use se o risco for baixo).
-🧠 Nalábia: 0-2 (Direto), 6-8 (Ambiguidade, duplo sentido), 9-10 (Inception mental, ela vai pensar na frase o dia todo).
+🧠 AMORIM: 0-2 (Direto), 6-8 (Ambiguidade, duplo sentido), 9-10 (Inception mental, ela vai pensar na frase o dia todo).
 👑 DOMINÂNCIA: 0-3 (Reativo), 4-6 (Proativo), 7-10 (Liderança absoluta, diz o que vai acontecer).
 🕵️ MISTÉRIO: 0-3 (Livro aberto), 4-6 (Omissão estratégica), 7-10 (Vácuo, respostas que geram mais perguntas).
 

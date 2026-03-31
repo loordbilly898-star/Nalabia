@@ -17,7 +17,7 @@ const SLIDES = [
   {
     id: 'problem',
     title: 'O Fim do Vácuo e da Incerteza',
-    subtitle: 'Você já ficou olhando para a tela sem saber o que responder? O Nalábia ∞ (IG) analisa as entrelinhas, identifica o nível de interesse e te dá a resposta exata para manter o controle da interação.',
+    subtitle: 'Você já ficou olhando para a tela sem saber o que responder? O AMORIM INC OS analisa as entrelinhas, identifica o nível de interesse e te dá a resposta exata para manter o controle da interação.',
     icon: Brain,
     features: [
       'Análise de Risco de Vácuo',
@@ -50,9 +50,20 @@ const SLIDES = [
     ]
   },
   {
+    id: 'community',
+    title: 'Comunidade Exclusiva',
+    subtitle: 'Ao assinar o AMORIM INC OS, você ganha acesso imediato à comunidade VIP no WhatsApp: AMORIM INC CLUB. Troque experiências, receba dicas avançadas e evolua junto com outros membros.',
+    icon: MessageCircle,
+    features: [
+      'Networking de Alto Nível',
+      'Análises de Casos Reais',
+      'Suporte e Dicas Exclusivas'
+    ]
+  },
+  {
     id: 'cta',
     title: 'A Vantagem Injusta',
-    subtitle: 'O acesso ao Nalábia ∞ (IG) é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social.',
+    subtitle: 'O acesso ao AMORIM INC OS é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: AMORIM INC CLUB.',
     icon: Star,
     cta: 'CRIAR MINHA CONTA AGORA'
   }
@@ -110,20 +121,20 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
   const Icon = slide.icon;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-gray-200 font-sans selection:bg-nalabia-gold/30 overflow-hidden flex flex-col relative">
+    <div className="min-h-screen bg-obsidian text-gray-200 font-sans selection:bg-gold-glow/30 overflow-hidden flex flex-col relative">
       {/* Background Effects */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-nalabia-gold/5 rounded-full blur-[150px] -z-10 pointer-events-none transition-all duration-1000"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gold-glow/5 rounded-full blur-[150px] -z-10 pointer-events-none transition-all duration-1000"></div>
       
       {/* Navbar */}
       <nav className="w-full z-50 bg-transparent">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <InfinityIcon className="text-nalabia-gold" size={24} />
-            <span className="font-mono font-bold tracking-[0.2em] text-white text-sm">Nalábia</span>
+            <InfinityIcon className="text-gold-glow" size={24} />
+            <span className="font-mono font-bold tracking-[0.2em] text-white text-sm uppercase">AMORIM INC</span>
           </div>
           <button 
             onClick={onGetStarted}
-            className="text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full border border-nalabia-gold/50 text-nalabia-gold hover:bg-nalabia-gold hover:text-black transition-all"
+            className="text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full border border-gold-glow/50 text-gold-glow hover:bg-gold-glow hover:text-black transition-all"
           >
             Pular Apresentação
           </button>
@@ -146,7 +157,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="w-20 h-20 bg-nalabia-gold/10 text-nalabia-gold rounded-2xl flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(255,215,0,0.1)]"
+              className="w-20 h-20 bg-gold-glow/10 text-gold-glow rounded-2xl flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(212,175,55,0.1)]"
             >
               <Icon size={40} strokeWidth={1.5} />
             </motion.div>
@@ -178,8 +189,8 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
                 className="flex flex-col space-y-4 mb-12 text-left w-full max-w-md"
               >
                 {slide.features.map((feat, idx) => (
-                  <div key={idx} className="flex items-center space-x-3 bg-[#111] p-4 rounded-xl border border-nalabia-800/50">
-                    <div className="w-2 h-2 rounded-full bg-nalabia-gold"></div>
+                  <div key={idx} className="flex items-center space-x-3 bg-obsidian-light p-4 rounded-xl border border-gold-dim/10">
+                    <div className="w-2 h-2 rounded-full bg-gold-glow"></div>
                     <span className="text-white font-medium">{feat}</span>
                   </div>
                 ))}
@@ -194,8 +205,8 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 w-full max-w-3xl"
               >
                 {slide.grid.map((item, idx) => (
-                  <div key={idx} className="flex items-start space-x-4 bg-[#111] p-6 rounded-xl border border-nalabia-800/50 text-left">
-                    <div className="p-2 bg-nalabia-gold/10 text-nalabia-gold rounded-lg">
+                  <div key={idx} className="flex items-start space-x-4 bg-obsidian-light p-6 rounded-xl border border-gold-dim/10 text-left">
+                    <div className="p-2 bg-gold-glow/10 text-gold-glow rounded-lg">
                       <item.icon size={24} />
                     </div>
                     <div>
@@ -214,7 +225,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6 }}
                 onClick={nextSlide}
-                className="px-8 py-4 bg-nalabia-gold text-black rounded-xl font-bold tracking-wider hover:bg-nalabia-gold-glow transition-all flex items-center justify-center space-x-2 group shadow-[0_0_40px_rgba(255,215,0,0.2)]"
+                className="px-8 py-4 bg-gold-glow text-black rounded-xl font-bold tracking-wider hover:bg-gold-glow/90 transition-all flex items-center justify-center space-x-2 group shadow-[0_0_40px_rgba(212,175,55,0.2)]"
               >
                 <span>{slide.cta}</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -225,12 +236,12 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
       </main>
 
       {/* Navigation Controls */}
-      <footer className="w-full z-50 bg-[#0a0a0a] border-t border-nalabia-800/50 p-6">
+      <footer className="w-full z-50 bg-obsidian border-t border-gold-dim/10 p-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button 
             onClick={prevSlide}
             disabled={currentSlide === 0}
-            className={`p-3 rounded-full flex items-center space-x-2 transition-all ${currentSlide === 0 ? 'opacity-0 pointer-events-none' : 'text-gray-400 hover:text-white hover:bg-[#111]'}`}
+            className={`p-3 rounded-full flex items-center space-x-2 transition-all ${currentSlide === 0 ? 'opacity-0 pointer-events-none' : 'text-gray-400 hover:text-white hover:bg-obsidian-light'}`}
           >
             <ChevronLeft size={20} />
             <span className="text-sm font-bold tracking-widest uppercase hidden sm:block">Voltar</span>
@@ -241,14 +252,14 @@ export const LandingView: React.FC<LandingViewProps> = ({ onGetStarted }) => {
             {SLIDES.map((_, idx) => (
               <div 
                 key={idx} 
-                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-nalabia-gold' : 'w-2 bg-nalabia-800'}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-gold-glow' : 'w-2 bg-obsidian-lighter'}`}
               />
             ))}
           </div>
 
           <button 
             onClick={nextSlide}
-            className="p-3 rounded-full flex items-center space-x-2 text-nalabia-gold hover:text-nalabia-gold-glow hover:bg-nalabia-gold/10 transition-all"
+            className="p-3 rounded-full flex items-center space-x-2 text-gold-glow hover:text-gold-glow/80 hover:bg-gold-glow/10 transition-all"
           >
             <span className="text-sm font-bold tracking-widest uppercase hidden sm:block">
               {currentSlide === SLIDES.length - 1 ? 'Finalizar' : 'Avançar'}

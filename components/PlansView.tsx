@@ -8,12 +8,13 @@ const PLANS = [
     name: 'Mensal',
     price: 'R$ 19,90',
     period: '/mês',
-    description: 'Acesso completo para testar o poder da Nalábia.',
+    description: 'Acesso completo para testar o poder da AMORIM INC.',
     features: [
-      'Acesso ilimitado à IA Nalábia',
+      'Acesso ilimitado à IA AMORIM INC',
       'Análise avançada de imagens e perfis',
       'Simulador de conversas realista',
-      'Histórico de conversas salvo'
+      'Histórico de conversas salvo',
+      'Acesso à Comunidade VIP no WhatsApp'
     ],
     popular: false,
     icon: Zap,
@@ -29,12 +30,13 @@ const PLANS = [
       'Todos os benefícios do plano Mensal',
       'Prioridade máxima na fila de respostas',
       'Múltiplos perfis de IA personalizados',
-      'Dicas exclusivas de inteligência social'
+      'Dicas exclusivas de inteligência social',
+      'Suporte prioritário via WhatsApp'
     ],
     popular: true,
     badge: 'Mais Popular',
     icon: Crown,
-    color: 'from-nalabia-gold to-nalabia-gold-glow'
+    color: 'from-gold to-gold-glow'
   },
   {
     id: 'anual',
@@ -181,7 +183,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
   if (verifyingPayment) {
     return (
       <div className="min-h-screen bg-[#050505] text-gray-100 flex flex-col items-center justify-center p-6 text-center">
-        <Loader2 className="w-12 h-12 text-nalabia-gold animate-spin mb-6" />
+        <Loader2 className="w-12 h-12 text-gold animate-spin mb-6" />
         <h1 className="text-2xl font-bold mb-2">Verificando seu pagamento...</h1>
         <p className="text-gray-400 max-w-md">
           Estamos processando sua assinatura com o Mercado Pago. Isso pode levar alguns segundos.
@@ -194,7 +196,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
   return (
     <div className="min-h-screen bg-[#050505] text-gray-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background Effects */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-nalabia-gold/10 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-gold/10 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
       <div className="z-10 w-full max-w-5xl relative">
@@ -209,7 +211,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
         )}
         <div className="text-center mb-12 space-y-4 mt-8 md:mt-0">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-gray-500">
-            Desbloqueie a Nalábia
+            Desbloqueie a AMORIM INC
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
             Escolha o plano ideal para você e tenha acesso completo à inteligência social mais avançada do mercado.
@@ -220,6 +222,13 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
               Sua assinatura está pendente ou expirou. Escolha um plano para continuar.
             </div>
           )}
+          
+          <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm max-w-md mx-auto">
+            <p className="font-medium">
+              🎁 BÔNUS EXCLUSIVO: <br/>
+              Assine qualquer plano e ganhe acesso imediato à comunidade VIP no WhatsApp: <span className="font-bold">AMORIM INC CLUB</span>
+            </p>
+          </div>
 
           {error && (
             <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm max-w-md mx-auto">
@@ -246,7 +255,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
               return (
                 <div 
                   key={plan.id}
-                  className={`relative bg-[#121212] border ${plan.popular ? 'border-nalabia-gold/50 shadow-lg shadow-nalabia-gold/10 scale-105 z-10' : 'border-white/10'} rounded-2xl p-8 flex flex-col h-full transition-all duration-300 hover:border-white/30`}
+                  className={`relative bg-[#121212] border ${plan.popular ? 'border-gold/50 shadow-lg shadow-gold/10 scale-105 z-10' : 'border-white/10'} rounded-2xl p-8 flex flex-col h-full transition-all duration-300 hover:border-white/30`}
                 >
                   {plan.badge && (
                     <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r ${plan.color} text-black text-xs font-bold uppercase tracking-wider rounded-full shadow-lg`}>
@@ -283,7 +292,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
                     disabled={loadingPlan !== null}
                     className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center
                       ${plan.popular 
-                        ? 'bg-gradient-to-r from-nalabia-gold to-nalabia-gold-glow text-black hover:shadow-lg hover:shadow-nalabia-gold/20 hover:scale-[1.02]' 
+                        ? 'bg-gradient-to-r from-gold to-gold-glow text-black hover:shadow-lg hover:shadow-gold/20 hover:scale-[1.02]' 
                         : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 hover:border-white/20'
                       }
                       ${loadingPlan === plan.id ? 'opacity-70 cursor-not-allowed' : ''}

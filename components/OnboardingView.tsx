@@ -4,7 +4,7 @@ import { Infinity as InfinityIcon, ArrowRight, Check } from 'lucide-react';
 
 const SLIDES = [
   {
-    title: "Bem-vindo ao Nalábia",
+    title: "Bem-vindo ao AMORIM INC",
     subtitle: "Seu assistente de inteligência social.",
   },
   {
@@ -158,15 +158,15 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
   if (step === 'presentation') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-gray-200 font-sans p-4">
-        <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-nalabia-800 shadow-2xl flex flex-col items-center text-center min-h-[400px] justify-between transition-all duration-500 relative">
+        <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-amorim-800 shadow-2xl flex flex-col items-center text-center min-h-[400px] justify-between transition-all duration-500 relative">
           <button 
             onClick={onSkip}
-            className="absolute top-4 right-4 text-xs font-mono text-gray-500 hover:text-nalabia-gold transition-colors"
+            className="absolute top-4 right-4 text-xs font-mono text-gray-500 hover:text-gold transition-colors"
           >
             JÁ TENHO CONTA
           </button>
           
-          <InfinityIcon className="text-nalabia-gold mb-8 mt-4" size={48} />
+          <InfinityIcon className="text-gold mb-8 mt-4" size={48} />
           
           <div className="flex-1 flex flex-col justify-center animate-fade-in">
             <h2 className="text-2xl font-bold text-white mb-4">{SLIDES[slideIndex].title}</h2>
@@ -178,14 +178,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
               {SLIDES.map((_, idx) => (
                 <div 
                   key={idx} 
-                  className={`h-1 rounded-full transition-all duration-300 ${idx === slideIndex ? 'w-8 bg-nalabia-gold' : 'w-2 bg-gray-700'}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${idx === slideIndex ? 'w-8 bg-gold' : 'w-2 bg-gray-700'}`}
                 />
               ))}
             </div>
 
             <button
               onClick={handleNextSlide}
-              className="w-full py-4 px-4 bg-nalabia-gold text-black rounded-xl font-bold tracking-wider hover:bg-nalabia-gold-glow transition-colors flex items-center justify-center space-x-2"
+              className="w-full py-4 px-4 bg-gold text-black rounded-xl font-bold tracking-wider hover:bg-gold-glow transition-colors flex items-center justify-center space-x-2"
             >
               <span>{slideIndex === SLIDES.length - 1 ? 'COMEÇAR' : 'PRÓXIMO'}</span>
               <ArrowRight size={20} />
@@ -200,16 +200,16 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-gray-200 font-sans p-4">
-      <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-nalabia-800 shadow-2xl flex flex-col">
+      <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-amorim-800 shadow-2xl flex flex-col">
         
         <div className="flex justify-between items-center mb-8">
-          <span className="text-xs font-mono text-nalabia-gold">PERFIL IA</span>
+          <span className="text-xs font-mono text-gold">PERFIL IA</span>
           <span className="text-xs font-mono text-gray-500">{questionIndex + 1} / {QUESTIONS.length}</span>
         </div>
 
         <div className="w-full bg-gray-800 h-1 rounded-full mb-8">
           <div 
-            className="bg-nalabia-gold h-1 rounded-full transition-all duration-500" 
+            className="bg-gold h-1 rounded-full transition-all duration-500" 
             style={{ width: `${((questionIndex) / QUESTIONS.length) * 100}%` }}
           />
         </div>
@@ -226,7 +226,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
                 disabled={isSubmitting}
                 className={`w-full p-4 rounded-xl border text-left transition-all duration-200 flex justify-between items-center ${
                   isSelected 
-                    ? 'border-nalabia-gold bg-nalabia-gold/10 text-nalabia-gold' 
+                    ? 'border-gold bg-gold/10 text-gold' 
                     : 'border-gray-800 bg-[#111] text-gray-300 hover:border-gray-600'
                 }`}
               >
@@ -238,7 +238,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onSk
         </div>
 
         {isSubmitting && (
-          <div className="mt-8 text-center text-nalabia-gold text-sm font-mono animate-pulse">
+          <div className="mt-8 text-center text-gold text-sm font-mono animate-pulse">
             SINTETIZANDO PERFIL NEURAL...
           </div>
         )}

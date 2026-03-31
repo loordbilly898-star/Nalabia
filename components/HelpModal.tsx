@@ -1,9 +1,9 @@
 import React from 'react';
 import { X, HelpCircle, ArrowRight } from 'lucide-react';
-import { NalábiaMode } from '../types';
+import { AnalysisMode } from '../types';
 
 interface HelpModalProps {
-  mode: NalábiaMode;
+  mode: AnalysisMode;
   onClose: () => void;
   settings?: any;
 }
@@ -66,12 +66,12 @@ const HelpModal: React.FC<HelpModalProps> = ({ mode, onClose, settings }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4">
-      <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-gold/20 rounded-xl w-full max-w-sm relative overflow-hidden`}>
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-nalabia-gold to-transparent opacity-50"></div>
+      <div className={`${getThemeInputBg().split(' ')[0]} border border-gold/20 rounded-xl w-full max-w-sm relative overflow-hidden`}>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-50"></div>
         
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-2 text-nalabia-gold">
+            <div className="flex items-center gap-2 text-gold">
               <HelpCircle size={20} />
               <h3 className="font-mono font-bold uppercase tracking-widest text-sm">{content.title}</h3>
             </div>
@@ -86,7 +86,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ mode, onClose, settings }) => {
 
           <button 
             onClick={onClose}
-            className="w-full bg-nalabia-900 border border-gray-800 hover:border-nalabia-gold/40 text-gray-400 hover:text-white py-3 rounded text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-amorim-900 border border-gray-800 hover:border-gold/40 text-gray-400 hover:text-white py-3 rounded text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
           >
             Entendi <ArrowRight size={12} />
           </button>

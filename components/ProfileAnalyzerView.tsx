@@ -12,7 +12,7 @@ interface ProfileAnalyzerViewProps {
 
 const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) => {
   const { user, userData, incrementFreeMessages } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
+  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.amorimPrimeAcess;
 
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [status, setStatus] = useState<ProcessingState>(ProcessingState.IDLE);
@@ -61,7 +61,7 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
       const deviceAllowed = await checkDeviceUsage();
       
       if (userFreeMessages >= 2 || !deviceAllowed) {
-        setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o Nalábia ∞ (IG).");
+        setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o AMORIM INC OS.");
         return;
       }
     }
@@ -151,22 +151,22 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
 
   const getThemeInputBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#0a0a0a] text-gray-200';
+      case 'ultra-dark': return 'bg-obsidian text-gray-200';
       case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
       case 'midnight': return 'bg-[#1e293b] text-gray-200';
       case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
       case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
       case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
       case 'dark':
-      default: return 'bg-[#0a0a0a] text-gray-200';
+      default: return 'bg-obsidian text-gray-200';
     }
   };
 
   return (
     <div className="h-full flex flex-col overflow-y-auto custom-scrollbar p-4 md:p-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-nalabia-900/30 rounded-xl border border-nalabia-800/50">
-          <ScanFace className="text-nalabia-gold" size={24} />
+        <div className="p-3 bg-obsidian-light rounded-xl border border-gold-dim/10">
+          <ScanFace className="text-gold-glow" size={24} />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Raio-X de Perfil</h2>
@@ -184,7 +184,7 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
           )}
           <div 
             className={`relative border-2 border-dashed rounded-2xl overflow-hidden transition-colors flex flex-col items-center justify-center min-h-[300px] ${
-              selectedImages.length > 0 ? `border-nalabia-800/50 ${getThemeInputBg().split(' ')[0]} p-4` : `border-nalabia-800/30 ${getThemeInputBg().split(' ')[0]} hover:border-nalabia-gold/50 cursor-pointer`
+              selectedImages.length > 0 ? `border-gold-dim/20 ${getThemeInputBg().split(' ')[0]} p-4` : `border-gold-dim/20 ${getThemeInputBg().split(' ')[0]} hover:border-gold-glow/50 cursor-pointer`
             }`}
             onClick={() => selectedImages.length === 0 && fileInputRef.current?.click()}
           >
@@ -192,11 +192,11 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
               <div className="w-full h-full flex flex-col">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 overflow-y-auto max-h-[300px] custom-scrollbar pr-1">
                   {selectedImages.map((img, idx) => (
-                    <div key={idx} className="relative group aspect-[3/4] rounded-lg overflow-hidden border border-nalabia-800/50">
+                    <div key={idx} className="relative group aspect-[3/4] rounded-lg overflow-hidden border border-gold-dim/10">
                       <img src={img} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
                       <button 
                         onClick={(e) => handleRemoveImage(idx, e)}
-                        className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-500/80 rounded-full text-white backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100"
+                        className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-rose-500/80 rounded-full text-white backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <X size={14} />
                       </button>
@@ -204,16 +204,16 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   ))}
                   <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-[3/4] rounded-lg border border-dashed border-nalabia-800/50 flex flex-col items-center justify-center cursor-pointer hover:border-nalabia-gold/50 hover:bg-nalabia-900/10 transition-colors"
+                    className="aspect-[3/4] rounded-lg border border-dashed border-gold-dim/20 flex flex-col items-center justify-center cursor-pointer hover:border-gold-glow/50 hover:bg-obsidian-light transition-colors"
                   >
-                    <Upload size={24} className="text-nalabia-gold/50 mb-2" />
+                    <Upload size={24} className="text-gold-glow/50 mb-2" />
                     <span className="text-xs text-gray-500">Adicionar</span>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="text-center p-6">
-                <Upload size={48} className="mx-auto mb-4 text-nalabia-gold/50" />
+                <Upload size={48} className="mx-auto mb-4 text-gold-glow/50" />
                 <p className="text-gray-300 font-medium mb-2">Toque para enviar prints</p>
                 <p className="text-gray-500 text-sm">Tinder, Bumble, Instagram (Fotos + Bio)</p>
               </div>
@@ -233,8 +233,8 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
             disabled={selectedImages.length === 0 || status !== ProcessingState.IDLE}
             className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase flex items-center justify-center gap-2 transition-all ${
               selectedImages.length === 0 || status !== ProcessingState.IDLE
-                ? 'bg-nalabia-900/20 text-gray-600 cursor-not-allowed border border-nalabia-800/30'
-                : 'bg-nalabia-gold text-black hover:bg-nalabia-gold-glow hover:shadow-[0_0_20px_rgba(255,215,0,0.3)]'
+                ? 'bg-obsidian-light text-gray-600 cursor-not-allowed border border-gold-dim/10'
+                : 'bg-gold-glow text-black hover:bg-gold-glow/90 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)]'
             }`}
           >
             {status === ProcessingState.ANALYZING ? (
@@ -256,30 +256,30 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
           {analysisResult ? (
             <div className="space-y-6 animate-fade-in">
               {/* Vibe */}
-              <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800/50 rounded-xl p-5`}>
-                <h3 className="text-xs font-mono text-nalabia-gold uppercase tracking-widest mb-2">Vibe Detectada</h3>
+              <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5`}>
+                <h3 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-2">Vibe Detectada</h3>
                 <p className="text-gray-200 text-sm leading-relaxed">{analysisResult.vibe}</p>
               </div>
 
               {/* Flags */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-green-950/20 border border-green-900/30 rounded-xl p-4">
-                  <h3 className="text-[10px] font-mono text-green-500 uppercase tracking-widest mb-3">Green Flags</h3>
+                <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-xl p-4">
+                  <h3 className="text-[10px] font-mono text-emerald-500 uppercase tracking-widest mb-3">Green Flags</h3>
                   <ul className="space-y-2">
                     {analysisResult.greenFlags.map((flag, i) => (
-                      <li key={i} className="text-xs text-green-100/80 flex items-start gap-2">
-                        <span className="text-green-500 mt-0.5">•</span>
+                      <li key={i} className="text-xs text-emerald-100/80 flex items-start gap-2">
+                        <span className="text-emerald-500 mt-0.5">•</span>
                         <span>{flag}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-4">
-                  <h3 className="text-[10px] font-mono text-red-500 uppercase tracking-widest mb-3">Red Flags</h3>
+                <div className="bg-rose-950/20 border border-rose-900/30 rounded-xl p-4">
+                  <h3 className="text-[10px] font-mono text-rose-500 uppercase tracking-widest mb-3">Red Flags</h3>
                   <ul className="space-y-2">
                     {analysisResult.redFlags.map((flag, i) => (
-                      <li key={i} className="text-xs text-red-100/80 flex items-start gap-2">
-                        <span className="text-red-500 mt-0.5">•</span>
+                      <li key={i} className="text-xs text-rose-100/80 flex items-start gap-2">
+                        <span className="text-rose-500 mt-0.5">•</span>
                         <span>{flag}</span>
                       </li>
                     ))}
@@ -288,18 +288,18 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
               </div>
 
               {/* Icebreakers */}
-              <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800/50 rounded-xl p-5`}>
-                <h3 className="text-xs font-mono text-nalabia-gold uppercase tracking-widest mb-4">Abridores Sugeridos</h3>
+              <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5`}>
+                <h3 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-4">Abridores Sugeridos</h3>
                 <div className="space-y-3">
                   {analysisResult.icebreakers.map((icebreaker, i) => (
-                    <div key={i} className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800/30 rounded-lg p-3 flex items-start justify-between group hover:border-nalabia-gold/30 transition-colors`}>
+                    <div key={i} className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-lg p-3 flex items-start justify-between group hover:border-gold-glow/30 transition-colors`}>
                       <p className="text-sm text-gray-300 pr-4">{icebreaker}</p>
                       <button
                         onClick={() => handleCopy(icebreaker, i)}
-                        className="text-gray-500 hover:text-nalabia-gold transition-colors p-1 flex-shrink-0"
+                        className="text-gray-500 hover:text-gold-glow transition-colors p-1 flex-shrink-0"
                         title="Copiar Abridor"
                       >
-                        {copiedIndex === i ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                        {copiedIndex === i ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                       </button>
                     </div>
                   ))}
@@ -307,7 +307,7 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
               </div>
             </div>
           ) : (
-            <div className={`h-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-nalabia-800/30 rounded-2xl ${getThemeInputBg().split(' ')[0]} opacity-50`}>
+            <div className={`h-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-gold-dim/20 rounded-2xl ${getThemeInputBg().split(' ')[0]} opacity-50`}>
               <ScanFace className="text-gray-600 mb-4" size={48} />
               <h3 className="text-xl font-bold text-gray-400 mb-2">Aguardando Perfil</h3>
               <p className="text-gray-500 max-w-sm text-sm">

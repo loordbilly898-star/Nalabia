@@ -5,7 +5,7 @@ import { db, auth } from '../services/firebase';
 import { handleFirestoreError, OperationType, Message, ProcessingState, Profile, AppSettings } from '../types';
 import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send } from 'lucide-react';
 import { getGeminiAI, handleGeminiError } from '../services/gemini';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { HarmCategory, HarmBlockThreshold, ThinkingLevel } from '@google/genai';
 
 interface DashboardViewProps {
   activeProfile: Profile;
@@ -133,7 +133,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
         `;
       }
 
-      const systemPrompt = `Você é o analista de dados da Nalábia.
+      const systemPrompt = `Você é o analista de dados da AMORIM INC.
 O usuário está visualizando suas estatísticas:
 - Conversas Analisadas: ${stats.conversations}
 - Stories Analisados: ${stats.stories}
@@ -150,6 +150,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
         contents: contents,
         config: {
           systemInstruction: systemPrompt,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
           maxOutputTokens: 8192,
           safetySettings: [
             { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -217,68 +218,97 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
 
   const getThemeInputBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#0a0a0a] text-gray-200';
+      case 'ultra-dark': return 'bg-obsidian text-gray-200';
       case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
       case 'midnight': return 'bg-[#1e293b] text-gray-200';
       case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
       case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
       case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
       case 'dark':
-      default: return 'bg-[#0a0a0a] text-gray-200';
+      default: return 'bg-obsidian text-gray-200';
     }
   };
 
   const getThemeHeaderBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#050505]';
+      case 'ultra-dark': return 'bg-obsidian';
       case 'light': return 'bg-[#ffffff]';
       case 'midnight': return 'bg-[#1e293b]';
       case 'dracula': return 'bg-[#44475a]';
       case 'hacker': return 'bg-[#000000]';
       case 'cyberpunk': return 'bg-[#000000]';
       case 'dark':
-      default: return 'bg-[#0a0a0a]';
+      default: return 'bg-obsidian';
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none p-6 space-y-6 overflow-y-auto max-h-[50%] border-b border-nalabia-800">
+      <div className="flex-none p-6 space-y-6 overflow-y-auto max-h-[50%] border-b border-gold-dim/10">
         <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 rounded-full bg-nalabia-900 border-2 border-nalabia-gold flex items-center justify-center">
-            <Crown size={28} className="text-nalabia-gold" />
+          <div className="w-16 h-16 rounded-full bg-obsidian-light border-2 border-gold-glow flex items-center justify-center">
+            <Crown size={28} className="text-gold-glow" />
           </div>
           <div>
             <h2 className="text-xl font-mono text-white font-bold">{userData.name}</h2>
-            <p className="text-sm text-nalabia-gold font-mono">Nível {userData.level} • Apex</p>
+            <p className="text-sm text-gold-glow font-mono">Nível {userData.level} • Apex</p>
           </div>
         </div>
 
-        <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-6 space-y-4`}>
+        <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-6 space-y-4`}>
           <div className="flex justify-between items-end">
             <span className="text-xs font-mono text-gray-500 uppercase">Progresso de XP</span>
-            <span className="text-sm font-mono text-nalabia-gold">{userData.xp} / {nextLevelXp}</span>
+            <span className="text-sm font-mono text-gold-glow">{userData.xp} / {nextLevelXp}</span>
           </div>
-          <div className="h-2 bg-nalabia-900 rounded-full overflow-hidden">
+          <div className="h-2 bg-obsidian-light rounded-full overflow-hidden">
             <div 
-              className="h-full bg-nalabia-gold transition-all duration-1000 ease-out"
+              className="h-full bg-gold-glow transition-all duration-1000 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
+        <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-5 flex items-center justify-between`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+              <MessageCircle size={20} className="text-green-500" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold font-mono text-white">AMORIM INC CLUB</h3>
+              <p className="text-[10px] text-gray-500 font-mono uppercase">Comunidade VIP</p>
+            </div>
+          </div>
+          {userData.status === 'ativo' || userData.amorimPrimeAcess ? (
+            <a
+              href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-green-500/10 border border-green-500/30 text-green-500 hover:bg-green-500/20"
+            >
+              ACESSAR
+            </a>
+          ) : (
+            <button
+              onClick={() => alert('Assine o AMORIM INC OS para acessar a comunidade VIP no WhatsApp!')}
+              className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-gray-800/50 border border-gray-700 text-gray-500 cursor-not-allowed"
+            >
+              BLOQUEADO
+            </button>
+          )}
+        </div>
+
         {stats.loading ? (
           <div className="flex justify-center py-6">
-            <Loader2 size={32} className="animate-spin text-nalabia-gold" />
+            <Loader2 size={32} className="animate-spin text-gold-glow" />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
-            <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
+            <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
               <MessageCircle size={24} className="text-gray-400" />
               <span className="text-2xl font-mono text-white">{stats.conversations}</span>
               <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">Conversas<br/>Analisadas</span>
             </div>
-            <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
+            <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
               <Camera size={24} className="text-gray-400" />
               <span className="text-2xl font-mono text-white">{stats.stories}</span>
               <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">Stories<br/>Analisados</span>
@@ -305,8 +335,8 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
             <div className={`max-w-[85%] ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
               <div className={`px-4 py-2 rounded-2xl inline-block ${
                 msg.role === 'user' 
-                  ? `${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-300 rounded-tr-sm` 
-                  : 'bg-nalabia-900/30 border border-nalabia-gold/30 text-nalabia-gold rounded-tl-sm'
+                  ? `${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 text-gray-300 rounded-tr-sm` 
+                  : 'bg-obsidian-light border border-gold-glow/30 text-gold-glow rounded-tl-sm'
               }`}>
                 <p className="text-xs font-mono whitespace-pre-wrap">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
               </div>
@@ -315,9 +345,9 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
         ))}
         {status !== ProcessingState.IDLE && status !== ProcessingState.ERROR && (
           <div className="flex justify-start">
-            <div className="bg-nalabia-900/30 border border-nalabia-gold/30 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center space-x-3">
-              <Loader2 size={14} className="animate-spin text-nalabia-gold" />
-              <span className="text-xs font-mono text-nalabia-gold">Analisando métricas...</span>
+            <div className="bg-obsidian-light border border-gold-glow/30 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center space-x-3">
+              <Loader2 size={14} className="animate-spin text-gold-glow" />
+              <span className="text-xs font-mono text-gold-glow">Analisando métricas...</span>
             </div>
           </div>
         )}
@@ -325,20 +355,20 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
       </div>
 
       {/* Input Area */}
-      <div className={`flex-none p-4 border-t border-nalabia-800 ${getThemeHeaderBg()}`}>
+      <div className={`flex-none p-4 border-t border-gold-dim/10 ${getThemeHeaderBg()}`}>
         <form onSubmit={handleSend} className="flex items-center space-x-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Pedir análise de desempenho..."
-            className="flex-1 bg-black border border-nalabia-800 rounded-full px-4 py-3 text-sm text-white focus:outline-none focus:border-nalabia-gold/50 font-mono"
+            className="flex-1 bg-black border border-gold-dim/10 rounded-full px-4 py-3 text-sm text-white focus:outline-none focus:border-gold-glow/50 font-mono"
             disabled={status !== ProcessingState.IDLE}
           />
           <button
             type="submit"
             disabled={!input.trim() || status !== ProcessingState.IDLE}
-            className="w-12 h-12 rounded-full bg-nalabia-gold text-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nalabia-gold-glow transition-colors"
+            className="w-12 h-12 rounded-full bg-gold-glow text-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gold-glow/80 transition-colors"
           >
             <Send size={18} />
           </button>

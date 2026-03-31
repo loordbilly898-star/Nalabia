@@ -165,7 +165,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
         showAlert('Permissão Negada', 'Permissão para notificações negada ou não suportada pelo navegador.');
         return;
       } else {
-        sendNotification('Nalábia ∞ (IG)', {
+        sendNotification('AMORIM INC OS', {
           body: 'Notificações ativadas com sucesso!',
         });
       }
@@ -190,7 +190,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
 
   const getToggleColor = (isOn: boolean) => {
     if (!isOn) return 'text-gray-600';
-    return 'text-nalabia-gold';
+    return 'text-gold';
   };
 
   const renderMain = () => (
@@ -275,6 +275,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="pt-4 space-y-3">
+        {(userData?.status === 'ativo' || userData?.nalabiaPrimeAcess) && (
+          <a 
+            href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-green-500/10 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-green-500/20 transition-all"
+          >
+            <MessageCircle size={18} className="text-green-500" />
+            <span className="text-sm font-bold text-green-500">Comunidade VIP no WhatsApp</span>
+          </a>
+        )}
         <button onClick={logout} className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-red-500/20 transition-all">
           <LogOut size={18} className="text-red-400" />
           <span className="text-sm font-medium text-red-400">Sair da Conta</span>
@@ -282,7 +293,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="text-center pt-8 pb-4 opacity-50">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Nalábia • System Config</div>
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">AMORIM INC • System Config</div>
         <div className="text-[9px] text-gray-600">Build 3.0.0 • Secure Enclave</div>
       </div>
     </div>
@@ -329,10 +340,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
               value={name} 
               onChange={(e) => setName(e.target.value)}
               readOnly={!isEditingName} 
-              className={`flex-1 bg-black/50 border ${isEditingName ? 'border-nalabia-gold' : 'border-gray-800'} rounded-xl p-3 text-sm text-gray-200 focus:outline-none transition-colors`} 
+              className={`flex-1 bg-black/50 border ${isEditingName ? 'border-gold' : 'border-gray-800'} rounded-xl p-3 text-sm text-gray-200 focus:outline-none transition-colors`} 
             />
             {isEditingName ? (
-              <button onClick={handleNameSave} className="bg-nalabia-gold text-black px-4 rounded-xl text-sm font-bold hover:bg-nalabia-gold-glow transition-colors shadow-lg shadow-nalabia-gold/20">
+              <button onClick={handleNameSave} className="bg-gold text-black px-4 rounded-xl text-sm font-bold hover:bg-gold-glow transition-colors shadow-lg shadow-gold/20">
                 Salvar
               </button>
             ) : (
@@ -348,7 +359,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
           <div className="flex space-x-2">
             <input type="email" value={userData?.email || ''} readOnly className="flex-1 bg-black/50 border border-gray-800 rounded-xl p-3 text-sm text-gray-500 focus:outline-none" />
             {!user?.emailVerified && (
-              <button onClick={handleVerifyEmail} className="bg-nalabia-gold/10 text-nalabia-gold border border-nalabia-gold/30 px-4 rounded-xl text-sm font-medium hover:bg-nalabia-gold/20 transition-colors">
+              <button onClick={handleVerifyEmail} className="bg-gold/10 text-gold border border-gold/30 px-4 rounded-xl text-sm font-medium hover:bg-gold/20 transition-colors">
                 Verificar
               </button>
             )}
@@ -540,7 +551,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
     <div className="p-5 space-y-6 pb-20 animate-fade-in">
       <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-5 space-y-5">
         <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest border-b border-gray-800/50 pb-3 flex items-center">
-          <Zap size={14} className="mr-2 text-nalabia-gold" />
+          <Zap size={14} className="mr-2 text-gold" />
           Motor de Inteligência
         </h3>
         
@@ -649,7 +660,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `nalabia_messages_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `amorim_messages_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

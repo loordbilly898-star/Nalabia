@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NalábiaMode } from '../types';
+import { AnalysisMode } from '../types';
 import { 
   Camera, MessageCircle, ScanFace, AlertTriangle, 
   Zap, ShieldAlert, ThermometerSnowflake, Ghost, 
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 interface HomeViewProps {
-  setActiveTab: (tab: NalábiaMode) => void;
+  setActiveTab: (tab: AnalysisMode) => void;
   accentColorText: string;
   settings: any;
 }
@@ -20,7 +20,7 @@ const CATEGORIES = [
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/20',
     tools: [
-      { id: 'COURSES' as NalábiaMode, label: 'Cursos', icon: BookOpen, desc: 'Academia Nalábia: Livros e Estudos', tip: 'Estude a teoria profunda da sedução e manipulação.' }
+      { id: 'COURSES' as AnalysisMode, label: 'Cursos', icon: BookOpen, desc: 'Academia AMORIM INC: Livros e Estudos', tip: 'Estude a teoria profunda da sedução e manipulação.' }
     ]
   },
   {
@@ -30,67 +30,67 @@ const CATEGORIES = [
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/20',
     tools: [
-      { id: 'PROFILE_ANALYZER' as NalábiaMode, label: 'Raio-X de Perfil', icon: ScanFace, desc: 'Analise fotos e bio para gerar abridores únicos.', tip: 'Use quando der match no Tinder/Bumble ou quiser chamar no Instagram de forma criativa.' },
-      { id: 'RED_FLAG_DETECTOR' as NalábiaMode, label: 'Detector de Red Flags', icon: AlertTriangle, desc: 'Descubra se ela é tóxica ou se vai dar ghosting.', tip: 'Cole o histórico da conversa quando sentir que ela está estranha ou fria.' },
+      { id: 'PROFILE_ANALYZER' as AnalysisMode, label: 'Raio-X de Perfil', icon: ScanFace, desc: 'Analise fotos e bio para gerar abridores únicos.', tip: 'Use quando der match no Tinder/Bumble ou quiser chamar no Instagram de forma criativa.' },
+      { id: 'RED_FLAG_DETECTOR' as AnalysisMode, label: 'Detector de Red Flags', icon: AlertTriangle, desc: 'Descubra se ela é tóxica ou se vai dar ghosting.', tip: 'Cole o histórico da conversa quando sentir que ela está estranha ou fria.' },
     ]
   },
   {
     title: 'Quebrar o Gelo',
     description: 'Inicie interações impossíveis de ignorar.',
-    color: 'text-nalabia-gold',
-    bg: 'bg-nalabia-gold/10',
-    border: 'border-nalabia-gold/20',
+    color: 'text-gold-glow',
+    bg: 'bg-gold-glow/10',
+    border: 'border-gold-glow/20',
     tools: [
-      { id: 'STORY_REPLY' as NalábiaMode, label: 'Reação a Story', icon: Camera, desc: 'Respostas magnéticas para stories.', tip: 'Use quando ela postar algo interessante e você quiser puxar assunto sem parecer gado.' },
-      { id: 'FIRST_CONTACT' as NalábiaMode, label: 'Primeiro Contato', icon: MessageCircle, desc: 'Abridores de alto impacto.', tip: 'A primeira mensagem no WhatsApp ou direct do zero.' },
-      { id: 'ONE_LINER' as NalábiaMode, label: '1 Linha', icon: Bolt, desc: 'Respostas curtas e impactantes.', tip: 'Quando você precisa de uma resposta rápida, engraçada e que quebre o padrão.' },
+      { id: 'STORY_REPLY' as AnalysisMode, label: 'Reação a Story', icon: Camera, desc: 'Respostas magnéticas para stories.', tip: 'Use quando ela postar algo interessante e você quiser puxar assunto sem parecer gado.' },
+      { id: 'FIRST_CONTACT' as AnalysisMode, label: 'Primeiro Contato', icon: MessageCircle, desc: 'Abridores de alto impacto.', tip: 'A primeira mensagem no WhatsApp ou direct do zero.' },
+      { id: 'ONE_LINER' as AnalysisMode, label: '1 Linha', icon: Bolt, desc: 'Respostas curtas e impactantes.', tip: 'Quando você precisa de uma resposta rápida, engraçada e que quebre o padrão.' },
     ]
   },
   {
     title: 'Manter a Conversa (Flow)',
     description: 'Escale a atração e gere conforto.',
-    color: 'text-green-400',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/20',
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20',
     tools: [
-      { id: 'FLOWING' as NalábiaMode, label: 'Flow', icon: Zap, desc: 'Mantenha o assunto fluindo naturalmente.', tip: 'Use quando a conversa estiver morrendo ou você não souber o que responder.' },
-      { id: 'VALUE_TEST' as NalábiaMode, label: 'Teste de Valor', icon: ShieldAlert, desc: 'Inverta o jogo e faça ela se qualificar.', tip: 'Quando ela estiver se achando muito ou te testando (shit tests).' },
-      { id: 'CHATBOT' as NalábiaMode, label: 'Assistente IA', icon: Bot, desc: 'Converse livremente com a IA.', tip: 'Peça conselhos gerais sobre sedução, estilo ou comportamento.' },
+      { id: 'FLOWING' as AnalysisMode, label: 'Flow', icon: Zap, desc: 'Mantenha o assunto fluindo naturalmente.', tip: 'Use quando a conversa estiver morrendo ou você não souber o que responder.' },
+      { id: 'VALUE_TEST' as AnalysisMode, label: 'Teste de Valor', icon: ShieldAlert, desc: 'Inverta o jogo e faça ela se qualificar.', tip: 'Quando ela estiver se achando muito ou te testando (shit tests).' },
+      { id: 'CHATBOT' as AnalysisMode, label: 'Assistente IA', icon: Bot, desc: 'Converse livremente com a IA.', tip: 'Peça conselhos gerais sobre sedução, estilo ou comportamento.' },
     ]
   },
   {
     title: 'Recuperação & Riscos',
     description: 'Salve interações que estão morrendo.',
-    color: 'text-red-400',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/20',
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/20',
     tools: [
-      { id: 'COLD_RESPONSE' as NalábiaMode, label: 'Resposta Fria', icon: ThermometerSnowflake, desc: 'Recupere o poder na dinâmica.', tip: 'Quando ela demorar muito para responder ou for seca com você.' },
-      { id: 'SILENCE' as NalábiaMode, label: 'Vácuo Estratégico', icon: Ghost, desc: 'Saiba quando e como ignorar.', tip: 'Use quando ela te der vácuo e você precisar saber o momento exato de voltar (se voltar).' },
-      { id: 'REACTIVATION' as NalábiaMode, label: 'Reviver Contato', icon: Repeat2, desc: 'Mande mensagem para contatos antigos.', tip: 'Aquele contatinho antigo que esfriou e você quer chamar de novo do nada.' },
+      { id: 'COLD_RESPONSE' as AnalysisMode, label: 'Resposta Fria', icon: ThermometerSnowflake, desc: 'Recupere o poder na dinâmica.', tip: 'Quando ela demorar muito para responder ou for seca com você.' },
+      { id: 'SILENCE' as AnalysisMode, label: 'Vácuo Estratégico', icon: Ghost, desc: 'Saiba quando e como ignorar.', tip: 'Use quando ela te der vácuo e você precisar saber o momento exato de voltar (se voltar).' },
+      { id: 'REACTIVATION' as AnalysisMode, label: 'Reviver Contato', icon: Repeat2, desc: 'Mande mensagem para contatos antigos.', tip: 'Aquele contatinho antigo que esfriou e você quer chamar de novo do nada.' },
     ]
   },
   {
     title: 'Tensão & Escalação',
     description: 'Aumente a temperatura e crie tensão sexual.',
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/20',
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20',
     tools: [
-      { id: 'NSFW' as NalábiaMode, label: 'Modo +18', icon: Flame, desc: 'Flerte agressivo e tensão sexual.', tip: 'Use quando a conversa já estiver quente e você quiser escalar para o físico/íntimo.' },
-      { id: 'MANIPULATION' as NalábiaMode, label: 'Manipulação', icon: Brain, desc: 'Controle Psicológico Absoluto.', tip: 'Use para criar dependência emocional, obsessão e submissão psicológica.' },
+      { id: 'NSFW' as AnalysisMode, label: 'Modo +18', icon: Flame, desc: 'Flerte agressivo e tensão sexual.', tip: 'Use quando a conversa já estiver quente e você quiser escalar para o físico/íntimo.' },
+      { id: 'MANIPULATION' as AnalysisMode, label: 'Manipulação', icon: Brain, desc: 'Controle Psicológico Absoluto.', tip: 'Use para criar dependência emocional, obsessão e submissão psicológica.' },
     ]
   },
   {
     title: 'Arsenal & Treino',
     description: 'Suas armas e campo de treinamento.',
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/20',
+    color: 'text-violet-400',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/20',
     tools: [
-      { id: 'SIMULATOR' as NalábiaMode, label: 'Simulador', icon: Users, desc: 'Treine conversas com personas de IA.', tip: 'Pratique seu papo antes de falar com a garota real.' },
-      { id: 'VAULT' as NalábiaMode, label: 'Cofre', icon: Lock, desc: 'Suas melhores respostas salvas.', tip: 'Acesse rapidamente as frases que você salvou para usar de novo.' },
-      { id: 'STATS' as NalábiaMode, label: 'Estatísticas', icon: Crown, desc: 'Seu desempenho e evolução.', tip: 'Acompanhe seu nível, XP e taxa de sucesso.' },
+      { id: 'SIMULATOR' as AnalysisMode, label: 'Simulador', icon: Users, desc: 'Treine conversas com personas de IA.', tip: 'Pratique seu papo antes de falar com a garota real.' },
+      { id: 'VAULT' as AnalysisMode, label: 'Cofre', icon: Lock, desc: 'Suas melhores respostas salvas.', tip: 'Acesse rapidamente as frases que você salvou para usar de novo.' },
+      { id: 'STATS' as AnalysisMode, label: 'Estatísticas', icon: Crown, desc: 'Seu desempenho e evolução.', tip: 'Acompanhe seu nível, XP e taxa de sucesso.' },
     ]
   }
 ];
@@ -100,14 +100,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
 
   const getThemeInputBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#0a0a0a] text-gray-200';
+      case 'ultra-dark': return 'bg-obsidian text-gray-200';
       case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
       case 'midnight': return 'bg-[#1e293b] text-gray-200';
       case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
       case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
       case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
       case 'dark':
-      default: return 'bg-[#0a0a0a] text-gray-200';
+      default: return 'bg-obsidian text-gray-200';
     }
   };
 
@@ -115,13 +115,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
     <div className="h-full flex flex-col overflow-y-auto custom-scrollbar p-4 md:p-8 relative">
       
       {/* Background Glow Effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-nalabia-gold/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-gold-glow/5 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       {/* Header */}
       <div className="mb-12 mt-4 animate-fade-in relative z-10">
         <h1 className="text-4xl md:text-5xl font-light tracking-tight text-white mb-3">
-          Bem-vindo ao <span className={`font-semibold ${accentColorText}`}>Nalábia ∞</span>
+          Bem-vindo ao <span className={`font-semibold ${accentColorText}`}>AMORIM INC OS</span>
         </h1>
         <p className="text-gray-400 text-base md:text-lg max-w-2xl leading-relaxed">
           Seu arsenal completo de atração. Escolha a ferramenta ideal para o seu momento atual na conversa.
@@ -179,7 +179,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
       {selectedTip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedTip(null)}>
           <div 
-            className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-6 max-w-md w-full shadow-2xl`}
+            className={`${getThemeInputBg().split(' ')[0]} border border-amorim-800 rounded-2xl p-6 max-w-md w-full shadow-2xl`}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-start mb-4">
@@ -189,8 +189,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
               </button>
             </div>
             <p className="text-gray-300 mb-6">{selectedTip.desc}</p>
-            <div className="bg-nalabia-gold/10 border border-nalabia-gold/20 rounded-xl p-4">
-              <h4 className="text-xs font-mono text-nalabia-gold uppercase tracking-widest mb-2 flex items-center gap-2">
+            <div className="bg-gold-glow/10 border border-gold-glow/20 rounded-xl p-4">
+              <h4 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-2 flex items-center gap-2">
                 <Info size={14} /> Quando usar?
               </h4>
               <p className="text-sm text-gray-200 leading-relaxed">

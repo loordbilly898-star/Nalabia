@@ -16,7 +16,7 @@ interface ChatbotViewProps {
 
 const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, userAIProfile, updateActiveProfileMessages }) => {
   const { user, userData, incrementFreeMessages } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
+  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.amorimPrimeAcess;
   
   const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'CHATBOT');
   const [input, setInput] = useState('');
@@ -53,7 +53,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o Nalábia ∞ (IG).",
+          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o AMORIM INC OS.",
           timestamp: Date.now(),
           mode: 'CHATBOT'
         };
@@ -269,34 +269,34 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
 
   const getThemeHeaderBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#050505]';
+      case 'ultra-dark': return 'bg-obsidian';
       case 'light': return 'bg-[#ffffff]';
       case 'midnight': return 'bg-[#1e293b]';
       case 'dracula': return 'bg-[#44475a]';
       case 'hacker': return 'bg-[#000000]';
       case 'cyberpunk': return 'bg-[#000000]';
       case 'dark':
-      default: return 'bg-[#0a0a0a]';
+      default: return 'bg-obsidian';
     }
   };
 
   const getThemeInputBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#0a0a0a] text-gray-200';
+      case 'ultra-dark': return 'bg-obsidian text-gray-200';
       case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
       case 'midnight': return 'bg-[#1e293b] text-gray-200';
       case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
       case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
       case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
       case 'dark':
-      default: return 'bg-[#0a0a0a] text-gray-200';
+      default: return 'bg-obsidian text-gray-200';
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div className={`p-4 border-b border-nalabia-800 ${getThemeHeaderBg()}`}>
-        <h2 className="text-sm font-mono text-nalabia-gold uppercase tracking-widest flex items-center gap-2">
+      <div className={`p-4 border-b border-gold-dim/10 ${getThemeHeaderBg()}`}>
+        <h2 className="text-sm font-mono text-gold-glow uppercase tracking-widest flex items-center gap-2">
           <Sparkles size={14} />
           Assistente IA
         </h2>
@@ -306,8 +306,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-nalabia-900 border border-nalabia-800 flex items-center justify-center">
-              <Bot size={24} className="text-nalabia-gold" />
+            <div className="w-16 h-16 rounded-full bg-obsidian-light border border-gold-dim/10 flex items-center justify-center">
+              <Bot size={24} className="text-gold-glow" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-300">Como posso ajudar?</h3>
@@ -321,8 +321,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] rounded-2xl p-3 ${
                 msg.role === 'user' 
-                  ? `${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-300 rounded-tr-sm` 
-                  : 'bg-nalabia-900/50 border border-nalabia-800/50 text-gray-300 rounded-tl-sm'
+                  ? `${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 text-gray-300 rounded-tr-sm` 
+                  : 'bg-obsidian-light border border-gold-dim/10 text-gray-300 rounded-tl-sm'
               }`}>
                 {msg.image && (
                   <img src={msg.image} alt="Upload" className="max-w-full rounded-lg mb-2 border border-gray-800" />
@@ -334,8 +334,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         )}
         {status !== ProcessingState.IDLE && (
           <div className="flex justify-start">
-            <div className="bg-nalabia-900/50 border border-nalabia-800/50 rounded-2xl rounded-tl-sm p-3 flex items-center space-x-2">
-              <Loader2 size={14} className="animate-spin text-nalabia-gold" />
+            <div className="bg-obsidian-light border border-gold-dim/10 rounded-2xl rounded-tl-sm p-3 flex items-center space-x-2">
+              <Loader2 size={14} className="animate-spin text-gold-glow" />
               <span className="text-xs text-gray-400">
                 {status === ProcessingState.ANALYZING && 'Analisando...'}
                 {status === ProcessingState.PROCESSING && 'Processando...'}
@@ -349,10 +349,10 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         <div ref={chatEndRef} />
       </div>
 
-      <div className={`p-4 ${getThemeHeaderBg()} border-t border-nalabia-800`}>
+      <div className={`p-4 ${getThemeHeaderBg()} border-t border-gold-dim/10`}>
         {selectedImage && (
           <div className="mb-3 relative inline-block">
-            <img src={selectedImage} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-nalabia-800" />
+            <img src={selectedImage} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-gold-dim/10" />
             <button 
               onClick={() => setSelectedImage(null)}
               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
@@ -372,7 +372,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-400 hover:text-nalabia-gold transition-colors`}
+            className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 text-gray-400 hover:text-gold-glow transition-colors`}
           >
             <ImageIcon size={20} />
           </button>
@@ -382,13 +382,13 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Pergunte algo ao assistente..."
-              className={`w-full ${getThemeInputBg()} border border-nalabia-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-nalabia-gold transition-colors`}
+              className={`w-full ${getThemeInputBg()} border border-gold-dim/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold-glow transition-colors`}
             />
           </div>
           <button
             type="submit"
             disabled={(!input.trim() && !selectedImage) || status !== ProcessingState.IDLE}
-            className="p-3 rounded-xl bg-nalabia-gold text-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nalabia-gold-glow transition-colors"
+            className="p-3 rounded-xl bg-gold-glow text-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gold-glow/80 transition-colors"
           >
             <Send size={20} />
           </button>

@@ -22,7 +22,7 @@ const SCENARIOS = [
 
 const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActiveProfileMessages, settings, userAIProfile }) => {
   const { user, userData, incrementFreeMessages } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
+  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.amorimPrimeAcess;
 
   const [scenario, setScenario] = useState(SCENARIOS[0].id);
   const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'SIMULATOR');
@@ -59,7 +59,7 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o Nalábia ∞ (IG).",
+          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o AMORIM INC OS.",
           timestamp: Date.now(),
           mode: 'SIMULATOR'
         };
@@ -187,21 +187,21 @@ Responda apenas com a sua próxima mensagem.`;
 
   const getThemeHeaderBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#050505]';
+      case 'ultra-dark': return 'bg-obsidian';
       case 'light': return 'bg-[#ffffff]';
       case 'midnight': return 'bg-[#1e293b]';
       case 'dracula': return 'bg-[#44475a]';
       case 'hacker': return 'bg-[#000000]';
       case 'cyberpunk': return 'bg-[#000000]';
       case 'dark':
-      default: return 'bg-[#0a0a0a]';
+      default: return 'bg-obsidian';
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div className={`p-4 border-b border-nalabia-800 ${getThemeHeaderBg()}`}>
-        <h2 className="text-sm font-mono text-nalabia-gold uppercase tracking-widest flex items-center gap-2 mb-4">
+      <div className={`p-4 border-b border-gold-dim/10 ${getThemeHeaderBg()}`}>
+        <h2 className="text-sm font-mono text-gold-glow uppercase tracking-widest flex items-center gap-2 mb-4">
           <Sparkles size={14} />
           Simulador de Conversa
         </h2>
@@ -216,8 +216,8 @@ Responda apenas com a sua próxima mensagem.`;
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-mono transition-colors ${
                 scenario === s.id 
-                  ? 'bg-nalabia-gold text-black' 
-                  : 'bg-nalabia-900 text-gray-400 hover:text-nalabia-gold border border-nalabia-800'
+                  ? 'bg-gold-glow text-black' 
+                  : 'bg-obsidian-light text-gray-400 hover:text-gold-glow border border-gold-dim/10'
               }`}
             >
               {s.label}
@@ -229,8 +229,8 @@ Responda apenas com a sua próxima mensagem.`;
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-nalabia-900 border border-nalabia-800 flex items-center justify-center">
-              <Bot size={24} className="text-nalabia-gold" />
+            <div className="w-16 h-16 rounded-full bg-obsidian-light border border-gold-dim/10 flex items-center justify-center">
+              <Bot size={24} className="text-gold-glow" />
             </div>
             <div>
               <p className="text-gray-400 font-mono text-sm">Pronto para treinar?</p>
@@ -238,7 +238,7 @@ Responda apenas com a sua próxima mensagem.`;
             </div>
             <button 
               onClick={handleStart}
-              className="px-6 py-2 bg-nalabia-gold text-black rounded-full font-medium hover:bg-nalabia-gold-glow transition-colors"
+              className="px-6 py-2 bg-gold-glow text-black rounded-full font-medium hover:bg-gold-glow/80 transition-colors"
             >
               Iniciar Simulação
             </button>
@@ -248,8 +248,8 @@ Responda apenas com a sua próxima mensagem.`;
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${
                 msg.role === 'user' 
-                  ? 'bg-nalabia-gold text-black rounded-tr-sm' 
-                  : 'bg-nalabia-900 border border-nalabia-800 text-gray-200 rounded-tl-sm'
+                  ? 'bg-gold-glow text-black rounded-tr-sm' 
+                  : 'bg-obsidian-light border border-gold-dim/10 text-gray-200 rounded-tl-sm'
               }`}>
                 <p className="text-sm">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
               </div>
@@ -258,8 +258,8 @@ Responda apenas com a sua próxima mensagem.`;
         )}
         {status !== ProcessingState.IDLE && (
           <div className="flex justify-start">
-            <div className="bg-nalabia-900 border border-nalabia-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center space-x-2">
-              <Loader2 size={16} className="animate-spin text-nalabia-gold" />
+            <div className="bg-obsidian-light border border-gold-dim/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center space-x-2">
+              <Loader2 size={16} className="animate-spin text-gold-glow" />
               <span className="text-xs text-gray-400">
                 {status === ProcessingState.ANALYZING && 'Analisando...'}
                 {status === ProcessingState.PROCESSING && 'Processando...'}
@@ -272,19 +272,19 @@ Responda apenas com a sua próxima mensagem.`;
       </div>
 
       {messages.length > 0 && (
-        <div className={`p-4 border-t border-nalabia-800 ${getThemeHeaderBg()}`}>
+        <div className={`p-4 border-t border-gold-dim/10 ${getThemeHeaderBg()}`}>
           <form onSubmit={handleSend} className="flex gap-2 relative">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Sua mensagem..."
-              className="flex-1 bg-nalabia-900 border border-nalabia-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-nalabia-gold/50 transition-colors"
+              className="flex-1 bg-obsidian-light border border-gold-dim/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold-glow/50 transition-colors"
             />
             <button
               type="submit"
               disabled={!input.trim() || status !== ProcessingState.IDLE}
-              className="absolute right-2 top-2 bottom-2 aspect-square flex items-center justify-center bg-nalabia-gold text-black rounded-lg hover:bg-nalabia-gold-glow disabled:opacity-50 transition-colors"
+              className="absolute right-2 top-2 bottom-2 aspect-square flex items-center justify-center bg-gold-glow text-black rounded-lg hover:bg-gold-glow/80 disabled:opacity-50 transition-colors"
             >
               <Send size={16} />
             </button>

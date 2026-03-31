@@ -1,5 +1,5 @@
-import { GoogleGenAI, Type, Schema, Modality, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { SYSTEM_PROMPT, LAB_PROMPT, REGENERATE_PROMPT, NalábiaAnalysis, NalábiaMode, ConversationSpeed, AppSettings, LaboratorySimulation, Profile, Message } from "../types";
+import { GoogleGenAI, Type, Schema, Modality, HarmCategory, HarmBlockThreshold, ThinkingLevel } from "@google/genai";
+import { SYSTEM_PROMPT, LAB_PROMPT, REGENERATE_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, LaboratorySimulation, Profile, Message } from "../types";
 
 const responseSchema: Schema = {
   type: Type.OBJECT,
@@ -194,6 +194,7 @@ export const generateAIResponse = async (userMessage: string, settings?: AppSett
       model: "gemini-3.1-pro-preview",
       contents: userMessage,
       config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         safetySettings: [
           { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
           { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -212,7 +213,7 @@ export const generateAIResponse = async (userMessage: string, settings?: AppSett
 export const analyzeContent = async (
   text: string, 
   imageBase64: string | undefined,
-  mode: NalábiaMode,
+  mode: AnalysisMode,
   flirtLevel: number,
   wittyLevel: number,
   dominanceLevel: number,
@@ -222,7 +223,7 @@ export const analyzeContent = async (
   profileContext?: Profile,
   userAIProfile?: any,
   messageHistory?: Message[]
-): Promise<NalábiaAnalysis> => {
+): Promise<CrystalResponse> => {
   const ai = getGeminiAI(settings);
   const model = "gemini-3.1-pro-preview"; 
 
@@ -262,7 +263,7 @@ export const analyzeContent = async (
     const formattedHistory = messageHistory.map(m => {
       if (m.role === 'user') return `Usuário (Alvo): ${m.content || '[Imagem enviada]'}`;
       if (m.role === 'assistant' && m.analysis) {
-        return `Nalábia (Sua sugestão anterior): ${m.analysis.responses[0]?.text || 'Análise gerada'}`;
+        return `AMORIM INC (Sua sugestão anterior): ${m.analysis.responses[0]?.text || 'Análise gerada'}`;
       }
       return `${m.role}: ${m.content}`;
     }).join('\n');
@@ -276,7 +277,7 @@ export const analyzeContent = async (
   }
 
   const contextInstruction = `
-  ⚡ Nalábia - PARÂMETROS DE OPERAÇÃO:
+  ⚡ AMORIM INC - PARÂMETROS DE OPERAÇÃO:
   
   MODO: ${mode}
   ${profileInstruction}
@@ -285,7 +286,7 @@ export const analyzeContent = async (
   
   🎚️ SLIDERS (Intenção do Usuário):
   - Flirt: ${flirtLevel}/10
-  - Nalábia: ${wittyLevel}/10
+  - AMORIM: ${wittyLevel}/10
   - Dominância: ${dominanceLevel}/10
   - Mistério: ${mysteryLevel}/10
   
@@ -336,6 +337,7 @@ export const analyzeContent = async (
         systemInstruction: SYSTEM_PROMPT,
         responseMimeType: "application/json",
         responseSchema: responseSchema,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         temperature: 0.75, 
         maxOutputTokens: 8192,
         safetySettings: [
@@ -350,14 +352,14 @@ export const analyzeContent = async (
     console.log("Resposta da IA:", response);
 
     let responseText = response.text;
-    if (!responseText) throw new Error("Empty response from Nalábia.");
+    if (!responseText) throw new Error("Empty response from AMORIM INC.");
 
     // Remove potential markdown formatting
     responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
     responseText = sanitizeJSON(responseText);
 
     try {
-      const analysis = JSON.parse(responseText) as NalábiaAnalysis;
+      const analysis = JSON.parse(responseText) as CrystalResponse;
       return analysis;
     } catch (e) {
       console.error("Failed to parse JSON. Response text:", responseText);
@@ -365,7 +367,7 @@ export const analyzeContent = async (
     }
 
   } catch (error) {
-    console.error("Nalábia Error:", error);
+    console.error("AMORIM INC Error:", error);
     return handleGeminiError(error);
   }
 };
@@ -373,7 +375,7 @@ export const analyzeContent = async (
 export const regenerateContent = async (
   originalText: string,
   imageBase64: string | undefined,
-  mode: NalábiaMode,
+  mode: AnalysisMode,
   sliders: { flirt: number, witty: number, dominance: number, mystery: number },
   speed: ConversationSpeed,
   settings: AppSettings,
@@ -442,6 +444,7 @@ export const regenerateContent = async (
         systemInstruction: SYSTEM_PROMPT + "\n" + REGENERATE_PROMPT,
         responseMimeType: "application/json",
         responseSchema: regenerateSchema,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         temperature: 0.85, // Slightly higher for variation
         maxOutputTokens: 8192,
         safetySettings: [
@@ -478,7 +481,7 @@ export const generateAudio = async (text: string, settings?: AppSettings): Promi
         responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Zephyr' },
+            prebuiltVoiceConfig: { voiceName: 'Charon' },
           },
         },
       },
@@ -496,7 +499,7 @@ export const generateAudio = async (text: string, settings?: AppSettings): Promi
 
 export const runLaboratory = async (
   contextText: string,
-  analysis: NalábiaAnalysis,
+  analysis: CrystalResponse,
   profileContext: Profile | undefined,
   settings: AppSettings,
   userAIProfile?: any
@@ -543,6 +546,7 @@ export const runLaboratory = async (
         systemInstruction: SYSTEM_PROMPT + "\n" + LAB_PROMPT,
         responseMimeType: "application/json",
         responseSchema: labSchema,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         temperature: 0.8,
         safetySettings: [
           { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },

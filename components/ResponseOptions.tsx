@@ -27,16 +27,16 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
   const { user, addXp, saveResponseToVault } = useAuth();
 
   const getThemeInputBg = () => {
-    if (!settings) return 'bg-[#0a0a0a]';
+    if (!settings) return 'bg-obsidian';
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#0a0a0a]';
+      case 'ultra-dark': return 'bg-obsidian';
       case 'light': return 'bg-[#ffffff]';
       case 'midnight': return 'bg-[#1e293b]';
       case 'dracula': return 'bg-[#44475a]';
       case 'hacker': return 'bg-[#000000]';
       case 'cyberpunk': return 'bg-[#000000]';
       case 'dark':
-      default: return 'bg-[#0a0a0a]';
+      default: return 'bg-obsidian';
     }
   };
 
@@ -131,8 +131,8 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
   return (
     <div className="space-y-3 w-full animate-fade-in">
       <div className="flex items-center justify-between px-1">
-        <h3 className="text-[10px] font-mono text-nalabia-gold uppercase tracking-widest flex items-center gap-2">
-          <Sparkles size={10} className="text-nalabia-gold" />
+        <h3 className="text-[10px] font-mono text-gold-glow uppercase tracking-widest flex items-center gap-2">
+          <Sparkles size={10} className="text-gold-glow" />
           Opções Geradas
         </h3>
         
@@ -140,10 +140,10 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
           <button 
             onClick={onRegenerate}
             disabled={isRegenerating}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-full border border-nalabia-800 ${getThemeInputBg()} hover:border-nalabia-gold/50 hover:text-nalabia-gold transition-all group ${isRegenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-full border border-gold-dim/20 ${getThemeInputBg()} hover:border-gold-glow/50 hover:text-gold-glow transition-all group ${isRegenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <RefreshCw size={10} className={`text-gray-500 group-hover:text-nalabia-gold ${isRegenerating ? 'animate-spin' : ''}`} />
-            <span className="text-[8px] font-mono text-gray-500 group-hover:text-nalabia-gold uppercase">Regerar</span>
+            <RefreshCw size={10} className={`text-gray-500 group-hover:text-gold-glow ${isRegenerating ? 'animate-spin' : ''}`} />
+            <span className="text-[8px] font-mono text-gray-500 group-hover:text-gold-glow uppercase">Regerar</span>
           </button>
         )}
       </div>
@@ -154,34 +154,34 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
           <div 
             key={idx} 
             onClick={() => handleCopy(typeof res.text === 'string' ? res.text : (typeof res === 'string' ? res : JSON.stringify(res)), idx)}
-            className={`flex-none w-[85%] sm:w-[300px] snap-center group relative bg-nalabia-900 border transition-all duration-300 rounded-xl p-5 cursor-pointer flex flex-col justify-between
+            className={`flex-none w-[85%] sm:w-[300px] snap-center group relative bg-obsidian-light border transition-all duration-300 rounded-xl p-5 cursor-pointer flex flex-col justify-between
               ${copiedIndex === idx 
-                ? 'border-green-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]' 
-                : `border-nalabia-800 hover:border-nalabia-gold/40 hover:${getThemeInputBg()} hover:shadow-[0_0_20px_rgba(212,175,55,0.05)]`}
+                ? 'border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]' 
+                : `border-gold-dim/20 hover:border-gold-glow/40 hover:${getThemeInputBg()} hover:shadow-[0_0_20px_rgba(212,175,55,0.05)]`}
             `}
           >
             <div>
               <div className="flex justify-between items-start mb-3">
-                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider border border-gray-800 px-2 py-0.5 rounded-full">{res.type || 'Opção'}</span>
+                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider border border-white/5 px-2 py-0.5 rounded-full">{res.type || 'Opção'}</span>
                 <div className="flex items-center space-x-3">
                   <button 
                     onClick={(e) => handleSave(typeof res.text === 'string' ? res.text : (typeof res === 'string' ? res : JSON.stringify(res)), typeof res.type === 'string' ? res.type : 'Geral', idx, e)}
-                    className="text-gray-600 hover:text-nalabia-gold transition-colors"
+                    className="text-gray-600 hover:text-gold-glow transition-colors"
                   >
-                    {savedIndex === idx ? <Check size={14} className="text-green-500" /> : <Bookmark size={14} />}
+                    {savedIndex === idx ? <Check size={14} className="text-emerald-500" /> : <Bookmark size={14} />}
                   </button>
                   <button 
                     onClick={(e) => handlePlayAudio(typeof res.text === 'string' ? res.text : (typeof res === 'string' ? res : JSON.stringify(res)), idx, e)}
-                    className="text-gray-600 hover:text-nalabia-gold transition-colors"
+                    className="text-gray-600 hover:text-gold-glow transition-colors"
                   >
                     {loadingAudioIndex === idx ? (
-                      <Loader2 size={14} className="animate-spin text-nalabia-gold" />
+                      <Loader2 size={14} className="animate-spin text-gold-glow" />
                     ) : (
-                      <Volume2 size={14} className={playingIndex === idx ? "text-nalabia-gold" : ""} />
+                      <Volume2 size={14} className={playingIndex === idx ? "text-gold-glow" : ""} />
                     )}
                   </button>
-                  <div className="text-gray-600 group-hover:text-nalabia-gold transition-colors">
-                    {copiedIndex === idx ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                  <div className="text-gray-600 group-hover:text-gold-glow transition-colors">
+                    {copiedIndex === idx ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   </div>
                 </div>
               </div>
@@ -189,9 +189,9 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
                 {typeof res.text === 'string' ? res.text : (typeof res === 'string' ? res : JSON.stringify(res))}
               </p>
               {res.explanation && (
-                <div className="mt-3 p-2.5 bg-nalabia-950/50 rounded-lg border border-nalabia-800/50">
-                  <p className="text-[10px] text-nalabia-gold/80 font-mono leading-relaxed">
-                    <span className="font-bold text-nalabia-gold mr-1">🧠 Nalábia:</span>
+                <div className="mt-3 p-2.5 bg-obsidian-lighter/50 rounded-lg border border-gold-dim/10">
+                  <p className="text-[10px] text-gold-glow/80 font-mono leading-relaxed">
+                    <span className="font-bold text-gold-glow mr-1">🧠 AMORIM INC OS:</span>
                     {res.explanation}
                   </p>
                 </div>
