@@ -9,7 +9,12 @@ const PLANS = [
     price: 'R$ 19,90',
     period: '/mês',
     description: 'Acesso completo para testar o poder da Nalábia.',
-    features: ['Acesso completo à IA', 'Análise de imagens', 'Simulador de conversas', 'Comunidade VIP no WhatsApp'],
+    features: [
+      'Acesso ilimitado à IA Nalábia',
+      'Análise avançada de imagens e perfis',
+      'Simulador de conversas realista',
+      'Histórico de conversas salvo'
+    ],
     popular: false,
     icon: Zap,
     color: 'from-blue-500 to-cyan-400'
@@ -20,7 +25,12 @@ const PLANS = [
     price: 'R$ 58,90',
     period: '/trimestre',
     description: 'A escolha ideal para dominar a inteligência social.',
-    features: ['Tudo do plano Mensal', 'Prioridade de resposta', 'Múltiplos perfis de IA', 'Comunidade VIP no WhatsApp'],
+    features: [
+      'Todos os benefícios do plano Mensal',
+      'Prioridade máxima na fila de respostas',
+      'Múltiplos perfis de IA personalizados',
+      'Dicas exclusivas de inteligência social'
+    ],
     popular: true,
     badge: 'Mais Popular',
     icon: Crown,
@@ -32,7 +42,13 @@ const PLANS = [
     price: 'R$ 149,90',
     period: '/ano',
     description: 'Maestria absoluta. Economize mais de 35%.',
-    features: ['Tudo do plano Trimestral', 'Acesso antecipado a novidades', 'Suporte premium', 'Comunidade VIP no WhatsApp'],
+    features: [
+      'Todos os benefícios do plano Trimestral',
+      'Economia de mais de 35% no valor total',
+      'Acesso antecipado a novas funcionalidades',
+      'Consultoria de perfil (1x por semestre)',
+      'Selo de Membro VIP no perfil'
+    ],
     popular: false,
     badge: 'Melhor Custo-Benefício',
     icon: Star,
@@ -204,13 +220,6 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
               Sua assinatura está pendente ou expirou. Escolha um plano para continuar.
             </div>
           )}
-          
-          <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm max-w-md mx-auto">
-            <p className="font-medium">
-              🎁 BÔNUS EXCLUSIVO: <br/>
-              Assine qualquer plano e ganhe acesso imediato à comunidade VIP no WhatsApp: <span className="font-bold">NALÁBIA Nalábia CLUB</span>
-            </p>
-          </div>
 
           {error && (
             <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm max-w-md mx-auto">

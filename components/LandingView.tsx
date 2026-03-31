@@ -50,20 +50,9 @@ const SLIDES = [
     ]
   },
   {
-    id: 'community',
-    title: 'Comunidade Exclusiva',
-    subtitle: 'Ao assinar o Nalábia ∞ (IG), você ganha acesso imediato à comunidade VIP no WhatsApp: NALÁBIA Nalábia CLUB. Troque experiências, receba dicas avançadas e evolua junto com outros membros.',
-    icon: MessageCircle,
-    features: [
-      'Networking de Alto Nível',
-      'Análises de Casos Reais',
-      'Suporte e Dicas Exclusivas'
-    ]
-  },
-  {
     id: 'cta',
     title: 'A Vantagem Injusta',
-    subtitle: 'O acesso ao Nalábia ∞ (IG) é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: NALÁBIA Nalábia CLUB.',
+    subtitle: 'O acesso ao Nalábia ∞ (IG) é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social.',
     icon: Star,
     cta: 'CRIAR MINHA CONTA AGORA'
   }

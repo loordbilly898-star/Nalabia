@@ -275,17 +275,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="pt-4 space-y-3">
-        {(userData?.status === 'ativo' || userData?.nalabiaPrimeAcess) && (
-          <a 
-            href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-green-500/10 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-green-500/20 transition-all"
-          >
-            <MessageCircle size={18} className="text-green-500" />
-            <span className="text-sm font-bold text-green-500">Comunidade VIP no WhatsApp</span>
-          </a>
-        )}
         <button onClick={logout} className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-red-500/20 transition-all">
           <LogOut size={18} className="text-red-400" />
           <span className="text-sm font-medium text-red-400">Sair da Conta</span>

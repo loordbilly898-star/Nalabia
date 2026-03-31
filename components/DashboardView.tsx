@@ -267,35 +267,6 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
           </div>
         </div>
 
-        <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-2xl p-5 flex items-center justify-between`}>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
-              <MessageCircle size={20} className="text-green-500" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold font-mono text-white">NALÁBIA Nalábia CLUB</h3>
-              <p className="text-[10px] text-gray-500 font-mono uppercase">Comunidade VIP</p>
-            </div>
-          </div>
-          {userData.status === 'ativo' || userData.nalabiaPrimeAcess ? (
-            <a
-              href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-green-500/10 border border-green-500/30 text-green-500 hover:bg-green-500/20"
-            >
-              ACESSAR
-            </a>
-          ) : (
-            <button
-              onClick={() => alert('Assine o Nalábia ∞ (IG) para acessar a comunidade VIP no WhatsApp!')}
-              className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-gray-800/50 border border-gray-700 text-gray-500 cursor-not-allowed"
-            >
-              BLOQUEADO
-            </button>
-          )}
-        </div>
-
         {stats.loading ? (
           <div className="flex justify-center py-6">
             <Loader2 size={32} className="animate-spin text-nalabia-gold" />

@@ -41,13 +41,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold tracking-[0.2em] font-mono text-white">Nalábia</h1>
           <p className="text-xs font-mono tracking-widest mt-2 text-nalabia-gold opacity-70">HUMAN ATTRACTION OS ∞</p>
-          {isRegistering && (
-            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <p className="text-sm text-green-400 font-medium">
-                Assine e ganhe acesso imediato à comunidade VIP no WhatsApp: <br/><span className="font-bold">NALÁBIA Nalábia CLUB</span>
-              </p>
-            </div>
-          )}
         </div>
 
         {error && (
