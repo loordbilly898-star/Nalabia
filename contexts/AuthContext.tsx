@@ -112,26 +112,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 data.darkPackAccess = true;
               } else if (currentUser.email === 'nauandematoss@gmail.com') {
                 data.coursesAccess = true;
-              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com' && data.plano !== 'Mensal' && data.plano !== 'Expirado') {
+              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com') {
                 const expDate = new Date();
                 expDate.setDate(expDate.getDate() + 30);
-                data.nalabiaPrimeAcess = true;
-                data.status = 'ativo';
-                data.plano = 'Mensal';
-                data.expiraEm = expDate.toISOString();
-                data.darkPackAccess = false;
-                data.coursesAccess = false;
-                try {
-                  await updateDoc(userRef, {
-                    nalabiaPrimeAcess: true,
-                    status: 'ativo',
-                    plano: 'Mensal',
-                    expiraEm: expDate.toISOString(),
-                    darkPackAccess: false,
-                    coursesAccess: false
-                  });
-                } catch (e) {
-                  console.error("Failed to activate 30-day access", e);
+                
+                const currentExp = data.expiraEm ? new Date(data.expiraEm) : new Date(0);
+                const daysUntilExp = (currentExp.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                
+                if (daysUntilExp < 29 || data.status !== 'ativo' || data.darkPackAccess || data.coursesAccess) {
+                  data.nalabiaPrimeAcess = true;
+                  data.status = 'ativo';
+                  data.plano = 'Mensal (Liberado)';
+                  data.expiraEm = expDate.toISOString();
+                  data.darkPackAccess = false;
+                  data.coursesAccess = false;
+                  try {
+                    await updateDoc(userRef, {
+                      nalabiaPrimeAcess: true,
+                      status: 'ativo',
+                      plano: 'Mensal (Liberado)',
+                      expiraEm: expDate.toISOString(),
+                      darkPackAccess: false,
+                      coursesAccess: false
+                    });
+                  } catch (e) {
+                    console.error("Failed to activate 30-day access", e);
+                  }
                 }
               } else if (currentUser.email === 'hhudson714@gmail.com' && data.plano !== 'Teste Grátis (7 Dias)' && data.plano !== 'Expirado') {
                 const expDate = new Date();
