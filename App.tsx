@@ -62,7 +62,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
   accentColor: 'gold',
   animations: true,
-  customApiKey: 'AIzaSyApohvTuu1IZrUa1lQi92ZUzTUgyuiIaOI',
   ai: {
     shortResponses: false,
     avoidCompliments: true,

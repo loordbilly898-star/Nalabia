@@ -382,7 +382,7 @@ if (process.env.NODE_ENV !== 'production') {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   });
-} else if (!process.env.VERCEL) {
+} else {
   const distPath = path.join(process.cwd(), 'dist');
   app.use(express.static(distPath));
   app.get('*all', (req, res) => {
