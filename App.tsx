@@ -1145,8 +1145,8 @@ const App: React.FC = () => {
                 type="submit" 
                 className={`p-3 rounded-xl transition-all flex items-center justify-center border ${
                   (!inputText && !selectedImage) || status !== ProcessingState.IDLE
-                    ? `${getThemeInputBg().split(' ')[0]} border-nalabia-800 text-gray-700` 
-                    : `${getAccentBg()} text-black border-transparent hover:opacity-90 shadow-lg`
+                    ? `${getThemeInputBg().split(' ')[0]} border-nalabia-800 text-gray-700 opacity-50 cursor-not-allowed` 
+                    : `${getAccentBg()} text-black border-transparent hover:opacity-90 hover:shadow-[0_0_20px_rgba(212,175,55,0.6)] shadow-lg`
                 }`}
                 disabled={(!inputText && !selectedImage) || status !== ProcessingState.IDLE}
               >
