@@ -112,7 +112,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 data.darkPackAccess = true;
               } else if (currentUser.email === 'nauandematoss@gmail.com') {
                 data.coursesAccess = true;
-              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com' || currentUser.email?.toLowerCase() === 'paz180511@gmail.com') {
+              } else if (currentUser.email?.toLowerCase() === 'paz180511@gmail.com') {
+                const expDate = new Date();
+                expDate.setDate(expDate.getDate() + 30);
+                
+                const currentExp = data.expiraEm ? new Date(data.expiraEm) : new Date(0);
+                const daysUntilExp = (currentExp.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                
+                if (daysUntilExp < 29 || data.status !== 'ativo' || !data.darkPackAccess || data.coursesAccess) {
+                  data.nalabiaPrimeAcess = true;
+                  data.status = 'ativo';
+                  data.plano = 'Mensal + Dark (Liberado)';
+                  data.expiraEm = expDate.toISOString();
+                  data.darkPackAccess = true;
+                  data.coursesAccess = false;
+                  try {
+                    await updateDoc(userRef, {
+                      nalabiaPrimeAcess: true,
+                      status: 'ativo',
+                      plano: 'Mensal + Dark (Liberado)',
+                      expiraEm: expDate.toISOString(),
+                      darkPackAccess: true,
+                      coursesAccess: false
+                    });
+                  } catch (e) {
+                    console.error("Failed to activate 30-day access", e);
+                  }
+                }
+              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com') {
                 const expDate = new Date();
                 expDate.setDate(expDate.getDate() + 30);
                 
