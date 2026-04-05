@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 data.darkPackAccess = true;
               } else if (currentUser.email === 'nauandematoss@gmail.com') {
                 data.coursesAccess = true;
-              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com') {
+              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com' || currentUser.email?.toLowerCase() === 'paz180511@gmail.com') {
                 const expDate = new Date();
                 expDate.setDate(expDate.getDate() + 30);
                 
