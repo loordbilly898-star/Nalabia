@@ -230,6 +230,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   }
                 }
               }
+
+              // Safety check: if user has any access but status is pendente, fix it
+              if (data.status === 'pendente' && (data.nalabiaPrimeAcess || data.darkPackAccess || data.coursesAccess)) {
+                data.status = 'ativo';
+                try {
+                  await updateDoc(userRef, { status: 'ativo' });
+                } catch (e) {}
+              }
+
               setUserData(data);
             }
           }, (error) => {

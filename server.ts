@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize Firebase Admin (Optional, for webhook)
+// Initialize Firebase Admin
 let db: Firestore | null = null;
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
@@ -26,15 +26,20 @@ try {
       console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY as JSON.', parseError);
     }
     
-    if (serviceAccount) {
-      if (getApps().length === 0) {
-        initializeApp({
-          credential: cert(serviceAccount)
-        });
-      }
-      db = getFirestore();
-      console.log('Firebase Admin initialized successfully.');
+    if (serviceAccount && getApps().length === 0) {
+      initializeApp({
+        credential: cert(serviceAccount)
+      });
+      console.log('Firebase Admin initialized with Service Account.');
     }
+  } else if (getApps().length === 0) {
+    // Try initializing with Application Default Credentials (ADC)
+    initializeApp();
+    console.log('Firebase Admin initialized with ADC.');
+  }
+  
+  if (getApps().length > 0) {
+    db = getFirestore();
   }
 } catch (error) {
   console.error('Failed to initialize Firebase Admin:', error);
@@ -125,30 +130,29 @@ app.post('/api/create-subscription', async (req, res) => {
 app.post('/api/webhook/mercadopago', async (req, res) => {
   try {
     const body = req.body;
-    const { type, data, action } = body;
+    const query = req.query;
+    
+    // Mercado Pago can send data in body or query params
+    const type = body.type || query.topic || body.resource?.split('/')[3];
+    const id = body.data?.id || query.id || body.resource?.split('/').pop();
+    const action = body.action || '';
+
+    console.log(`[MP Webhook] Received: type=${type}, id=${id}, action=${action}`);
+
     if (!db) return res.status(500).send('Server configuration error');
 
-    let subscriptionId = null;
-    let paymentId = null;
-
     if (type === 'subscription_preapproval' || action?.includes('subscription_preapproval') || type === 'preapproval') {
-      subscriptionId = data?.id || body.resource?.split('/').pop();
-    } else if (type === 'payment' || action?.includes('payment')) {
-      paymentId = data?.id || body.resource?.split('/').pop();
-    }
-
-    if (subscriptionId) {
       try {
         if (!preapproval) throw new Error('Mercado Pago not configured');
-        const subData = await preapproval.get({ id: subscriptionId });
+        const subData = await preapproval.get({ id: id });
         await processSubscriptionUpdate(subData);
       } catch (err: any) {
-        console.error(`[MP Webhook] Error fetching subscription ${subscriptionId}:`, err.message || err);
+        console.error(`[MP Webhook] Error fetching subscription ${id}:`, err.message || err);
       }
-    } else if (paymentId) {
+    } else if (type === 'payment' || action?.includes('payment')) {
       try {
         if (!payment) throw new Error('Mercado Pago not configured');
-        const payData = await payment.get({ id: paymentId });
+        const payData = await payment.get({ id: id });
         if (payData.status === 'approved' || payData.status === 'authorized') {
           await processSubscriptionUpdate({
             id: payData.id?.toString(),
@@ -160,11 +164,12 @@ app.post('/api/webhook/mercadopago', async (req, res) => {
           });
         }
       } catch (err: any) {
-        console.error(`[MP Webhook] Error fetching payment ${paymentId}:`, err.message || err);
+        console.error(`[MP Webhook] Error fetching payment ${id}:`, err.message || err);
       }
     }
     res.status(200).send('OK');
   } catch (error: any) {
+    console.error('[MP Webhook] Global Error:', error);
     res.status(500).send('Webhook Error');
   }
 });
@@ -278,58 +283,91 @@ async function processSubscriptionUpdate(subscription: any) {
   let userId = subscription.external_reference;
   const payerEmail = subscription.payer_email || subscription.payer?.email;
   const status = subscription.status;
-  const reason = subscription.reason || '';
-  const transactionAmount = subscription.transaction_amount;
+  const reason = subscription.reason || subscription.description || '';
+  const transactionAmount = Number(subscription.transaction_amount || subscription.auto_recurring?.transaction_amount || 0);
   const planName = reason.includes('NaLábia') ? reason.replace('NaLábia - ', '') : (reason || 'Premium');
 
-  if (!db) return;
+  console.log(`[Payment Process] Provider: ${provider}, User: ${userId || payerEmail}, Status: ${status}, Amount: ${transactionAmount}, Reason: ${reason}`);
+
+  if (!db) {
+    console.error('[Payment Process] Database not initialized');
+    return;
+  }
 
   if (!userId && payerEmail) {
-    const usersSnapshot = await db.collection('users').where('email', '==', payerEmail).limit(1).get();
-    if (!usersSnapshot.empty) userId = usersSnapshot.docs[0].id;
+    try {
+      const usersSnapshot = await db.collection('users').where('email', '==', payerEmail).limit(1).get();
+      if (!usersSnapshot.empty) {
+        userId = usersSnapshot.docs[0].id;
+        console.log(`[Payment Process] Found userId ${userId} by email ${payerEmail}`);
+      }
+    } catch (err) {
+      console.error('[Payment Process] Error searching user by email:', err);
+    }
   }
 
   if (userId) {
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    if (!userDoc.exists) return;
-    
-    if (status === 'authorized' || status === 'approved') {
-      const userData = userDoc.data();
-      if (userData?.lastPaymentId === subscription.id) return;
-
-      const amount = Number(transactionAmount);
-      if (amount === 39.9 || amount === 39.90 || amount === 3990 || amount === 0.399 || reason.toLowerCase().includes('curso') || reason.toLowerCase().includes('academia')) {
-        await userRef.update({ coursesAccess: true, lastPaymentId: subscription.id, updatedAt: new Date().toISOString() });
+    try {
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        console.error(`[Payment Process] User document ${userId} not found`);
         return;
       }
+      
+      if (status === 'authorized' || status === 'approved') {
+        const userData = userDoc.data();
+        if (userData?.lastPaymentId === subscription.id) {
+          console.log(`[Payment Process] Payment ${subscription.id} already processed`);
+          return;
+        }
 
-      if (amount === 15 || amount === 1500 || amount === 0.15 || reason.toLowerCase().includes('dark') || reason.toLowerCase().includes('18')) {
-        await userRef.update({ darkPackAccess: true, lastPaymentId: subscription.id, updatedAt: new Date().toISOString() });
-        return;
+        const amount = transactionAmount;
+        const isCourse = amount >= 30 && amount <= 45 || reason.toLowerCase().includes('curso') || reason.toLowerCase().includes('academia');
+        const isDarkPack = amount >= 10 && amount <= 18 || reason.toLowerCase().includes('dark') || reason.toLowerCase().includes('18');
+
+        const updateData: any = {
+          status: 'ativo',
+          nalabiaPrimeAcess: true, // Always grant base access on any purchase to avoid blocking the user
+          lastPaymentId: subscription.id,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (isCourse) {
+          updateData.coursesAccess = true;
+          updateData.plano = 'Curso Academia';
+          console.log(`[Payment Process] Granting Course Access to ${userId}`);
+        } else if (isDarkPack) {
+          updateData.darkPackAccess = true;
+          updateData.plano = 'Pacote Dark';
+          console.log(`[Payment Process] Granting Dark Pack Access to ${userId}`);
+        } else {
+          let expiraEm = new Date();
+          if (userData?.expiraEm) {
+            const currentExp = new Date(userData.expiraEm);
+            if (currentExp > new Date()) expiraEm = currentExp;
+          }
+
+          if (reason.toLowerCase().includes('trimestral')) expiraEm.setMonth(expiraEm.getMonth() + 3);
+          else if (reason.toLowerCase().includes('anual')) expiraEm.setFullYear(expiraEm.getFullYear() + 1);
+          else expiraEm.setMonth(expiraEm.getMonth() + 1);
+
+          updateData.plano = planName || 'Premium';
+          updateData.expiraEm = expiraEm.toISOString();
+          console.log(`[Payment Process] Granting Subscription Access to ${userId}, Expires: ${updateData.expiraEm}`);
+        }
+
+        await userRef.update(updateData);
+        console.log(`[Payment Process] Successfully updated user ${userId}`);
+      } else if (['cancelled', 'paused', 'canceled', 'subscription.canceled'].includes(status)) {
+        await userRef.update({ status: 'pendente', updatedAt: new Date().toISOString() });
+        console.log(`[Payment Process] Subscription cancelled for user ${userId}`);
       }
-
-      let expiraEm = new Date();
-      if (userData?.expiraEm) {
-        const currentExp = new Date(userData.expiraEm);
-        if (currentExp > new Date()) expiraEm = currentExp;
-      }
-
-      if (reason.toLowerCase().includes('trimestral')) expiraEm.setMonth(expiraEm.getMonth() + 3);
-      else if (reason.toLowerCase().includes('anual')) expiraEm.setFullYear(expiraEm.getFullYear() + 1);
-      else expiraEm.setMonth(expiraEm.getMonth() + 1);
-
-      await userRef.update({
-        status: 'ativo',
-        nalabiaPrimeAcess: true,
-        plano: planName || 'Premium',
-        expiraEm: expiraEm.toISOString(),
-        lastPaymentId: subscription.id,
-        updatedAt: new Date().toISOString()
-      });
-    } else if (['cancelled', 'paused', 'canceled', 'subscription.canceled'].includes(status)) {
-      await userRef.update({ status: 'pendente', updatedAt: new Date().toISOString() });
+    } catch (err) {
+      console.error(`[Payment Process] Error updating user ${userId}:`, err);
     }
+  } else {
+    console.error(`[Payment Process] Could not identify user for payment ${subscription.id}`);
   }
 }
 
