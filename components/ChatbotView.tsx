@@ -15,7 +15,7 @@ interface ChatbotViewProps {
 }
 
 const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, userAIProfile, updateActiveProfileMessages }) => {
-  const { user, userData, incrementFreeMessages } = useAuth();
+  const { user, userData, incrementUsage } = useAuth();
   const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
   
   const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'CHATBOT');
@@ -34,7 +34,38 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            setSelectedImage(dataUrl);
+          } else {
+            setSelectedImage(e.target?.result as string);
+          }
+        };
+        img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -42,6 +73,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    const isDeveloper = userData?.plano === 'Desenvolvedor';
 
     if (needsSubscription) {
       const userFreeMessages = userData?.freeMessagesUsed || 0;
@@ -54,6 +87,19 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
           id: Date.now().toString(),
           role: 'assistant',
           content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.",
+          timestamp: Date.now(),
+          mode: 'CHATBOT'
+        };
+        updateActiveProfileMessages(prev => [...prev, errMessage]);
+        return;
+      }
+    } else if (!isDeveloper) {
+      const today = new Date().toISOString().split('T')[0];
+      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
+        const errMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: "Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!",
           timestamp: Date.now(),
           mode: 'CHATBOT'
         };
@@ -225,8 +271,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         });
       }
 
+      await incrementUsage();
       if (needsSubscription) {
-        await incrementFreeMessages();
         await incrementDeviceUsage();
       }
 

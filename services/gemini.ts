@@ -90,21 +90,130 @@ const regenerateSchema: Schema = {
 };
 
 export const getGeminiAI = (settings?: AppSettings) => {
-  let platformApiKey;
-  let defaultApiKey;
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-      platformApiKey = process.env['API_KEY'];
-      defaultApiKey = process.env['GEMINI_API_KEY'];
-    }
-  } catch (e) {}
-
-  const apiKey = platformApiKey || settings?.customApiKey || defaultApiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = settings?.customApiKey || "zVhT2MP7mBIFTKTatkTnvA5YMuK4p11d";
   
-  if (!apiKey) {
-    throw new Error("API Key não configurada. Por favor, insira sua chave nas configurações.");
-  }
-  return new GoogleGenAI({ apiKey });
+  return {
+    models: {
+      generateContent: async (params: any) => {
+        const isJson = params.config?.responseMimeType === "application/json";
+        let systemInstruction = params.config?.systemInstruction || "";
+        
+        if (isJson) {
+          systemInstruction += "\n\nCRITICAL: You MUST return ONLY a valid JSON object. Do not include markdown formatting like ```json.";
+        }
+
+        const messages: any[] = [];
+        if (systemInstruction) {
+          messages.push({ role: "system", content: systemInstruction });
+        }
+
+        let hasImage = false;
+
+        if (typeof params.contents === 'string') {
+          messages.push({ role: "user", content: params.contents });
+        } else if (Array.isArray(params.contents)) {
+          for (const msg of params.contents) {
+            const role = msg.role === 'model' ? 'assistant' : 'user';
+            if (msg.parts) {
+              const contentParts: any[] = [];
+              for (const part of msg.parts) {
+                if (part.text) {
+                  contentParts.push({ type: "text", text: part.text });
+                } else if (part.inlineData) {
+                  hasImage = true;
+                  contentParts.push({
+                    type: "image_url",
+                    image_url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+                  });
+                }
+              }
+              if (contentParts.length === 1 && contentParts[0].type === "text") {
+                messages.push({ role, content: contentParts[0].text });
+              } else {
+                messages.push({ role, content: contentParts });
+              }
+            } else {
+              messages.push({ role, content: JSON.stringify(msg) });
+            }
+          }
+        } else {
+           const msg = params.contents;
+           const role = msg.role === 'model' ? 'assistant' : 'user';
+           if (msg.parts) {
+              const contentParts: any[] = [];
+              for (const part of msg.parts) {
+                if (part.text) {
+                  contentParts.push({ type: "text", text: part.text });
+                } else if (part.inlineData) {
+                  hasImage = true;
+                  contentParts.push({
+                    type: "image_url",
+                    image_url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+                  });
+                }
+              }
+              if (contentParts.length === 1 && contentParts[0].type === "text") {
+                messages.push({ role, content: contentParts[0].text });
+              } else {
+                messages.push({ role, content: contentParts });
+              }
+            } else {
+              messages.push({ role, content: JSON.stringify(msg) });
+            }
+        }
+
+        const model = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
+
+        const body: any = {
+          model,
+          messages,
+          temperature: params.config?.temperature || 0.75
+        };
+
+        if (isJson && !hasImage) {
+          body.response_format = { type: "json_object" };
+        }
+
+        const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Mistral API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        }
+
+        const data = await response.json();
+        let text = data.choices[0].message.content;
+        
+        if (isJson) {
+          text = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+        }
+
+        return {
+          text: text,
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: text }
+                ]
+              }
+            }
+          ]
+        };
+      },
+      generateContentStream: async function* (params: any) {
+        const response = await this.generateContent(params);
+        yield { text: response.text };
+      }
+    }
+  };
 };
 
 const sanitizeJSON = (str: string) => {
@@ -191,10 +300,9 @@ export const generateAIResponse = async (userMessage: string, settings?: AppSett
     const ai = getGeminiAI(settings);
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-2.5-flash",
       contents: userMessage,
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         safetySettings: [
           { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
           { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -225,7 +333,7 @@ export const analyzeContent = async (
   messageHistory?: Message[]
 ): Promise<CrystalResponse> => {
   const ai = getGeminiAI(settings);
-  const model = "gemini-3.1-pro-preview"; 
+  const model = "gemini-2.5-flash"; 
 
   const parts: any[] = [];
   
@@ -260,7 +368,9 @@ export const analyzeContent = async (
 
   let historyInstruction = "";
   if (messageHistory && messageHistory.length > 0) {
-    const formattedHistory = messageHistory.map(m => {
+    // Limita o histórico às últimas 6 mensagens para economizar tokens/cota
+    const recentHistory = messageHistory.slice(-6);
+    const formattedHistory = recentHistory.map(m => {
       if (m.role === 'user') return `Usuário (Alvo): ${m.content || '[Imagem enviada]'}`;
       if (m.role === 'assistant' && m.analysis) {
         return `NaLábia (Sua sugestão anterior): ${m.analysis.responses[0]?.text || 'Análise gerada'}`;
@@ -269,7 +379,7 @@ export const analyzeContent = async (
     }).join('\n');
     
     historyInstruction = `
-    📜 HISTÓRICO DESTA INTERAÇÃO (MODO: ${mode}):
+    📜 HISTÓRICO RECENTE DESTA INTERAÇÃO (MODO: ${mode}):
     ${formattedHistory}
     
     LEMBRE-SE: Continue a partir deste histórico. Não repita o que já foi dito. Evolua a conversa.
@@ -337,7 +447,6 @@ export const analyzeContent = async (
         systemInstruction: SYSTEM_PROMPT,
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         temperature: 0.75, 
         maxOutputTokens: 8192,
         safetySettings: [
@@ -383,7 +492,7 @@ export const regenerateContent = async (
   userAIProfile?: any
 ): Promise<{ responses: { type: string, text: string }[] }> => {
   const ai = getGeminiAI(settings);
-  const model = "gemini-3.1-pro-preview";
+  const model = "gemini-2.5-flash";
 
   const parts: any[] = [];
 
@@ -444,7 +553,6 @@ export const regenerateContent = async (
         systemInstruction: SYSTEM_PROMPT + "\n" + REGENERATE_PROMPT,
         responseMimeType: "application/json",
         responseSchema: regenerateSchema,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         temperature: 0.85, // Slightly higher for variation
         maxOutputTokens: 8192,
         safetySettings: [
@@ -471,7 +579,12 @@ export const regenerateContent = async (
 };
 
 export const generateAudio = async (text: string, settings?: AppSettings): Promise<string> => {
-  const ai = getGeminiAI(settings);
+  let apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Geração de áudio requer chave da API do Google Gemini configurada no ambiente.");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
     const response = await ai.models.generateContent({
@@ -505,7 +618,7 @@ export const runLaboratory = async (
   userAIProfile?: any
 ): Promise<LaboratorySimulation> => {
   const ai = getGeminiAI(settings);
-  const model = "gemini-3.1-pro-preview"; 
+  const model = "gemini-2.5-flash"; 
 
   const parts: any[] = [];
   
@@ -546,7 +659,6 @@ export const runLaboratory = async (
         systemInstruction: SYSTEM_PROMPT + "\n" + LAB_PROMPT,
         responseMimeType: "application/json",
         responseSchema: labSchema,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         temperature: 0.8,
         safetySettings: [
           { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },

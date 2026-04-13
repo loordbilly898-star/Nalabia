@@ -11,7 +11,7 @@ interface ProfileAnalyzerViewProps {
 }
 
 const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) => {
-  const { user, userData, incrementFreeMessages } = useAuth();
+  const { user, userData, incrementUsage } = useAuth();
   const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
 
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
@@ -56,12 +56,20 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
   const handleAnalyze = async () => {
     if (selectedImages.length === 0) return;
 
+    const isDeveloper = userData?.plano === 'Desenvolvedor';
+
     if (needsSubscription) {
       const userFreeMessages = userData?.freeMessagesUsed || 0;
       const deviceAllowed = await checkDeviceUsage();
       
       if (userFreeMessages >= 2 || !deviceAllowed) {
         setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.");
+        return;
+      }
+    } else if (!isDeveloper) {
+      const today = new Date().toISOString().split('T')[0];
+      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
+        setErrorMsg("Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!");
         return;
       }
     }
@@ -124,8 +132,8 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
         throw new Error("Resposta vazia da IA.");
       }
 
+      await incrementUsage();
       if (needsSubscription) {
-        await incrementFreeMessages();
         await incrementDeviceUsage();
       }
 

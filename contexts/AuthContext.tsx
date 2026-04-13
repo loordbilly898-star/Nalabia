@@ -37,6 +37,8 @@ interface UserData {
   coursesAccess?: boolean;
   mpCustomerId?: string;
   freeMessagesUsed?: number;
+  dailyRequests?: number;
+  lastRequestDate?: string;
 }
 
 interface AuthContextType {
@@ -61,7 +63,7 @@ interface AuthContextType {
   restoreBackup: (file: File) => Promise<void>;
   deleteAccount: () => Promise<void>;
   unlockFreeTrial: (code: string) => Promise<void>;
-  incrementFreeMessages: () => Promise<void>;
+  incrementUsage: () => Promise<void>;
   saveResponseToVault: (text: string, category?: string) => Promise<void>;
   getSavedResponses: () => Promise<SavedResponse[]>;
 }
@@ -697,15 +699,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     throw new Error("A campanha de Teste Grátis foi encerrada. O acesso gratuito não está mais disponível.");
   };
 
-  const incrementFreeMessages = async () => {
+  const incrementUsage = async () => {
     if (!user || !userData) return;
     try {
       const userRef = doc(db, 'users', user.uid);
-      const newCount = (userData.freeMessagesUsed || 0) + 1;
-      await updateDoc(userRef, { freeMessagesUsed: newCount });
-      setUserData({ ...userData, freeMessagesUsed: newCount });
+      const today = new Date().toISOString().split('T')[0];
+      
+      const updates: any = {};
+      
+      if (userData.lastRequestDate !== today) {
+        updates.dailyRequests = 1;
+        updates.lastRequestDate = today;
+      } else {
+        updates.dailyRequests = (userData.dailyRequests || 0) + 1;
+      }
+
+      const needsSubscription = !userData?.nalabiaPrimeAcess && userData?.status !== 'ativo';
+      if (needsSubscription) {
+        updates.freeMessagesUsed = (userData.freeMessagesUsed || 0) + 1;
+      }
+
+      await updateDoc(userRef, updates);
+      setUserData({ ...userData, ...updates });
     } catch (error) {
-      console.error("Error incrementing free messages:", error);
+      console.error("Error incrementing usage:", error);
     }
   };
 
@@ -749,7 +766,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout, 
       addXp, completeOnboarding, updateUserSettings, updateUserProfiles,
       updateUserName, updateUserPhoto, updateUserPassword, verifyEmail,
-      createBackup, restoreBackup, deleteAccount, unlockFreeTrial, incrementFreeMessages,
+      createBackup, restoreBackup, deleteAccount, unlockFreeTrial, incrementUsage,
       saveResponseToVault, getSavedResponses
     }}>
       {!loading && children}

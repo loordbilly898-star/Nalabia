@@ -21,7 +21,7 @@ const SCENARIOS = [
 ];
 
 const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActiveProfileMessages, settings, userAIProfile }) => {
-  const { user, userData, incrementFreeMessages } = useAuth();
+  const { user, userData, incrementUsage } = useAuth();
   const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
 
   const [scenario, setScenario] = useState(SCENARIOS[0].id);
@@ -51,6 +51,8 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
+    const isDeveloper = userData?.plano === 'Desenvolvedor';
+
     if (needsSubscription) {
       const userFreeMessages = userData?.freeMessagesUsed || 0;
       const deviceAllowed = await checkDeviceUsage();
@@ -60,6 +62,19 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
           id: Date.now().toString(),
           role: 'assistant',
           content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.",
+          timestamp: Date.now(),
+          mode: 'SIMULATOR'
+        };
+        updateActiveProfileMessages(prev => [...prev, errMessage]);
+        return;
+      }
+    } else if (!isDeveloper) {
+      const today = new Date().toISOString().split('T')[0];
+      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
+        const errMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: "Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!",
           timestamp: Date.now(),
           mode: 'SIMULATOR'
         };
@@ -143,8 +158,8 @@ Responda apenas com a sua próxima mensagem.`;
       };
       updateActiveProfileMessages(prev => [...prev, assistantMessage]);
 
+      await incrementUsage();
       if (needsSubscription) {
-        await incrementFreeMessages();
         await incrementDeviceUsage();
       }
     } catch (error: any) {

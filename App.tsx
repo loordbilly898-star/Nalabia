@@ -87,7 +87,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const App: React.FC = () => {
-  const { user, userData, userAIProfile, logout, addXp, updateUserSettings, updateUserProfiles, incrementFreeMessages, loading } = useAuth();
+  const { user, userData, userAIProfile, logout, addXp, updateUserSettings, updateUserProfiles, incrementUsage, loading } = useAuth();
   const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
   
   // Global State
@@ -410,7 +410,38 @@ const App: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress to 70% quality JPEG
+            setSelectedImage(dataUrl);
+          } else {
+            setSelectedImage(reader.result as string); // Fallback
+          }
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -428,6 +459,8 @@ const App: React.FC = () => {
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
+    const isDeveloper = userData?.plano === 'Desenvolvedor';
+
     if (needsSubscription) {
       // Check for free messages
       const userFreeMessages = userData?.freeMessagesUsed || 0;
@@ -435,6 +468,13 @@ const App: React.FC = () => {
       
       if (userFreeMessages >= 2 || !deviceAllowed) {
         setIsPlansDismissed(false);
+        return;
+      }
+    } else if (!isDeveloper) {
+      // Check daily limit for paid users (50 requests/day)
+      const today = new Date().toISOString().split('T')[0];
+      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
+        alert("Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!");
         return;
       }
     }
@@ -530,8 +570,8 @@ const App: React.FC = () => {
           // Add XP for analyzing a conversation
           await addXp(50);
 
+          await incrementUsage();
           if (needsSubscription) {
-            await incrementFreeMessages();
             await incrementDeviceUsage();
           }
         } catch (dbError) {
