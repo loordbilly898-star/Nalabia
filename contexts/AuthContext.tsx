@@ -215,40 +215,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (name: string, email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    const signUpPromise = supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-        },
-        emailRedirectTo: window.location.origin
-      }
-    });
+    let attempts = 0;
+    const maxAttempts = 2;
+    let signUpResult: { data: any, error: any } = { data: null, error: null };
 
-    // 15-second timeout to prevent the UI from hanging indefinitely
-    const timeoutPromise = new Promise<{data: any, error: any}>((resolve) => {
-      setTimeout(() => {
-        resolve({ 
-          data: { user: null, session: null }, 
-          error: { status: 504, name: 'TimeoutError', message: 'A requisição demorou muito tempo.' } 
-        });
-      }, 15000);
-    });
+    while (attempts < maxAttempts) {
+      const signUpPromise = supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: window.location.origin
+        }
+      });
 
-    let { data, error } = await Promise.race([signUpPromise, timeoutPromise]);
+      // 15-second timeout
+      const timeoutPromise = new Promise<{data: any, error: any}>((resolve) => {
+        setTimeout(() => {
+          resolve({ 
+            data: { user: null, session: null }, 
+            error: { status: 504, name: 'TimeoutError', message: 'A requisição demorou muito tempo.' } 
+          });
+        }, 15000);
+      });
+
+      signUpResult = await Promise.race([signUpPromise, timeoutPromise]);
+      
+      if (!signUpResult.error) break;
+      attempts++;
+    }
+
+    let { data, error } = signUpResult;
 
     if (error) {
       if (error.status === 504 || error.name === 'AuthRetryableFetchError' || error.name === 'TimeoutError') {
         // Fallback: The server timed out, but the account might have been created in the background.
-        // Let's try to log in to verify if the account actually exists.
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
         
         if (loginError && loginError.message === 'Email not confirmed') {
-          // The account WAS created successfully, it just needs email confirmation.
           throw new Error('Email not confirmed');
         } else if (loginData?.user) {
-          // The account was created and logged in successfully despite the timeout.
           data = loginData;
           error = null as any;
         } else {
