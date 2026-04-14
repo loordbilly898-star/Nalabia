@@ -1,93 +1,6 @@
-import { GoogleGenAI, Type, Schema, Modality, HarmCategory, HarmBlockThreshold, ThinkingLevel } from "@google/genai";
-import { SYSTEM_PROMPT, LAB_PROMPT, REGENERATE_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, LaboratorySimulation, Profile, Message } from "../types";
-
-const responseSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    momentReading: { type: Type.STRING, description: "Leitura do momento atual" },
-    interestLevel: { type: Type.STRING, description: "Nível de interesse: Baixo, Médio, Alto ou Oscilante" },
-    interestScore: { type: Type.INTEGER },
-    investmentScore: { type: Type.INTEGER },
-    riskScore: { type: Type.INTEGER },
-    meetingChance: { type: Type.INTEGER },
-    emotion: { type: Type.STRING },
-    dynamic: { type: Type.STRING },
-    risk: { type: Type.STRING },
-    detectedMode: { type: Type.STRING },
-    behavioralPattern: { type: Type.STRING, description: "Resumo do padrão de comportamento e personalidade da garota baseado na conversa até agora." },
-    responses: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          type: { type: Type.STRING },
-          text: { type: Type.STRING },
-          explanation: { type: Type.STRING, description: "Explicação psicológica do porquê esta resposta funciona e o que ela ensina." }
-        },
-        required: ["type", "text", "explanation"]
-      }
-    },
-    rhythm: { type: Type.STRING, description: "Ritmo recomendado: Agora, Esperar, Mudar assunto, Sumir ou Encerrar" }
-  },
-  required: ["momentReading", "interestLevel", "interestScore", "investmentScore", "riskScore", "meetingChance", "emotion", "dynamic", "risk", "detectedMode", "responses", "rhythm", "behavioralPattern"]
-};
-
-const labSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    variations: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          style: { type: Type.STRING, description: "Estilo: Confiante, Provocante ou Misteriosa" },
-          text: { type: Type.STRING },
-          impact: {
-            type: Type.OBJECT,
-            properties: {
-              attraction: { type: Type.STRING, description: "Atração: Baixa, Média ou Alta" },
-              curiosity: { type: Type.STRING, description: "Curiosidade: Baixa, Média ou Alta" },
-              risk: { type: Type.STRING, description: "Risco: Baixo, Médio ou Alto" }
-            },
-            required: ["attraction", "curiosity", "risk"]
-          },
-          bestScenario: { type: Type.STRING }
-        },
-        required: ["style", "text", "impact", "bestScenario"]
-      }
-    },
-    prediction: {
-      type: Type.OBJECT,
-      properties: {
-        likelyResponse: { type: Type.STRING },
-        alternativeResponse: { type: Type.STRING },
-        adviceIfSilence: { type: Type.STRING },
-        adviceIfResponse: { type: Type.STRING }
-      },
-      required: ["likelyResponse", "alternativeResponse", "adviceIfSilence", "adviceIfResponse"]
-    }
-  },
-  required: ["variations", "prediction"]
-};
-
-const regenerateSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    responses: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          type: { type: Type.STRING },
-          text: { type: Type.STRING },
-          explanation: { type: Type.STRING, description: "Explicação psicológica do porquê esta resposta funciona e o que ela ensina." }
-        },
-        required: ["type", "text", "explanation"]
-      }
-    }
-  },
-  required: ["responses"]
-};
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { SYSTEM_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message } from "../types";
+import { getMistralAI } from "./mistral";
 
 export const getGeminiAI = (settings?: AppSettings) => {
   const apiKey = settings?.customApiKey || process.env.GEMINI_API_KEY;
@@ -134,26 +47,25 @@ export const handleGeminiError = async (error: any) => {
   throw error;
 };
 
+import { getMistralAI } from "./mistral";
+import { SYSTEM_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message } from "../types";
+
 export const generateAIResponse = async (userMessage: string, settings?: AppSettings): Promise<string> => {
   try {
-    const ai = getGeminiAI(settings);
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: userMessage,
-      config: {
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-        ]
-      }
+    const client = getMistralAI(settings);
+    const response = await client.chat.complete({
+      model: "mistral-large-latest",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userMessage }
+      ],
+      temperature: 0.7,
     });
 
-    return response.text || "";
+    return response.choices?.[0]?.message?.content?.toString() || "";
   } catch (error) {
-    return handleGeminiError(error);
+    console.error("Mistral Error:", error);
+    throw error;
   }
 };
 
@@ -171,151 +83,45 @@ export const analyzeContent = async (
   userAIProfile?: any,
   messageHistory?: Message[]
 ): Promise<CrystalResponse> => {
-  const ai = getGeminiAI(settings);
-  const model = "gemini-3-flash-preview"; 
-
-  const parts: any[] = [];
+  // Use Mistral for analysis as requested
+  const client = getMistralAI(settings);
   
-  let profileInstruction = "";
-  if (profileContext && profileContext.id !== "general") {
-    profileInstruction = `
-    👤 PERFIL ATIVO (ALVO): ${profileContext.name}
-    DESCRIÇÃO DO ALVO: ${profileContext.description}
-    PADRÃO DELA: ${profileContext.behavioralPattern || "Ainda em análise"}
-    RISCO ANTERIOR: ${profileContext.metrics.risk}
-    
-    ⚠️ ADAPTE SUA ESTRATÉGIA À DESCRIÇÃO DO ALVO!
-    `;
+  const prompt = `
+  ${SYSTEM_PROMPT}
+  
+  Analyze the following input and return ONLY a JSON object with the following structure:
+  {
+    "momentReading": "string",
+    "interestLevel": "string",
+    "interestScore": number,
+    "investmentScore": number,
+    "riskScore": number,
+    "meetingChance": number,
+    "emotion": "string",
+    "dynamic": "string",
+    "risk": "string",
+    "detectedMode": "string",
+    "behavioralPattern": "string",
+    "responses": [{"type": "string", "text": "string", "explanation": "string"}],
+    "rhythm": "string"
   }
-
-  let userAIProfileInstruction = "";
-  if (userAIProfile) {
-    userAIProfileInstruction = `
-    🧠 USER PROFILE (O USUÁRIO):
-    Objetivo: ${userAIProfile.goal}
-    Nível de Experiência: ${userAIProfile.experienceLevel}
-    Estilo de Comunicação: ${userAIProfile.communicationStyle}
-    Nível de Flerte Preferido: ${userAIProfile.flirtLevel}
-    Tamanho de Resposta Preferido: ${userAIProfile.responseLength}
-    Plataforma Principal: ${userAIProfile.mainPlatform}
-    Objetivo da Conversa: ${userAIProfile.conversationGoal}
-    Tipo de Personalidade: ${userAIProfile.personalityType}
-    
-    A IA DEVE ADAPTAR AS RESPOSTAS COM BASE NESTE PERFIL DO USUÁRIO.
-    `;
-  }
-
-  let historyInstruction = "";
-  if (messageHistory && messageHistory.length > 0) {
-    // Limita o histórico às últimas 6 mensagens para economizar tokens/cota
-    const recentHistory = messageHistory.slice(-6);
-    const formattedHistory = recentHistory.map(m => {
-      if (m.role === 'user') return `Usuário (Alvo): ${m.content || '[Imagem enviada]'}`;
-      if (m.role === 'assistant' && m.analysis && m.analysis.responses) {
-        return `NaLábia (Sua sugestão anterior): ${m.analysis.responses.length > 0 ? m.analysis.responses[0]?.text : 'Análise gerada'}`;
-      }
-      return `${m.role}: ${m.content}`;
-    }).join('\n');
-    
-    historyInstruction = `
-    📜 HISTÓRICO RECENTE DESTA INTERAÇÃO (MODO: ${mode}):
-    ${formattedHistory}
-    
-    LEMBRE-SE: Continue a partir deste histórico. Não repita o que já foi dito. Evolua a conversa.
-    `;
-  }
-
-  const contextInstruction = `
-  ⚡ NaLábia - PARÂMETROS DE OPERAÇÃO:
   
-  MODO: ${mode}
-  ${profileInstruction}
-  ${userAIProfileInstruction}
-  ${historyInstruction}
-  
-  🎚️ SLIDERS (Intenção do Usuário):
-  - Flirt: ${flirtLevel}/10
-  - NaLábia: ${wittyLevel}/10
-  - Dominância: ${dominanceLevel}/10
-  - Mistério: ${mysteryLevel}/10
-  
-  ⚡ VELOCIDADE: ${speed.toUpperCase()}
-
-  ⚙️ CONFIGURAÇÕES GLOBAIS (RESPEITE RIGOROSAMENTE):
-  - Respostas Curtas: ${settings?.ai?.shortResponses ? 'ATIVADO (Seja breve)' : 'OFF'}
-  - Zero Elogios Físicos: ${settings?.ai?.avoidCompliments ? 'ATIVADO (Proibido chamar de linda/gata)' : 'OFF'}
-  - Evitar Perguntas: ${settings?.ai?.avoidQuestions ? 'ATIVADO (Prefira afirmações)' : 'OFF'}
-  - Auto-Ajuste de Risco: ${settings?.ai?.autoAdjustFlirt ? 'ATIVADO (Reduza flirt se houver risco)' : 'OFF'}
-  - Anti-Carência: ${settings?.safety?.antiNeedy ? 'ATIVADO' : 'OFF'}
-  
-  ⚠️ ATENÇÃO: Se a leitura de risco for alta, ignore os sliders altos e proteja o valor do usuário (Auto-Correção).
+  Input: ${text}
   `;
 
-  parts.push({ text: contextInstruction });
-
-  if (imageBase64) {
-    const mimeType = imageBase64.startsWith('data:') 
-      ? imageBase64.split(';')[0].split(':')[1] 
-      : "image/jpeg";
-    const cleanBase64 = imageBase64.split(',')[1] || imageBase64;
-    parts.push({
-      inlineData: {
-        mimeType: mimeType,
-        data: cleanBase64
-      }
-    });
-  }
-
-  if (text) {
-    parts.push({ text });
-  }
-
-  if (parts.length === 1) {
-    throw new Error("No content to analyze.");
-  }
-
-  console.log("Prompt enviado:", parts);
-
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: parts
-      },
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: responseSchema,
-        temperature: 0.75, 
-        maxOutputTokens: 8192,
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-        ]
-      }
+    const response = await client.chat.complete({
+      model: "mistral-large-latest",
+      messages: [{ role: "user", content: prompt }],
+      responseFormat: { type: "json_object" },
+      temperature: 0.75,
     });
 
-    console.log("Resposta da IA:", response);
-
-    let responseText = response.text;
-    if (!responseText) throw new Error("Empty response from NaLábia.");
-
-    // Remove potential markdown formatting
-    responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-
-    try {
-      const analysis = JSON.parse(responseText) as CrystalResponse;
-      return analysis;
-    } catch (e) {
-      console.error("Failed to parse JSON. Response text:", responseText);
-      throw new Error("A IA retornou um formato inválido.");
-    }
-
+    const content = response.choices?.[0]?.message?.content?.toString() || "{}";
+    return JSON.parse(content) as CrystalResponse;
   } catch (error) {
-    console.error("NaLábia Error:", error);
-    return handleGeminiError(error);
+    console.error("Mistral Analysis Error:", error);
+    throw error;
   }
 };
 
