@@ -101,7 +101,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
         },
         body: JSON.stringify({
           planId,
-          userId: user.uid,
+          userId: user.id,
           userEmail: user.email,
           userName: userData?.name || user.displayName
         }),
@@ -153,7 +153,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
       const response = await fetch('/api/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid })
+        body: JSON.stringify({ userId: user.id })
       });
       const data = await response.json();
       if (data.success) {

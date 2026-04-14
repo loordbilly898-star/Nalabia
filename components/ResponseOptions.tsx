@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { Copy, Check, Sparkles, ChevronRight, RefreshCw, Volume2, Loader2, Bookmark } from 'lucide-react';
 import { generateAudio } from '../services/gemini';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../services/firebase';
-import { handleFirestoreError, OperationType } from '../types';
 
 interface ResponseOption {
   type: string;

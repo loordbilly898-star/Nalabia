@@ -9,6 +9,7 @@ export interface LoginViewProps {
 export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
   const { loginWithEmail, registerWithEmail } = useAuth();
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   
@@ -19,16 +20,29 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       if (isRegistering) {
         if (!name) throw new Error('Nome é obrigatório para registro.');
         await registerWithEmail(name, email, password, onboardingData);
+        setSuccess('Conta criada com sucesso! Enviamos um e-mail de verificação para o seu endereço. Por favor, acesse sua caixa de entrada e clique no link enviado para confirmar e ativar sua conta.');
+        setIsRegistering(false); // Switch to login view
       } else {
         await loginWithEmail(email, password, onboardingData);
       }
     } catch (err: any) {
-      setError(err.message || `Erro ao ${isRegistering ? 'registrar' : 'fazer login'}.`);
+      if (err.message === 'Email not confirmed') {
+        setError('Email não confirmado. Um email de verificação foi enviado para você. Por favor, verifique sua caixa de entrada e clique no link para confirmar.');
+      } else if (err.message === 'Invalid login credentials') {
+        setError('Credenciais inválidas. Verifique seu email e senha.');
+      } else if (err.message === 'User already registered') {
+        setError('Este email já está registrado. Tente fazer login.');
+      } else if (err.status === 504 || err.name === 'AuthRetryableFetchError' || err.name === 'TimeoutError') {
+        setError('O servidor demorou muito para responder (Timeout). Se você estava criando uma conta, o e-mail de verificação pode ter sido enviado. Por favor, verifique sua caixa de entrada e spam antes de tentar novamente.');
+      } else {
+        setError(err.message || `Erro ao ${isRegistering ? 'registrar' : 'fazer login'}.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -51,9 +65,26 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
         </div>
 
         {error && (
-          <div className="w-full mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start space-x-2 text-red-500 text-sm">
+          <div className="w-full mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-lg flex flex-col items-start space-y-2 text-red-500 text-sm">
+            <div className="flex items-start space-x-2">
+              <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            {error.includes('servidor demorou') && (
+              <button 
+                onClick={() => setIsRegistering(false)}
+                className="w-full py-2 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/30 transition-colors"
+              >
+                Tentar fazer login
+              </button>
+            )}
+          </div>
+        )}
+
+        {success && (
+          <div className="w-full mb-6 p-3 bg-green-500/10 border border-green-500/50 rounded-lg flex items-start space-x-2 text-green-400 text-sm">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{success}</span>
           </div>
         )}
 

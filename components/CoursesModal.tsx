@@ -35,7 +35,7 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
         },
         body: JSON.stringify({
           planId: 'curso',
-          userId: user.uid,
+          userId: user.id,
           userEmail: user.email,
           userName: userData?.name || user.displayName
         }),
@@ -70,7 +70,7 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
       const response = await fetch('/api/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, type: 'courses' })
+        body: JSON.stringify({ userId: user.id, type: 'courses' })
       });
       const data = await response.json();
       

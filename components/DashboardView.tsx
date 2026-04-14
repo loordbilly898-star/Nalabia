@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db, auth } from '../services/firebase';
-import { handleFirestoreError, OperationType, Message, ProcessingState, Profile, AppSettings } from '../types';
+import { supabase } from '../services/supabase';
+import { Message, ProcessingState, Profile, AppSettings } from '../types';
 import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send } from 'lucide-react';
 import { getGeminiAI, handleGeminiError } from '../services/gemini';
 import { HarmCategory, HarmBlockThreshold, ThinkingLevel } from '@google/genai';
@@ -37,24 +36,29 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
       if (!userData) return;
       
       try {
-        const q = query(collection(db, 'conversations'), where('userID', '==', userData.userID));
-        const querySnapshot = await getDocs(q);
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('analysis, responses')
+          .eq('userID', userData.userID);
+          
+        if (error) throw error;
         
         let stories = 0;
         let convos = 0;
         let responses = 0;
         
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.analysis?.detectedMode === 'STORY_REPLY') {
-            stories++;
-          } else {
-            convos++;
-          }
-          if (data.responses) {
-            responses += data.responses.length;
-          }
-        });
+        if (data) {
+          data.forEach((doc: any) => {
+            if (doc.analysis?.detectedMode === 'STORY_REPLY') {
+              stories++;
+            } else {
+              convos++;
+            }
+            if (doc.responses) {
+              responses += doc.responses.length;
+            }
+          });
+        }
         
         setStats({
           conversations: convos,
@@ -63,7 +67,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
           loading: false
         });
       } catch (error) {
-        handleFirestoreError(error, OperationType.GET, 'conversations', auth);
+        console.error("Error fetching stats:", error);
         setStats(prev => ({ ...prev, loading: false }));
       }
     };

@@ -90,172 +90,11 @@ const regenerateSchema: Schema = {
 };
 
 export const getGeminiAI = (settings?: AppSettings) => {
-  const apiKey = settings?.customApiKey || "zVhT2MP7mBIFTKTatkTnvA5YMuK4p11d";
-  
-  return {
-    models: {
-      generateContent: async (params: any) => {
-        const isJson = params.config?.responseMimeType === "application/json";
-        let systemInstruction = params.config?.systemInstruction || "";
-        
-        if (isJson) {
-          systemInstruction += "\n\nCRITICAL: You MUST return ONLY a valid JSON object. Do not include markdown formatting like ```json.";
-        }
-
-        const messages: any[] = [];
-        if (systemInstruction) {
-          messages.push({ role: "system", content: systemInstruction });
-        }
-
-        let hasImage = false;
-
-        if (typeof params.contents === 'string') {
-          messages.push({ role: "user", content: params.contents });
-        } else if (Array.isArray(params.contents)) {
-          for (const msg of params.contents) {
-            const role = msg.role === 'model' ? 'assistant' : 'user';
-            if (msg.parts) {
-              const contentParts: any[] = [];
-              for (const part of msg.parts) {
-                if (part.text) {
-                  contentParts.push({ type: "text", text: part.text });
-                } else if (part.inlineData) {
-                  hasImage = true;
-                  contentParts.push({
-                    type: "image_url",
-                    image_url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-                  });
-                }
-              }
-              if (contentParts.length === 1 && contentParts[0].type === "text") {
-                messages.push({ role, content: contentParts[0].text });
-              } else {
-                messages.push({ role, content: contentParts });
-              }
-            } else {
-              messages.push({ role, content: JSON.stringify(msg) });
-            }
-          }
-        } else {
-           const msg = params.contents;
-           const role = msg.role === 'model' ? 'assistant' : 'user';
-           if (msg.parts) {
-              const contentParts: any[] = [];
-              for (const part of msg.parts) {
-                if (part.text) {
-                  contentParts.push({ type: "text", text: part.text });
-                } else if (part.inlineData) {
-                  hasImage = true;
-                  contentParts.push({
-                    type: "image_url",
-                    image_url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-                  });
-                }
-              }
-              if (contentParts.length === 1 && contentParts[0].type === "text") {
-                messages.push({ role, content: contentParts[0].text });
-              } else {
-                messages.push({ role, content: contentParts });
-              }
-            } else {
-              messages.push({ role, content: JSON.stringify(msg) });
-            }
-        }
-
-        const model = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
-
-        const body: any = {
-          model,
-          messages,
-          temperature: params.config?.temperature || 0.75
-        };
-
-        if (isJson && !hasImage) {
-          body.response_format = { type: "json_object" };
-        }
-
-        const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(body)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(`Mistral API Error: ${response.status} - ${JSON.stringify(errorData)}`);
-        }
-
-        const data = await response.json();
-        let text = data.choices[0].message.content;
-        
-        if (isJson) {
-          text = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-        }
-
-        return {
-          text: text,
-          candidates: [
-            {
-              content: {
-                parts: [
-                  { text: text }
-                ]
-              }
-            }
-          ]
-        };
-      },
-      generateContentStream: async function* (params: any) {
-        const response = await this.generateContent(params);
-        yield { text: response.text };
-      }
-    }
-  };
-};
-
-const sanitizeJSON = (str: string) => {
-  let inString = false;
-  let escaped = false;
-  let result = '';
-  for (let i = 0; i < str.length; i++) {
-    const char = str[i];
-    
-    if (escaped) {
-      result += char;
-      escaped = false;
-      continue;
-    }
-
-    if (char === '\\') {
-      escaped = true;
-      result += char;
-      continue;
-    }
-
-    if (char === '"') {
-      inString = !inString;
-      result += char;
-      continue;
-    }
-
-    if (inString) {
-      if (char === '\n') {
-        result += '\\n';
-      } else if (char === '\r') {
-        result += '\\r';
-      } else if (char === '\t') {
-        result += '\\t';
-      } else {
-        result += char;
-      }
-    } else {
-      result += char;
-    }
+  const apiKey = settings?.customApiKey || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key is missing.");
   }
-  return result;
+  return new GoogleGenAI({ apiKey });
 };
 
 export const handleGeminiError = async (error: any) => {
@@ -300,7 +139,7 @@ export const generateAIResponse = async (userMessage: string, settings?: AppSett
     const ai = getGeminiAI(settings);
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: userMessage,
       config: {
         safetySettings: [
@@ -333,7 +172,7 @@ export const analyzeContent = async (
   messageHistory?: Message[]
 ): Promise<CrystalResponse> => {
   const ai = getGeminiAI(settings);
-  const model = "gemini-2.5-flash"; 
+  const model = "gemini-3-flash-preview"; 
 
   const parts: any[] = [];
   
@@ -372,8 +211,8 @@ export const analyzeContent = async (
     const recentHistory = messageHistory.slice(-6);
     const formattedHistory = recentHistory.map(m => {
       if (m.role === 'user') return `Usuário (Alvo): ${m.content || '[Imagem enviada]'}`;
-      if (m.role === 'assistant' && m.analysis) {
-        return `NaLábia (Sua sugestão anterior): ${m.analysis.responses[0]?.text || 'Análise gerada'}`;
+      if (m.role === 'assistant' && m.analysis && m.analysis.responses) {
+        return `NaLábia (Sua sugestão anterior): ${m.analysis.responses.length > 0 ? m.analysis.responses[0]?.text : 'Análise gerada'}`;
       }
       return `${m.role}: ${m.content}`;
     }).join('\n');
@@ -465,7 +304,6 @@ export const analyzeContent = async (
 
     // Remove potential markdown formatting
     responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-    responseText = sanitizeJSON(responseText);
 
     try {
       const analysis = JSON.parse(responseText) as CrystalResponse;
@@ -492,7 +330,7 @@ export const regenerateContent = async (
   userAIProfile?: any
 ): Promise<{ responses: { type: string, text: string }[] }> => {
   const ai = getGeminiAI(settings);
-  const model = "gemini-2.5-flash";
+  const model = "gemini-3-flash-preview";
 
   const parts: any[] = [];
 
@@ -569,7 +407,6 @@ export const regenerateContent = async (
 
     // Remove potential markdown formatting
     responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-    responseText = sanitizeJSON(responseText);
 
     return JSON.parse(responseText);
   } catch (error) {
@@ -618,7 +455,7 @@ export const runLaboratory = async (
   userAIProfile?: any
 ): Promise<LaboratorySimulation> => {
   const ai = getGeminiAI(settings);
-  const model = "gemini-2.5-flash"; 
+  const model = "gemini-3-flash-preview"; 
 
   const parts: any[] = [];
   
@@ -674,7 +511,6 @@ export const runLaboratory = async (
 
     // Remove potential markdown formatting
     responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-    responseText = sanitizeJSON(responseText);
 
     return JSON.parse(responseText) as LaboratorySimulation;
 

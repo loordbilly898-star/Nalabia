@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, updatePassword, sendEmailVerification, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, googleProvider, db, storage } from '../services/firebase';
-import firebaseConfig from '../firebase-applet-config.json';
-import { sanitizeFirestoreData, handleFirestoreError, OperationType, SavedResponse } from '../types';
+import { supabase } from '../services/supabase';
+import { User } from '@supabase/supabase-js';
+import { SavedResponse } from '../types';
 
 export interface UserAIProfile {
   userID: string;
@@ -77,352 +74,197 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribeUser: (() => void) | undefined;
-    let unsubscribeProfile: (() => void) | undefined;
+    const fetchUserData = async (currentUser: User) => {
+      try {
+        const { data: userDoc, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('userID', currentUser.id)
+          .single();
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const userRef = doc(db, 'users', currentUser.uid);
+        if (userError && userError.code !== 'PGRST116') {
+          console.error("Error fetching user data:", userError);
+        }
+
+        if (userDoc) {
+          let data = userDoc as UserData;
           
-          // Set up the real-time listener
-          unsubscribeUser = onSnapshot(userRef, async (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data() as UserData;
-              // Developer bypass
-              if (currentUser.email === 'loordbilly898@gmail.com') {
-                data.nalabiaPrimeAcess = true;
-                data.darkPackAccess = true;
-                data.coursesAccess = true;
-                data.status = 'ativo';
-                data.plano = 'Desenvolvedor';
-              } else if (currentUser.email === 'kauanhenrique171822@gmail.com') {
-                data.nalabiaPrimeAcess = true;
-                data.darkPackAccess = true;
-                data.coursesAccess = true;
-                data.status = 'ativo';
-                data.plano = 'Mensal';
-              } else if (currentUser.email === 'gamerbilly898@gmail.com') {
-                data.nalabiaPrimeAcess = true;
-                // Cursos pagos agora, removido acesso gratuito
-                // Não forçamos darkPackAccess para permitir testes de pagamento
-                data.status = 'ativo';
-                data.plano = 'Mensal';
-              } else if (currentUser.email === 'encantomirim53@gmail.com') {
-                data.coursesAccess = true;
-                data.darkPackAccess = true;
-              } else if (currentUser.email === 'nauandematoss@gmail.com') {
-                data.coursesAccess = true;
-              } else if (currentUser.email?.toLowerCase() === 'paz180511@gmail.com') {
-                const expDate = new Date();
-                expDate.setDate(expDate.getDate() + 30);
-                
-                const currentExp = data.expiraEm ? new Date(data.expiraEm) : new Date(0);
-                const daysUntilExp = (currentExp.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
-                
-                if (daysUntilExp < 29 || data.status !== 'ativo' || !data.darkPackAccess || data.coursesAccess) {
-                  data.nalabiaPrimeAcess = true;
-                  data.status = 'ativo';
-                  data.plano = 'Mensal + Dark (Liberado)';
-                  data.expiraEm = expDate.toISOString();
-                  data.darkPackAccess = true;
-                  data.coursesAccess = false;
-                  try {
-                    await updateDoc(userRef, {
-                      nalabiaPrimeAcess: true,
-                      status: 'ativo',
-                      plano: 'Mensal + Dark (Liberado)',
-                      expiraEm: expDate.toISOString(),
-                      darkPackAccess: true,
-                      coursesAccess: false
-                    });
-                  } catch (e) {
-                    console.error("Failed to activate 30-day access", e);
-                  }
-                }
-              } else if (currentUser.email?.toLowerCase() === 'luissilva960884@gmail.com') {
-                const expDate = new Date();
-                expDate.setDate(expDate.getDate() + 30);
-                
-                const currentExp = data.expiraEm ? new Date(data.expiraEm) : new Date(0);
-                const daysUntilExp = (currentExp.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
-                
-                if (daysUntilExp < 29 || data.status !== 'ativo' || data.darkPackAccess || data.coursesAccess) {
-                  data.nalabiaPrimeAcess = true;
-                  data.status = 'ativo';
-                  data.plano = 'Mensal (Liberado)';
-                  data.expiraEm = expDate.toISOString();
-                  data.darkPackAccess = false;
-                  data.coursesAccess = false;
-                  try {
-                    await updateDoc(userRef, {
-                      nalabiaPrimeAcess: true,
-                      status: 'ativo',
-                      plano: 'Mensal (Liberado)',
-                      expiraEm: expDate.toISOString(),
-                      darkPackAccess: false,
-                      coursesAccess: false
-                    });
-                  } catch (e) {
-                    console.error("Failed to activate 30-day access", e);
-                  }
-                }
-              } else if (currentUser.email === 'hhudson714@gmail.com' && data.plano !== 'Teste Grátis (7 Dias)' && data.plano !== 'Expirado') {
-                const expDate = new Date();
-                expDate.setDate(expDate.getDate() + 7);
-                data.nalabiaPrimeAcess = true;
-                data.status = 'ativo';
-                data.plano = 'Teste Grátis (7 Dias)';
-                data.expiraEm = expDate.toISOString();
-                try {
-                  await updateDoc(userRef, {
-                    nalabiaPrimeAcess: true,
-                    status: 'ativo',
-                    plano: 'Teste Grátis (7 Dias)',
-                    expiraEm: expDate.toISOString()
-                  });
-                } catch (e) {
-                  console.error("Failed to activate 7-day trial", e);
-                }
-              } else if (currentUser.email?.toLowerCase() === 'luqinziky@hotmail.com' && data.plano !== 'Mensal' && data.plano !== 'Expirado') {
-                const expDate = new Date();
-                expDate.setDate(expDate.getDate() + 30);
-                data.nalabiaPrimeAcess = true;
-                data.status = 'ativo';
-                data.plano = 'Mensal';
-                data.expiraEm = expDate.toISOString();
-                try {
-                  await updateDoc(userRef, {
-                    nalabiaPrimeAcess: true,
-                    status: 'ativo',
-                    plano: 'Mensal',
-                    expiraEm: expDate.toISOString()
-                  });
-                } catch (e) {
-                  console.error("Failed to activate 30-day access", e);
-                }
-              } else if (data.plano === 'Teste Grátis' && data.nalabiaPrimeAcess && !data.expiraEm) {
-                data.nalabiaPrimeAcess = false;
-                data.status = 'pendente';
-                data.plano = 'Expirado';
-                try {
-                  await updateDoc(userRef, {
-                    nalabiaPrimeAcess: false,
-                    status: 'pendente',
-                    plano: 'Expirado'
-                  });
-                } catch (e) {
-                  console.error("Failed to revoke free trial", e);
-                }
-              } else if (data.expiraEm) {
-                const expDate = new Date(data.expiraEm);
-                if (expDate < new Date() && data.nalabiaPrimeAcess) {
-                  data.nalabiaPrimeAcess = false;
-                  data.status = 'pendente';
-                  data.plano = 'Expirado';
-                  try {
-                    await updateDoc(userRef, {
-                      nalabiaPrimeAcess: false,
-                      status: 'pendente',
-                      plano: 'Expirado'
-                    });
-                  } catch (e) {
-                    console.error("Failed to update expired plan", e);
-                  }
-                }
-              }
+          // Developer bypass
+          if (currentUser.email === 'loordbilly898@gmail.com') {
+            data.nalabiaPrimeAcess = true;
+            data.darkPackAccess = true;
+            data.coursesAccess = true;
+            data.status = 'ativo';
+            data.plano = 'Desenvolvedor';
+          } else if (currentUser.email === 'kauanhenrique171822@gmail.com') {
+            data.nalabiaPrimeAcess = true;
+            data.darkPackAccess = true;
+            data.coursesAccess = true;
+            data.status = 'ativo';
+            data.plano = 'Mensal';
+          } else if (currentUser.email === 'gamerbilly898@gmail.com') {
+            data.nalabiaPrimeAcess = true;
+            data.status = 'ativo';
+            data.plano = 'Mensal';
+          }
 
-              // Safety check: if user has any access but status is pendente, fix it
-              if (data.status === 'pendente' && (data.nalabiaPrimeAcess || data.darkPackAccess || data.coursesAccess)) {
-                data.status = 'ativo';
-                try {
-                  await updateDoc(userRef, { status: 'ativo' });
-                } catch (e) {}
-              }
-
-              setUserData(data);
-            }
-          }, (error) => {
-             handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`, auth);
-          });
-
-          // Fetch AI Profile with real-time listener
-          const profileRef = doc(db, 'user_ai_profile', currentUser.uid);
-          unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-            if (docSnap.exists()) {
-              setUserAIProfile(docSnap.data() as UserAIProfile);
-            } else {
-              setUserAIProfile(null);
-            }
-          }, (error) => {
-             handleFirestoreError(error, OperationType.GET, `user_ai_profile/${currentUser.uid}`, auth);
-          });
-          
-        } catch (error: any) {
-          // If the client is offline or using a mock key, Firestore will fail to connect.
-          // We handle this gracefully by providing fallback data instead of throwing a scary error.
-          console.warn("Could not fetch user data from Firestore (client may be offline). Using local fallback.");
-          
-          // Fallback to basic user data so the app doesn't break
-          setUserData({
-            userID: currentUser.uid,
-            name: currentUser.displayName || 'Usuário',
+          setUserData(data);
+        } else {
+           // Fallback to basic user data so the app doesn't break
+           setUserData({
+            userID: currentUser.id,
+            name: currentUser.user_metadata?.full_name || 'Usuário',
             email: currentUser.email || '',
-            photoURL: currentUser.photoURL || undefined,
+            photoURL: currentUser.user_metadata?.avatar_url || undefined,
             level: 1,
             xp: 0,
             createdAt: Date.now(),
             onboardingCompleted: true, // Assume true to avoid getting stuck in onboarding while offline
           });
         }
-      } else {
-        setUserData(null);
-        setUserAIProfile(null);
-        if (unsubscribeUser) unsubscribeUser();
-        if (unsubscribeProfile) unsubscribeProfile();
+
+        const { data: profileDoc, error: profileError } = await supabase
+          .from('user_ai_profile')
+          .select('*')
+          .eq('userID', currentUser.id)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error("Error fetching user AI profile:", profileError);
+        }
+
+        if (profileDoc) {
+          setUserAIProfile(profileDoc as UserAIProfile);
+        } else {
+          setUserAIProfile(null);
+        }
+      } catch (error) {
+        console.error("Error in fetchUserData:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserData(session.user);
+      } else {
+        setLoading(false);
+      }
     });
 
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchUserData(session.user);
+        } else {
+          setUserData(null);
+          setUserAIProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
     return () => {
-      unsubscribeAuth();
-      if (unsubscribeUser) unsubscribeUser();
-      if (unsubscribeProfile) unsubscribeProfile();
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
   const loginWithEmail = async (email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "mock-api-key" || firebaseConfig.apiKey.includes("TODO")) {
-      throw new Error("Para usar o login, configure o Firebase no painel do AI Studio.");
-    }
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    
-    if (onboardingData) {
-      try {
-        const userRef = doc(db, 'users', userCredential.user.uid);
-        await updateDoc(userRef, { onboardingCompleted: true });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    if (onboardingData && data.user) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ onboardingCompleted: true })
+        .eq('userID', data.user.id);
+      
+      if (updateError) console.error("Error updating onboarding status:", updateError);
+
+      const fullProfile: UserAIProfile = {
+        ...onboardingData,
+        userID: data.user.id,
+      };
+      
+      const { error: profileError } = await supabase
+        .from('user_ai_profile')
+        .upsert(fullProfile);
         
-        const fullProfile: UserAIProfile = {
-          ...onboardingData,
-          userID: userCredential.user.uid,
-        };
-        const profileRef = doc(db, 'user_ai_profile', userCredential.user.uid);
-        await setDoc(profileRef, sanitizeFirestoreData(fullProfile));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `users/${userCredential.user.uid}`, auth);
-      }
+      if (profileError) console.error("Error saving AI profile:", profileError);
     }
   };
 
   const loginWithGoogle = async (onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "mock-api-key" || firebaseConfig.apiKey.includes("TODO")) {
-      throw new Error("Para usar o login, configure o Firebase no painel do AI Studio.");
-    }
-    try {
-      const userCredential = await signInWithPopup(auth, googleProvider);
-      const userRef = doc(db, 'users', userCredential.user.uid);
-      
-      let userSnap;
-      try {
-        userSnap = await getDoc(userRef);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `users/${userCredential.user.uid}`, auth);
-        throw error;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
       }
+    });
 
-      if (!userSnap.exists()) {
-        const isDeveloper = userCredential.user.email === 'loordbilly898@gmail.com';
-        const isLegacyPremium = userCredential.user.email === 'kauanhenrique171822@gmail.com' || userCredential.user.email === 'gamerbilly898@gmail.com';
-        
-        let customerId = '';
-        try {
-          const response = await fetch('/api/create-customer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              email: userCredential.user.email || '', 
-              name: userCredential.user.displayName || 'Usuário' 
-            })
-          });
-          if (response.ok) {
-            const data = await response.json();
-            customerId = data.customer_id || '';
-          }
-        } catch (err) {
-          console.warn('Failed to create Mercado Pago customer:', err);
-        }
-
-        const newUserData: UserData = {
-          userID: userCredential.user.uid,
-          name: userCredential.user.displayName || 'Usuário',
-          email: userCredential.user.email || '',
-          photoURL: userCredential.user.photoURL || undefined,
-          level: 1,
-          xp: 0,
-          createdAt: Date.now(),
-          onboardingCompleted: !!onboardingData,
-          plano: isDeveloper ? 'Desenvolvedor' : (isLegacyPremium ? 'Mensal' : ''),
-          status: (isDeveloper || isLegacyPremium) ? 'ativo' : 'pendente',
-          expiraEm: '',
-          nalabiaPrimeAcess: (isDeveloper || isLegacyPremium),
-          mpCustomerId: customerId,
-          freeMessagesUsed: 0,
-        };
-        try {
-          await setDoc(userRef, sanitizeFirestoreData(newUserData));
-          setUserData(newUserData);
-        } catch (error) {
-          await signOut(auth);
-          throw error;
-        }
-      }
-
-      if (onboardingData) {
-        await updateDoc(userRef, { onboardingCompleted: true });
-        const fullProfile: UserAIProfile = {
-          ...onboardingData,
-          userID: userCredential.user.uid,
-        };
-        const profileRef = doc(db, 'user_ai_profile', userCredential.user.uid);
-        await setDoc(profileRef, sanitizeFirestoreData(fullProfile));
-        setUserAIProfile(fullProfile);
-      }
-    } catch (error) {
-      console.warn("Google Login Error:", error);
-      throw error;
-    }
+    if (error) throw error;
+    // Note: Supabase OAuth redirects, so onboardingData handling here might not work as expected immediately after redirect.
+    // It's usually handled in the onAuthStateChange listener after redirect.
   };
 
   const registerWithEmail = async (name: string, email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "mock-api-key" || firebaseConfig.apiKey.includes("TODO")) {
-      throw new Error("Para usar o login, configure o Firebase no painel do AI Studio.");
+    const signUpPromise = supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        },
+        emailRedirectTo: window.location.origin
+      }
+    });
+
+    // 15-second timeout to prevent the UI from hanging indefinitely
+    const timeoutPromise = new Promise<{data: any, error: any}>((resolve) => {
+      setTimeout(() => {
+        resolve({ 
+          data: { user: null, session: null }, 
+          error: { status: 504, name: 'TimeoutError', message: 'A requisição demorou muito tempo.' } 
+        });
+      }, 15000);
+    });
+
+    let { data, error } = await Promise.race([signUpPromise, timeoutPromise]);
+
+    if (error) {
+      if (error.status === 504 || error.name === 'AuthRetryableFetchError' || error.name === 'TimeoutError') {
+        // Fallback: The server timed out, but the account might have been created in the background.
+        // Let's try to log in to verify if the account actually exists.
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        
+        if (loginError && loginError.message === 'Email not confirmed') {
+          // The account WAS created successfully, it just needs email confirmation.
+          throw new Error('Email not confirmed');
+        } else if (loginData?.user) {
+          // The account was created and logged in successfully despite the timeout.
+          data = loginData;
+          error = null as any;
+        } else {
+          throw error;
+        }
+      } else {
+        throw error;
+      }
     }
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName: name });
-    
-    try {
-      const userRef = doc(db, 'users', userCredential.user.uid);
+
+    if (data?.user && !error) {
       const isDeveloper = email === 'loordbilly898@gmail.com';
       const isLegacyPremium = email === 'kauanhenrique171822@gmail.com' || email === 'gamerbilly898@gmail.com';
-      
-      let customerId = '';
-      try {
-        const response = await fetch('/api/create-customer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, name })
-        });
-        if (response.ok) {
-          const data = await response.json();
-          customerId = data.customer_id || '';
-        }
-      } catch (err) {
-        console.warn('Failed to create Mercado Pago customer:', err);
-      }
 
       const newUserData: UserData = {
-        userID: userCredential.user.uid,
+        userID: data.user.id,
         name: name,
         email: email,
         level: 1,
@@ -433,36 +275,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: (isDeveloper || isLegacyPremium) ? 'ativo' : 'pendente',
         expiraEm: '',
         nalabiaPrimeAcess: (isDeveloper || isLegacyPremium),
-        mpCustomerId: customerId,
         freeMessagesUsed: 0,
       };
-      try {
-        await setDoc(userRef, sanitizeFirestoreData(newUserData));
+
+      const { error: userError } = await supabase
+        .from('users')
+        .upsert(newUserData);
+
+      if (userError) {
+        throw userError; // Throw so LoginView can handle it
+      } else {
         setUserData(newUserData);
-      } catch (error) {
-        await signOut(auth);
-        throw error;
       }
 
       if (onboardingData) {
         const fullProfile: UserAIProfile = {
           ...onboardingData,
-          userID: userCredential.user.uid,
+          userID: data.user.id,
         };
-        const profileRef = doc(db, 'user_ai_profile', userCredential.user.uid);
-        await setDoc(profileRef, sanitizeFirestoreData(fullProfile));
-        setUserAIProfile(fullProfile);
+        const { error: profileError } = await supabase
+          .from('user_ai_profile')
+          .upsert(fullProfile);
+          
+        if (profileError) {
+           throw profileError; // Throw so LoginView can handle it
+        } else {
+           setUserAIProfile(fullProfile);
+        }
       }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `users/${userCredential.user.uid}`, auth);
     }
   };
 
   const resetPassword = async (email: string) => {
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "mock-api-key" || firebaseConfig.apiKey.includes("TODO")) {
-      throw new Error("Para usar a recuperação de senha, configure o Firebase no painel do AI Studio.");
-    }
-    await sendPasswordResetEmail(auth, email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
   };
 
   const completeOnboarding = async (profileData: Omit<UserAIProfile, 'userID'>) => {
@@ -470,33 +318,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fullProfile: UserAIProfile = {
       ...profileData,
-      userID: user.uid,
+      userID: user.id,
     };
 
     try {
-      // Save AI Profile
-      const profileRef = doc(db, 'user_ai_profile', user.uid);
-      await setDoc(profileRef, sanitizeFirestoreData(fullProfile));
+      const { error: profileError } = await supabase
+        .from('user_ai_profile')
+        .upsert(fullProfile);
+        
+      if (profileError) throw profileError;
       setUserAIProfile(fullProfile);
 
-      // Update User Data
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, { onboardingCompleted: true });
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ onboardingCompleted: true })
+        .eq('userID', user.id);
+        
+      if (userError) throw userError;
       setUserData({ ...userData, onboardingCompleted: true });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+      console.error("Error completing onboarding:", error);
     }
   };
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       setUserData(null);
       setUserAIProfile(null);
-    try {
-      localStorage.removeItem('nalabia_settings_v1');
-    } catch (e) {}
-      // Force reload to clear all React state and memory
+      try {
+        localStorage.removeItem('nalabia_settings_v1');
+      } catch (e) {}
       window.location.reload();
     } catch (error) {
       console.error("Error signing out", error);
@@ -513,23 +365,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserData(updatedData);
     
     try {
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, sanitizeFirestoreData({ xp: newXp, level: newLevel }), { merge: true });
+      const { error } = await supabase
+        .from('users')
+        .update({ xp: newXp, level: newLevel })
+        .eq('userID', user.id);
+        
+      if (error) throw error;
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+      console.error("Error adding XP:", error);
     }
   };
 
   const updateUserSettings = async (settings: any) => {
     if (!user) return;
     try {
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, sanitizeFirestoreData({
-        settings: settings
-      }));
+      const { error } = await supabase
+        .from('users')
+        .update({ settings })
+        .eq('userID', user.id);
+        
+      if (error) throw error;
       setUserData(prev => prev ? { ...prev, settings } : null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+      console.error("Error updating settings:", error);
       throw error;
     }
   };
@@ -537,8 +395,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserProfiles = async (profiles: any[]) => {
     if (!user) return;
     try {
-      // Strip images from messages to prevent exceeding the 1MB Firestore document limit
-      // Also limit messages to last 20 to prevent Firestore 1MB document limit errors
       const strippedProfiles = profiles.map(p => ({
         ...p,
         messages: p.messages ? p.messages.slice(-20).map((m: any) => {
@@ -547,14 +403,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }) : []
       }));
 
-      const userRef = doc(db, 'users', user.uid);
-      const sanitizedProfiles = sanitizeFirestoreData(strippedProfiles);
-      await updateDoc(userRef, {
-        profiles: sanitizedProfiles
-      });
-      setUserData(prev => prev ? { ...prev, profiles: sanitizedProfiles } : null);
+      const { error } = await supabase
+        .from('users')
+        .update({ profiles: strippedProfiles })
+        .eq('userID', user.id);
+        
+      if (error) throw error;
+      setUserData(prev => prev ? { ...prev, profiles: strippedProfiles } : null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+      console.error("Error updating profiles:", error);
       throw error;
     }
   };
@@ -562,40 +419,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserName = async (name: string) => {
     if (!user) return;
     try {
-      await updateProfile(user, { displayName: name });
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, sanitizeFirestoreData({ name }));
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { full_name: name }
+      });
+      if (authError) throw authError;
+
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ name })
+        .eq('userID', user.id);
+        
+      if (dbError) throw dbError;
       setUserData(prev => prev ? { ...prev, name } : null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+      console.error("Error updating name:", error);
     }
   };
 
   const updateUserPhoto = async (file: File) => {
     if (!user) return;
     try {
-      const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
-      await uploadBytes(storageRef, file);
-      const photoURL = await getDownloadURL(storageRef);
-      await updateProfile(user, { photoURL });
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, sanitizeFirestoreData({ photoURL }));
-      setUserData(prev => prev ? { ...prev, photoURL } : null);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/profile.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+        
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+      if (authError) throw authError;
+
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ photoURL: publicUrl })
+        .eq('userID', user.id);
+        
+      if (dbError) throw dbError;
+      setUserData(prev => prev ? { ...prev, photoURL: publicUrl } : null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+      console.error("Error updating photo:", error);
     }
   };
 
   const updateUserPassword = async (currentPassword: string, newPassword: string) => {
-    if (!user || !user.email) return;
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
-    await updatePassword(user, newPassword);
+    if (!user) return;
+    // Supabase doesn't require current password for update if user is already logged in
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    if (error) throw error;
   };
 
   const verifyEmail = async () => {
-    if (!user) return;
-    await sendEmailVerification(user);
+    // Supabase sends verification email automatically on signup if configured.
+    // To resend, we can use resend()
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: user.email,
+    });
+    if (error) throw error;
   };
 
   const createBackup = async () => {
@@ -609,10 +500,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const jsonString = JSON.stringify(backupData);
     const blob = new Blob([jsonString], { type: 'application/json' });
-    const storageRef = ref(storage, `backups/${user.uid}/backup_${Date.now()}.json`);
-    await uploadBytes(storageRef, blob);
     
-    // Also trigger download for user
+    const fileName = `${user.id}/backup_${Date.now()}.json`;
+    const { error } = await supabase.storage
+      .from('backups')
+      .upload(fileName, blob);
+      
+    if (error) console.error("Error saving backup to storage:", error);
+    
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -627,19 +522,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const text = await file.text();
     const backupData = JSON.parse(text);
     
-    if (backupData.userData && backupData.userData.userID === user.uid) {
+    if (backupData.userData && backupData.userData.userID === user.id) {
       try {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, sanitizeFirestoreData(backupData.userData));
+        const { error: userError } = await supabase
+          .from('users')
+          .upsert(backupData.userData);
+          
+        if (userError) throw userError;
         setUserData(backupData.userData);
         
         if (backupData.userAIProfile) {
-          const profileRef = doc(db, 'user_ai_profile', user.uid);
-          await setDoc(profileRef, sanitizeFirestoreData(backupData.userAIProfile));
+          const { error: profileError } = await supabase
+            .from('user_ai_profile')
+            .upsert(backupData.userAIProfile);
+            
+          if (profileError) throw profileError;
           setUserAIProfile(backupData.userAIProfile);
         }
       } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`, auth);
+        console.error("Error restoring backup:", error);
       }
     } else {
       throw new Error("Backup inválido ou pertence a outro usuário.");
@@ -649,51 +550,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteAccount = async () => {
     if (!user) return;
     try {
-      // Check if recent login is required before deleting data
-      const lastSignInTime = new Date(user.metadata.lastSignInTime || '').getTime();
-      const now = Date.now();
-      const fiveMinutes = 5 * 60 * 1000;
+      // Delete user data from Supabase
+      await supabase.from('users').delete().eq('userID', user.id);
+      await supabase.from('user_ai_profile').delete().eq('userID', user.id);
       
-      if (now - lastSignInTime > fiveMinutes) {
-        throw new Error('Para sua segurança, você precisa fazer login novamente antes de excluir sua conta. Por favor, saia do aplicativo, faça login novamente e tente excluir a conta.');
+      // Delete user account (Requires Edge Function or Admin API usually, but we can try RPC if configured)
+      // For now, we sign out. To truly delete the auth user, you need a Supabase Edge Function or call the admin API from your backend.
+      const { error } = await supabase.rpc('delete_user');
+      if (error) {
+         console.warn("RPC delete_user failed (might not exist), signing out instead.", error);
       }
-
-      // Delete user data from Firestore
-      await deleteDoc(doc(db, 'users', user.uid));
-      await deleteDoc(doc(db, 'user_ai_profile', user.uid));
       
-      // Delete user account
-      await user.delete();
+      await supabase.auth.signOut();
       
-      // Clear local state
       setUserData(null);
       setUserAIProfile(null);
     } catch (error: any) {
-      if (error.code === 'auth/requires-recent-login' || error.message?.includes('auth/requires-recent-login')) {
-        throw new Error('Para sua segurança, você precisa fazer login novamente antes de excluir sua conta. Por favor, saia do aplicativo, faça login novamente e tente excluir a conta.');
-      }
-      handleFirestoreError(error, OperationType.DELETE, `users/${user.uid}`, auth);
+      console.error("Error deleting account:", error);
       throw error;
     }
   };
-
-  const VALID_INVITE_CODES = [
-    'NaLábia-7X9P-2K4M',
-    'NaLábia-3B8N-5V1C',
-    'NaLábia-9M2Q-8L6Z',
-    'NaLábia-4F1W-7T3Y',
-    'NaLábia-6H5R-9J2D',
-    'NaLábia-1K8C-4N7X',
-    'NaLábia-5V3M-2B9L',
-    'NaLábia-8T6Y-1W4F',
-    'NaLábia-2J9D-6H5R',
-    'NaLábia-7P4M-3X8N',
-    'NaLábia-9L1C-5V2Q',
-    'NaLábia-3W8Z-7T4F',
-    'NaLábia-6N2X-1K9C',
-    'NaLábia-4R5D-8J3H',
-    'NaLábia-5M7P-2B6L'
-  ];
 
   const unlockFreeTrial = async (code: string) => {
     throw new Error("A campanha de Teste Grátis foi encerrada. O acesso gratuito não está mais disponível.");
@@ -702,7 +578,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const incrementUsage = async () => {
     if (!user || !userData) return;
     try {
-      const userRef = doc(db, 'users', user.uid);
       const today = new Date().toISOString().split('T')[0];
       
       const updates: any = {};
@@ -719,7 +594,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updates.freeMessagesUsed = (userData.freeMessagesUsed || 0) + 1;
       }
 
-      await updateDoc(userRef, updates);
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('userID', user.id);
+
+      if (error) throw error;
       setUserData({ ...userData, ...updates });
     } catch (error) {
       console.error("Error incrementing usage:", error);
@@ -729,17 +609,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const saveResponseToVault = async (text: string, category?: string) => {
     if (!user) throw new Error("Usuário não autenticado.");
     try {
-      const newResponseRef = doc(collection(db, 'saved_responses'));
-      const newResponse: SavedResponse = {
-        id: newResponseRef.id,
-        userID: user.uid,
+      const newResponse = {
+        userID: user.id,
         text,
         category,
         createdAt: Date.now()
       };
-      await setDoc(newResponseRef, sanitizeFirestoreData(newResponse));
+      
+      const { error } = await supabase
+        .from('saved_responses')
+        .insert(newResponse);
+        
+      if (error) throw error;
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'saved_responses', auth);
+      console.error("Error saving response:", error);
       throw error;
     }
   };
@@ -747,15 +630,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getSavedResponses = async (): Promise<SavedResponse[]> => {
     if (!user) return [];
     try {
-      const q = query(collection(db, 'saved_responses'), where('userID', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-      const responses: SavedResponse[] = [];
-      querySnapshot.forEach((doc) => {
-        responses.push(doc.data() as SavedResponse);
-      });
-      return responses.sort((a, b) => b.createdAt - a.createdAt);
+      const { data, error } = await supabase
+        .from('saved_responses')
+        .select('*')
+        .eq('userID', user.id)
+        .order('createdAt', { ascending: false });
+        
+      if (error) throw error;
+      return data as SavedResponse[];
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, 'saved_responses', auth);
+      console.error("Error getting saved responses:", error);
       throw error;
     }
   };

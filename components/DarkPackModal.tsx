@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Flame, Brain, Loader2, ShieldCheck, ExternalLink, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../services/firebase';
-import { handleFirestoreError, OperationType } from '../types';
 
 interface DarkPackModalProps {
   isOpen: boolean;
@@ -39,7 +36,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
         },
         body: JSON.stringify({
           planId: 'dark',
-          userId: user.uid,
+          userId: user.id,
           userEmail: user.email,
           userName: userData?.name || user.displayName
         }),
@@ -74,7 +71,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
       const response = await fetch('/api/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, type: 'darkpack' })
+        body: JSON.stringify({ userId: user.id, type: 'darkpack' })
       });
       const data = await response.json();
       

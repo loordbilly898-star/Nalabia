@@ -3,8 +3,7 @@ import cors from 'cors';
 import { MercadoPagoConfig, PreApproval, Payment, Customer } from 'mercadopago';
 import path from 'path';
 import dotenv from 'dotenv';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -15,35 +14,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize Firebase Admin
-let db: Firestore | null = null;
-try {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    let serviceAccount;
-    try {
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    } catch (parseError) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY as JSON.', parseError);
-    }
-    
-    if (serviceAccount && getApps().length === 0) {
-      initializeApp({
-        credential: cert(serviceAccount)
-      });
-      console.log('Firebase Admin initialized with Service Account.');
-    }
-  } else if (getApps().length === 0) {
-    // Try initializing with Application Default Credentials (ADC)
-    initializeApp();
-    console.log('Firebase Admin initialized with ADC.');
-  }
-  
-  if (getApps().length > 0) {
-    db = getFirestore();
-  }
-} catch (error) {
-  console.error('Failed to initialize Firebase Admin:', error);
-}
+// Initialize Supabase
+const supabaseUrl = 'https://dxnxykpwmgbzsdiohgdo.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bnh5a3B3bWdienNkaW9oZ2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDQzODksImV4cCI6MjA5MTY4MDM4OX0.P5TiAYDvDAoBs4I_T3d4IC6xVKVCfiqZIkVV81IJphs';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize Mercado Pago
 let client: MercadoPagoConfig | null = null;
@@ -139,8 +113,6 @@ app.post('/api/webhook/mercadopago', async (req, res) => {
 
     console.log(`[MP Webhook] Received: type=${type}, id=${id}, action=${action}`);
 
-    if (!db) return res.status(500).send('Server configuration error');
-
     if (type === 'subscription_preapproval' || action?.includes('subscription_preapproval') || type === 'preapproval') {
       try {
         if (!preapproval) throw new Error('Mercado Pago not configured');
@@ -184,9 +156,9 @@ app.post('/api/verify-payment', async (req, res) => {
       options: { external_reference: userId, status: 'approved', sort: 'date_created', criteria: 'desc' }
     });
 
-    if ((!searchResult.results || searchResult.results.length === 0) && db) {
-      const userDoc = await db.collection('users').doc(userId).get();
-      const email = userDoc.data()?.email;
+    if (!searchResult.results || searchResult.results.length === 0) {
+      const { data: userDoc } = await supabase.from('users').select('email').eq('userID', userId).single();
+      const email = userDoc?.email;
       if (email) {
         searchResult = await payment.search({
           options: { 'payer.email': email, status: 'approved', sort: 'date_created', criteria: 'desc' }
@@ -206,12 +178,10 @@ app.post('/api/verify-payment', async (req, res) => {
         });
       }
 
-      if (db) {
-        const updatedUserDoc = await db.collection('users').doc(userId).get();
-        const userData = updatedUserDoc.data();
-        if (type === 'courses' && !userData?.coursesAccess) return res.json({ success: false, message: 'Pagamento do curso ainda não aprovado.' });
-        if (type === 'darkpack' && !userData?.darkPackAccess) return res.json({ success: false, message: 'Pagamento do Dark Pack ainda não aprovado.' });
-      }
+      const { data: userData } = await supabase.from('users').select('*').eq('userID', userId).single();
+      if (type === 'courses' && !userData?.coursesAccess) return res.json({ success: false, message: 'Pagamento do curso ainda não aprovado.' });
+      if (type === 'darkpack' && !userData?.darkPackAccess) return res.json({ success: false, message: 'Pagamento do Dark Pack ainda não aprovado.' });
+      
       return res.json({ success: true, message: 'Pagamentos verificados.' });
     }
     res.json({ success: false, message: 'Nenhum pagamento aprovado encontrado.' });
@@ -289,16 +259,11 @@ async function processSubscriptionUpdate(subscription: any) {
 
   console.log(`[Payment Process] Provider: ${provider}, User: ${userId || payerEmail}, Status: ${status}, Amount: ${transactionAmount}, Reason: ${reason}`);
 
-  if (!db) {
-    console.error('[Payment Process] Database not initialized');
-    return;
-  }
-
   if (!userId && payerEmail) {
     try {
-      const usersSnapshot = await db.collection('users').where('email', '==', payerEmail).limit(1).get();
-      if (!usersSnapshot.empty) {
-        userId = usersSnapshot.docs[0].id;
+      const { data: users } = await supabase.from('users').select('userID').eq('email', payerEmail).limit(1);
+      if (users && users.length > 0) {
+        userId = users[0].userID;
         console.log(`[Payment Process] Found userId ${userId} by email ${payerEmail}`);
       }
     } catch (err) {
@@ -308,15 +273,13 @@ async function processSubscriptionUpdate(subscription: any) {
 
   if (userId) {
     try {
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await userRef.get();
-      if (!userDoc.exists) {
+      const { data: userData } = await supabase.from('users').select('*').eq('userID', userId).single();
+      if (!userData) {
         console.error(`[Payment Process] User document ${userId} not found`);
         return;
       }
       
       if (status === 'authorized' || status === 'approved') {
-        const userData = userDoc.data();
         if (userData?.lastPaymentId === subscription.id) {
           console.log(`[Payment Process] Payment ${subscription.id} already processed`);
           return;
@@ -357,10 +320,10 @@ async function processSubscriptionUpdate(subscription: any) {
           console.log(`[Payment Process] Granting Subscription Access to ${userId}, Expires: ${updateData.expiraEm}`);
         }
 
-        await userRef.update(updateData);
+        await supabase.from('users').update(updateData).eq('userID', userId);
         console.log(`[Payment Process] Successfully updated user ${userId}`);
       } else if (['cancelled', 'paused', 'canceled', 'subscription.canceled'].includes(status)) {
-        await userRef.update({ status: 'pendente', updatedAt: new Date().toISOString() });
+        await supabase.from('users').update({ status: 'pendente', updatedAt: new Date().toISOString() }).eq('userID', userId);
         console.log(`[Payment Process] Subscription cancelled for user ${userId}`);
       }
     } catch (err) {
@@ -374,25 +337,25 @@ async function processSubscriptionUpdate(subscription: any) {
 app.post('/api/admin/activate-user', async (req, res) => {
   const { email, months = 1, secret } = req.body;
   if (secret !== process.env.ADMIN_SECRET && process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'Unauthorized' });
-  if (!email || !db) return res.status(400).json({ error: 'Missing email or db not initialized' });
+  if (!email) return res.status(400).json({ error: 'Missing email' });
 
   try {
-    const snapshot = await db.collection('users').where('email', '==', email).get();
-    if (snapshot.empty) return res.status(404).json({ error: 'User not found' });
+    const { data: users } = await supabase.from('users').select('userID').eq('email', email);
+    if (!users || users.length === 0) return res.status(404).json({ error: 'User not found' });
 
     const expDate = new Date();
     expDate.setMonth(expDate.getMonth() + months);
-    const batch = db.batch();
-    snapshot.forEach(doc => {
-      batch.update(doc.ref, {
+    
+    for (const user of users) {
+      await supabase.from('users').update({
         status: 'ativo',
         plano: `Manual (${months} meses)`,
         nalabiaPrimeAcess: true,
         expiraEm: expDate.toISOString(),
         updatedAt: new Date().toISOString()
-      });
-    });
-    await batch.commit();
+      }).eq('userID', user.userID);
+    }
+    
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

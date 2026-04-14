@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeContent, runLaboratory, regenerateContent } from './services/gemini';
-import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile, sanitizeFirestoreData, handleFirestoreError, OperationType } from './types';
+import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile } from './types';
 import { sendNotification } from './services/notificationService';
 import AnalysisView from './components/AnalysisView';
 import ResponseOptions from './components/ResponseOptions';
@@ -25,8 +25,7 @@ import { CoursesModal } from './components/CoursesModal';
 import { Send, ImageIcon, X, Trash2, Infinity as InfinityIcon, Camera, MessageCircle, Zap, ShieldAlert, ThermometerSnowflake, Ghost, Repeat2, Bolt, User, Crown, Feather, Settings, Users, HelpCircle, FlaskConical, AlertTriangle, LogIn, LogOut, Bot, Lock, ScanFace, Home, ArrowLeft, Flame, Brain, BookOpen } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import { checkDeviceUsage, incrementDeviceUsage } from './services/antiFraud';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from './services/firebase';
+import { supabase } from './services/supabase';
 
 // --- CONSTANTS ---
 
@@ -128,7 +127,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (user && userData && !hasLoadedUserData.current) {
-      const keySuffix = `_${user.uid}`;
+      const keySuffix = `_${user.id}`;
       
       // Try to load from Firestore first, then localStorage
       if (userData.settings) {
@@ -160,8 +159,8 @@ const App: React.FC = () => {
               });
 
               // Add any profiles from localStorage that are NOT in userData.profiles
-              const firestoreProfileIds = new Set(userData.profiles.map(p => p.id));
-              const offlineProfiles = localProfiles.filter(p => !firestoreProfileIds.has(p.id));
+              const cloudProfileIds = new Set(userData.profiles.map(p => p.id));
+              const offlineProfiles = localProfiles.filter(p => !cloudProfileIds.has(p.id));
               if (offlineProfiles.length > 0) {
                 mergedProfiles = [...mergedProfiles, ...offlineProfiles];
               }
@@ -192,7 +191,7 @@ const App: React.FC = () => {
 
   // Persist to localStorage for offline access (scoped by user)
   useEffect(() => {
-    const keySuffix = user ? `_${user.uid}` : '_guest';
+    const keySuffix = user ? `_${user.id}` : '_guest';
     try {
       localStorage.setItem(`nalabia_settings_v1${keySuffix}`, JSON.stringify(settings));
     } catch (e) {}
@@ -285,7 +284,7 @@ const App: React.FC = () => {
   }, [settings, user]);
 
   useEffect(() => {
-    const keySuffix = user ? `_${user.uid}` : '_guest';
+    const keySuffix = user ? `_${user.id}` : '_guest';
     try {
       localStorage.setItem(`nalabia_profiles_v1${keySuffix}`, JSON.stringify(profiles));
     } catch (e) {}
@@ -301,14 +300,13 @@ const App: React.FC = () => {
            return rest;
          }) : []
        }));
-       const sanitizedProfiles = sanitizeFirestoreData(strippedProfiles);
-       const profilesString = JSON.stringify(sanitizedProfiles);
+       const profilesString = JSON.stringify(strippedProfiles);
        const userDataProfilesString = JSON.stringify(userData.profiles || []);
        
        if (profilesString !== userDataProfilesString) {
          const saveProfiles = async () => {
            try {
-             await updateUserProfiles(sanitizedProfiles);
+             await updateUserProfiles(strippedProfiles);
            } catch (e) {
              console.error("Failed to save profiles to cloud", e);
            }
@@ -378,13 +376,20 @@ const App: React.FC = () => {
   // --- HELPERS ---
 
   const updateActiveProfileMessages = (newMessages: Message[] | ((prev: Message[]) => Message[])) => {
-    setProfiles(prevProfiles => prevProfiles.map(p => {
-      if (p.id === activeProfile.id) {
-        const updatedMessages = typeof newMessages === 'function' ? newMessages(p.messages) : newMessages;
-        return { ...p, messages: updatedMessages, metrics: { ...p.metrics, lastInteraction: Date.now() } };
+    setProfiles(prevProfiles => {
+      const profileExists = prevProfiles.some(p => p.id === activeProfile.id);
+      if (!profileExists) {
+        const updatedMessages = typeof newMessages === 'function' ? newMessages([]) : newMessages;
+        return [...prevProfiles, { ...activeProfile, messages: updatedMessages, metrics: { ...activeProfile.metrics, lastInteraction: Date.now() } }];
       }
-      return p;
-    }));
+      return prevProfiles.map(p => {
+        if (p.id === activeProfile.id) {
+          const updatedMessages = typeof newMessages === 'function' ? newMessages(p.messages) : newMessages;
+          return { ...p, messages: updatedMessages, metrics: { ...p.metrics, lastInteraction: Date.now() } };
+        }
+        return p;
+      });
+    });
   };
 
   const handleProfileStyleChange = (styleId: string) => {
@@ -479,7 +484,7 @@ const App: React.FC = () => {
       }
     }
 
-    if ((!inputText.trim() && !selectedImage) || (status !== ProcessingState.IDLE && status !== ProcessingState.REGENERATING)) return;
+    if ((!inputText.trim() && !selectedImage) || (status !== ProcessingState.IDLE && status !== ProcessingState.REGENERATING && status !== ProcessingState.ERROR)) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -541,31 +546,46 @@ const App: React.FC = () => {
       }
 
       // Update metrics based on analysis
-      setProfiles(prev => prev.map(p => 
-        p.id === activeProfile.id ? { 
-          ...p, 
-          messages: [...updatedMessages, responseMessage], 
-          metrics: { 
-            interest: analysis.interestLevel, 
-            risk: analysis.risk, 
-            lastInteraction: Date.now() 
-          },
-          behavioralPattern: analysis.behavioralPattern || p.behavioralPattern
-        } : p
-      ));
+      setProfiles(prev => {
+        const profileExists = prev.some(p => p.id === activeProfile.id);
+        if (!profileExists) {
+          return [...prev, {
+            ...activeProfile,
+            messages: [...updatedMessages, responseMessage],
+            metrics: {
+              interest: analysis.interestLevel,
+              risk: analysis.risk,
+              lastInteraction: Date.now()
+            },
+            behavioralPattern: analysis.behavioralPattern || activeProfile.behavioralPattern
+          }];
+        }
+        return prev.map(p => 
+          p.id === activeProfile.id ? { 
+            ...p, 
+            messages: [...updatedMessages, responseMessage], 
+            metrics: { 
+              interest: analysis.interestLevel, 
+              risk: analysis.risk, 
+              lastInteraction: Date.now() 
+            },
+            behavioralPattern: analysis.behavioralPattern || p.behavioralPattern
+          } : p
+        );
+      });
 
       if (user) {
         try {
-          const conversationData = sanitizeFirestoreData({
-            userID: user.uid,
+          const conversationData = {
+            userID: user.id,
             imageURL: newMessage.image ? 'image_attached' : null,
             contextText: newMessage.content || '',
             analysis: analysis,
             responses: analysis.responses,
-          });
-          conversationData.createdAt = serverTimestamp();
+            createdAt: Date.now()
+          };
           console.log("conversationData to be saved:", conversationData);
-          await addDoc(collection(db, 'conversations'), conversationData);
+          await supabase.from('conversations').insert(conversationData);
           
           // Add XP for analyzing a conversation
           await addXp(50);
