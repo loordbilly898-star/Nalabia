@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Sparkles, ChevronRight, RefreshCw, Volume2, Loader2, Bookmark } from 'lucide-react';
-import { generateAudio } from '../services/gemini';
+import { Copy, Check, Sparkles, ChevronRight, RefreshCw, Loader2, Bookmark } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ResponseOption {
@@ -18,8 +17,6 @@ interface ResponseOptionsProps {
 
 const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenerate, isRegenerating, settings }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const [loadingAudioIndex, setLoadingAudioIndex] = useState<number | null>(null);
   const [savedIndex, setSavedIndex] = useState<number | null>(null);
   const { user, addXp, saveResponseToVault } = useAuth();
 
@@ -70,61 +67,6 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
     }
   };
 
-  const handlePlayAudio = async (text: string, index: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (playingIndex === index || loadingAudioIndex === index) return;
-    
-    try {
-      setLoadingAudioIndex(index);
-      
-      // Initialize AudioContext synchronously to bypass iOS Safari restrictions
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) {
-        throw new Error("AudioContext not supported in this browser.");
-      }
-      const audioContext = new AudioContextClass();
-
-      const base64Audio = await generateAudio(text);
-      
-      const binaryString = window.atob(base64Audio);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const sampleRate = 24000;
-      const numChannels = 1;
-      const numSamples = bytes.length / 2;
-      
-      const audioBuffer = audioContext.createBuffer(numChannels, numSamples, sampleRate);
-      const channelData = audioBuffer.getChannelData(0);
-      
-      const dataView = new DataView(bytes.buffer);
-      for (let i = 0; i < numSamples; i++) {
-        const sample = dataView.getInt16(i * 2, true);
-        channelData[i] = sample < 0 ? sample / 32768 : sample / 32767;
-      }
-      
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-      
-      source.onended = () => {
-        setPlayingIndex(null);
-      };
-      
-      setLoadingAudioIndex(null);
-      setPlayingIndex(index);
-      source.start();
-      
-    } catch (error) {
-      console.error("Failed to play audio", error);
-      setLoadingAudioIndex(null);
-      setPlayingIndex(null);
-    }
-  };
-
   return (
     <div className="space-y-3 w-full animate-fade-in">
       <div className="flex items-center justify-between px-1">
@@ -166,16 +108,6 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
                     className="text-gray-600 hover:text-gold-glow transition-colors"
                   >
                     {savedIndex === idx ? <Check size={14} className="text-emerald-500" /> : <Bookmark size={14} />}
-                  </button>
-                  <button 
-                    onClick={(e) => handlePlayAudio(typeof res.text === 'string' ? res.text : (typeof res === 'string' ? res : JSON.stringify(res)), idx, e)}
-                    className="text-gray-600 hover:text-gold-glow transition-colors"
-                  >
-                    {loadingAudioIndex === idx ? (
-                      <Loader2 size={14} className="animate-spin text-gold-glow" />
-                    ) : (
-                      <Volume2 size={14} className={playingIndex === idx ? "text-gold-glow" : ""} />
-                    )}
                   </button>
                   <div className="text-gray-600 group-hover:text-gold-glow transition-colors">
                     {copiedIndex === idx ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}

@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { ScanFace, Upload, X, Loader2, Sparkles, Copy, Check } from 'lucide-react';
-import { getGeminiAI, handleGeminiError } from '../services/gemini';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { getMistralAI } from '../services/mistral';
 import { AppSettings, ProcessingState } from '../types';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
+
+import { resizeImage } from '../utils/imageResizer';
 
 interface ProfileAnalyzerViewProps {
   settings: AppSettings;
@@ -26,24 +27,25 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length > 0) {
-      const newImages: string[] = [];
-      let loadedCount = 0;
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newImages.push(reader.result as string);
-          loadedCount++;
-          if (loadedCount === files.length) {
-            setSelectedImages(prev => [...prev, ...newImages]);
-            setAnalysisResult(null); // Reset previous analysis
-            setErrorMsg(null);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      setStatus(ProcessingState.PROCESSING);
+      try {
+        const newImages: string[] = [];
+        for (const file of files) {
+          const resizedBase64 = await resizeImage(file, 1024, 1024);
+          newImages.push(resizedBase64);
+        }
+        setSelectedImages(prev => [...prev, ...newImages]);
+        setAnalysisResult(null); // Reset previous analysis
+        setErrorMsg(null);
+      } catch (error) {
+        console.error("Error resizing image:", error);
+        setErrorMsg("Erro ao processar a imagem. Tente novamente.");
+      } finally {
+        setStatus(ProcessingState.IDLE);
+      }
     }
   };
 
@@ -77,12 +79,8 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
     setStatus(ProcessingState.ANALYZING);
     setErrorMsg(null);
     try {
-      const ai = getGeminiAI(settings);
+      const client = getMistralAI(settings);
       
-      const imageParts = selectedImages.map(img => ({
-        inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' }
-      }));
-
       const prompt = `Você é um especialista em atração e dinâmica social.
 Analise a(s) imagem(ns) deste perfil de aplicativo de namoro ou rede social (Instagram/Tinder/Bumble).
 Forneça uma análise profunda e gere abridores (icebreakers) altamente personalizados e criativos com base no que você vê nas fotos ou na bio.
@@ -99,31 +97,36 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
   ]
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: [
-          ...imageParts,
-          { text: prompt }
-        ],
-        config: {
-          responseMimeType: 'application/json',
-          maxOutputTokens: 8192,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-          ]
-        }
+      const contentParts: any[] = [
+        { type: "text", text: prompt }
+      ];
+      
+      selectedImages.forEach(img => {
+        contentParts.push({
+          type: "image_url",
+          imageUrl: img
+        });
       });
 
-      let text = response.text;
+      const response = await client.chat.complete({
+        model: "pixtral-12b-2409",
+        messages: [{ role: "user", content: contentParts }],
+        responseFormat: { type: "json_object" },
+        temperature: 0.7,
+      });
+
+      let text = response.choices?.[0]?.message?.content?.toString() || "{}";
       if (text) {
         // Remove potential markdown formatting
         text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
         try {
           const parsed = JSON.parse(text);
-          setAnalysisResult(parsed);
+          setAnalysisResult({
+            vibe: parsed.vibe || "Vibe não detectada.",
+            redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : [],
+            greenFlags: Array.isArray(parsed.greenFlags) ? parsed.greenFlags : [],
+            icebreakers: Array.isArray(parsed.icebreakers) ? parsed.icebreakers : []
+          });
         } catch (e) {
           console.error("Failed to parse JSON:", text);
           throw new Error("A IA retornou um formato inválido.");
@@ -139,13 +142,19 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
 
     } catch (error: any) {
       console.error("Profile Analysis Error:", error);
-      let finalError = error;
-      try {
-        await handleGeminiError(error);
-      } catch (e) {
-        finalError = e;
+      let errorMessage = "Erro ao analisar o perfil. Tente novamente.";
+      if (error?.message) {
+        if (typeof error.message === 'string') {
+          if (error.message.includes("429") || error.message.includes("Rate limit")) {
+            errorMessage = "Limite de requisições da API excedido. Por favor, aguarde alguns instantes e tente novamente.";
+          } else {
+            errorMessage = error.message;
+          }
+        } else {
+          errorMessage = JSON.stringify(error.message);
+        }
       }
-      setErrorMsg(finalError.message || "Erro ao analisar o perfil. Tente novamente.");
+      setErrorMsg(errorMessage);
     } finally {
       setStatus(ProcessingState.IDLE);
     }
@@ -266,7 +275,9 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
               {/* Vibe */}
               <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5`}>
                 <h3 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-2">Vibe Detectada</h3>
-                <p className="text-gray-200 text-sm leading-relaxed">{analysisResult.vibe}</p>
+                <p className="text-gray-200 text-sm leading-relaxed">
+                  {typeof analysisResult.vibe === 'string' ? analysisResult.vibe : JSON.stringify(analysisResult.vibe)}
+                </p>
               </div>
 
               {/* Flags */}
@@ -274,10 +285,10 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                 <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-xl p-4">
                   <h3 className="text-[10px] font-mono text-emerald-500 uppercase tracking-widest mb-3">Green Flags</h3>
                   <ul className="space-y-2">
-                    {analysisResult.greenFlags.map((flag, i) => (
+                    {Array.isArray(analysisResult.greenFlags) && analysisResult.greenFlags.map((flag, i) => (
                       <li key={i} className="text-xs text-emerald-100/80 flex items-start gap-2">
                         <span className="text-emerald-500 mt-0.5">•</span>
-                        <span>{flag}</span>
+                        <span>{typeof flag === 'string' ? flag : JSON.stringify(flag)}</span>
                       </li>
                     ))}
                   </ul>
@@ -285,10 +296,10 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                 <div className="bg-rose-950/20 border border-rose-900/30 rounded-xl p-4">
                   <h3 className="text-[10px] font-mono text-rose-500 uppercase tracking-widest mb-3">Red Flags</h3>
                   <ul className="space-y-2">
-                    {analysisResult.redFlags.map((flag, i) => (
+                    {Array.isArray(analysisResult.redFlags) && analysisResult.redFlags.map((flag, i) => (
                       <li key={i} className="text-xs text-rose-100/80 flex items-start gap-2">
                         <span className="text-rose-500 mt-0.5">•</span>
-                        <span>{flag}</span>
+                        <span>{typeof flag === 'string' ? flag : JSON.stringify(flag)}</span>
                       </li>
                     ))}
                   </ul>
@@ -299,11 +310,11 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
               <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5`}>
                 <h3 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-4">Abridores Sugeridos</h3>
                 <div className="space-y-3">
-                  {analysisResult.icebreakers.map((icebreaker, i) => (
+                  {Array.isArray(analysisResult.icebreakers) && analysisResult.icebreakers.map((icebreaker, i) => (
                     <div key={i} className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-lg p-3 flex items-start justify-between group hover:border-gold-glow/30 transition-colors`}>
-                      <p className="text-sm text-gray-300 pr-4">{icebreaker}</p>
+                      <p className="text-sm text-gray-300 pr-4">{typeof icebreaker === 'string' ? icebreaker : JSON.stringify(icebreaker)}</p>
                       <button
-                        onClick={() => handleCopy(icebreaker, i)}
+                        onClick={() => handleCopy(typeof icebreaker === 'string' ? icebreaker : JSON.stringify(icebreaker), i)}
                         className="text-gray-500 hover:text-gold-glow transition-colors p-1 flex-shrink-0"
                         title="Copiar Abridor"
                       >

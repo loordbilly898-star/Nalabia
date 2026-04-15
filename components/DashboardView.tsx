@@ -3,8 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 import { Message, ProcessingState, Profile, AppSettings } from '../types';
 import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send } from 'lucide-react';
-import { getGeminiAI, handleGeminiError } from '../services/gemini';
-import { HarmCategory, HarmBlockThreshold, ThinkingLevel } from '@google/genai';
+import { getMistralAI } from '../services/mistral';
 
 interface DashboardViewProps {
   activeProfile: Profile;
@@ -97,30 +96,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
 
     try {
-      const ai = getGeminiAI(settings);
+      const client = getMistralAI(settings);
       
       const currentModeMessages = [...messages, newMessage];
-      const rawContents = currentModeMessages.map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content || '' }]
-      })).filter(c => c.parts[0].text.trim() !== '');
-
-      const contents: any[] = [];
-      for (const c of rawContents) {
-        if (contents.length > 0 && contents[contents.length - 1].role === c.role) {
-          contents[contents.length - 1].parts.push(...c.parts);
-        } else {
-          contents.push(c);
-        }
-      }
-
-      if (contents.length > 0 && contents[0].role === 'model') {
-        contents.shift();
-      }
-
-      if (contents.length === 0) {
-        throw new Error("No content to send.");
-      }
+      const mistralMessages: any[] = [];
 
       let userAIProfileInstruction = "";
       if (userAIProfile) {
@@ -149,20 +128,19 @@ ${userAIProfileInstruction}
 
 Analise friamente o desempenho dele. Dê conselhos baseados em números e probabilidade. Seja direto, calculista e focado em otimização de conversão social.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: contents,
-        config: {
-          systemInstruction: systemPrompt,
-          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-          maxOutputTokens: 8192,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-          ]
-        }
+      mistralMessages.push({ role: "system", content: systemPrompt });
+
+      currentModeMessages.forEach(msg => {
+        mistralMessages.push({
+          role: msg.role === 'assistant' ? 'assistant' : 'user',
+          content: msg.content || ""
+        });
+      });
+
+      const response = await client.chat.complete({
+        model: "mistral-large-latest",
+        messages: mistralMessages,
+        temperature: 0.7,
       });
 
       clearTimeout(stateTimer1);
@@ -171,7 +149,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.text || '...',
+        content: response.choices?.[0]?.message?.content?.toString() || '...',
         timestamp: Date.now(),
         mode: 'STATS'
       };
@@ -184,24 +162,9 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
       setStatus(ProcessingState.ERROR);
       setTimeout(() => setStatus(ProcessingState.IDLE), 3000);
       
-      let finalError = error;
-      try {
-        await handleGeminiError(error);
-      } catch (e) {
-        finalError = e;
-      }
-
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
-      if (typeof finalError?.message === 'string') {
-        if (finalError.message.includes("API Key") || finalError.message.includes("cota") || finalError.message.includes("janela") || finalError.message.includes("modelo")) {
-          errorMessage = finalError.message;
-        } else {
-          errorMessage = `Erro: ${finalError.message}`;
-        }
-      } else if (typeof finalError === 'string') {
-        errorMessage = `Erro: ${finalError}`;
-      } else {
-        try { errorMessage = `Erro: ${JSON.stringify(finalError)}`; } catch (e) {}
+      if (typeof error?.message === 'string') {
+        errorMessage = `Erro: ${error.message}`;
       }
 
       const errMessage: Message = {

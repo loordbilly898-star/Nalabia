@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, Loader2, Sparkles } from 'lucide-react';
-import { getGeminiAI, handleGeminiError } from '../services/gemini';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { getMistralAI } from '../services/mistral';
 import { ProcessingState, Profile, Message, AppSettings } from '../types';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
@@ -103,7 +102,7 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 3500);
 
     try {
-      const ai = getGeminiAI(settings);
+      const client = getMistralAI(settings);
       
       const scenarioObj = SCENARIOS.find(s => s.id === scenario);
       
@@ -130,18 +129,10 @@ Responda apenas com a sua próxima mensagem.`;
 
       console.log("Prompt enviado:", systemPrompt);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: systemPrompt,
-        config: {
-          maxOutputTokens: 8192,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-          ]
-        }
+      const response = await client.chat.complete({
+        model: "mistral-large-latest",
+        messages: [{ role: "user", content: systemPrompt }],
+        temperature: 0.7,
       });
 
       console.log("Resposta da IA:", response);
@@ -152,7 +143,7 @@ Responda apenas com a sua próxima mensagem.`;
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.text || '...',
+        content: response.choices?.[0]?.message?.content?.toString() || '...',
         timestamp: Date.now(),
         mode: 'SIMULATOR'
       };
@@ -167,24 +158,9 @@ Responda apenas com a sua próxima mensagem.`;
       clearTimeout(stateTimer2);
       console.error("Simulator Error:", error);
       
-      let finalError = error;
-      try {
-        await handleGeminiError(error);
-      } catch (e) {
-        finalError = e;
-      }
-
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
-      if (typeof finalError?.message === 'string') {
-        if (finalError.message.includes("API Key") || finalError.message.includes("cota") || finalError.message.includes("janela") || finalError.message.includes("modelo")) {
-          errorMessage = finalError.message;
-        } else {
-          errorMessage = `Erro: ${finalError.message}`;
-        }
-      } else if (typeof finalError === 'string') {
-        errorMessage = `Erro: ${finalError}`;
-      } else {
-        try { errorMessage = `Erro: ${JSON.stringify(finalError)}`; } catch (e) {}
+      if (typeof error?.message === 'string') {
+        errorMessage = `Erro: ${error.message}`;
       }
 
       const errMessage: Message = {

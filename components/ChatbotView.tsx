@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
-import { getGeminiAI, handleGeminiError } from '../services/gemini';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { getMistralAI } from '../services/mistral';
 import { SYSTEM_PROMPT, AppSettings, Profile, ProcessingState, Message } from '../types';
 import { sendNotification } from '../services/notificationService';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
@@ -81,8 +80,6 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       const deviceAllowed = await checkDeviceUsage();
       
       if (userFreeMessages >= 2 || !deviceAllowed) {
-        // We can't easily trigger the paywall modal from here without passing a prop, 
-        // but we can add an error message to the chat
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
@@ -131,48 +128,10 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
 
     try {
-      const ai = getGeminiAI(settings);
+      const client = getMistralAI(settings);
       
       const currentModeMessages = [...messages, newMessage];
-      const rawContents = currentModeMessages.map(msg => {
-        const msgParts: any[] = [];
-        if (msg.image) {
-          const mimeType = msg.image.startsWith('data:') 
-            ? msg.image.split(';')[0].split(':')[1] 
-            : "image/jpeg";
-          const cleanBase64 = msg.image.split(',')[1] || msg.image;
-          msgParts.push({
-            inlineData: {
-              mimeType: mimeType,
-              data: cleanBase64
-            }
-          });
-        }
-        if (msg.content) {
-          msgParts.push({ text: msg.content });
-        }
-        return {
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: msgParts
-        };
-      }).filter(c => c.parts.length > 0);
-
-      const contents: any[] = [];
-      for (const c of rawContents) {
-        if (contents.length > 0 && contents[contents.length - 1].role === c.role) {
-          contents[contents.length - 1].parts.push(...c.parts);
-        } else {
-          contents.push(c);
-        }
-      }
-
-      if (contents.length > 0 && contents[0].role === 'model') {
-        contents.shift();
-      }
-
-      if (contents.length === 0) {
-        throw new Error("No content to send.");
-      }
+      const mistralMessages: any[] = [];
 
       let profileInstruction = "";
       if (activeProfile && activeProfile.id !== "general") {
@@ -216,24 +175,36 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
 
       const fullSystemPrompt = `${SYSTEM_PROMPT}\n\nCONTEXTO ATUAL:\n${profileInstruction}\n${userAIProfileInstruction}\n${settingsInstruction}`;
 
-      console.log("Prompt enviado:", contents);
+      mistralMessages.push({ role: "system", content: fullSystemPrompt });
 
-      // Determine model based on complexity (image or long context = pro, otherwise flash)
-      const modelToUse = (userImg || contents.length > 10) ? 'gemini-3.1-pro-preview' : 'gemini-3.1-pro-preview';
+      let hasImage = false;
 
-      const responseStream = await ai.models.generateContentStream({
-        model: modelToUse,
-        contents: contents,
-        config: {
-          systemInstruction: fullSystemPrompt,
-          maxOutputTokens: 8192,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-          ]
+      currentModeMessages.forEach(msg => {
+        if (msg.image) {
+          hasImage = true;
+          mistralMessages.push({
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: [
+              { type: "text", text: msg.content || "Image" },
+              { type: "image_url", imageUrl: msg.image }
+            ]
+          });
+        } else {
+          mistralMessages.push({
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: msg.content || ""
+          });
         }
+      });
+
+      console.log("Prompt enviado:", mistralMessages);
+
+      const modelToUse = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
+
+      const responseStream = await client.chat.stream({
+        model: modelToUse,
+        messages: mistralMessages,
+        temperature: 0.7,
       });
 
       clearTimeout(stateTimer1);
@@ -248,19 +219,19 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         mode: 'CHATBOT'
       };
       
-      // Add empty assistant message to be filled by stream
       updateActiveProfileMessages(prev => [...prev, currentAssistantMessage]);
 
       let fullText = '';
       for await (const chunk of responseStream) {
-        fullText += chunk.text;
-        currentAssistantMessage = { ...currentAssistantMessage, content: fullText };
-        
-        // Update the specific message in the global array
-        updateActiveProfileMessages(prev => {
-          const withoutLast = prev.filter(m => m.id !== currentAssistantMessage.id);
-          return [...withoutLast, currentAssistantMessage];
-        });
+        if (chunk.data.choices[0]?.delta?.content) {
+          fullText += chunk.data.choices[0].delta.content;
+          currentAssistantMessage = { ...currentAssistantMessage, content: fullText };
+          
+          updateActiveProfileMessages(prev => {
+            const withoutLast = prev.filter(m => m.id !== currentAssistantMessage.id);
+            return [...withoutLast, currentAssistantMessage];
+          });
+        }
       }
 
       setStatus(ProcessingState.IDLE);
@@ -281,24 +252,9 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       clearTimeout(stateTimer2);
       console.error("Chatbot Error:", error);
       
-      let finalError = error;
-      try {
-        await handleGeminiError(error);
-      } catch (e) {
-        finalError = e;
-      }
-
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
-      if (typeof finalError?.message === 'string') {
-        if (finalError.message.includes("API Key") || finalError.message.includes("cota") || finalError.message.includes("janela") || finalError.message.includes("modelo")) {
-          errorMessage = finalError.message;
-        } else {
-          errorMessage = `Erro: ${finalError.message}`;
-        }
-      } else if (typeof finalError === 'string') {
-        errorMessage = `Erro: ${finalError}`;
-      } else {
-        try { errorMessage = `Erro: ${JSON.stringify(finalError)}`; } catch (e) {}
+      if (typeof error?.message === 'string') {
+        errorMessage = `Erro: ${error.message}`;
       }
 
       const errMessage: Message = {

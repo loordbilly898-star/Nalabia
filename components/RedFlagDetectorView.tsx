@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AlertTriangle, ShieldAlert, Loader2, Sparkles, Upload, X } from 'lucide-react';
-import { getGeminiAI, handleGeminiError } from '../services/gemini';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { getMistralAI } from '../services/mistral';
 import { AppSettings, ProcessingState } from '../types';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,12 +78,8 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
     setStatus(ProcessingState.ANALYZING);
     setErrorMsg(null);
     try {
-      const ai = getGeminiAI(settings);
+      const client = getMistralAI(settings);
       
-      const imageParts = selectedImages.map(img => ({
-        inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' }
-      }));
-
       const prompt = `Você é um especialista em psicologia comportamental e relacionamentos.
 Analise a seguinte interação entre um homem (o usuário) e uma mulher.
 Identifique "Red Flags" (sinais de alerta de toxicidade, desinteresse, manipulação ou problemas emocionais) e "Green Flags" (sinais de interesse genuíno, maturidade).
@@ -103,31 +98,38 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
   "advice": "O que o usuário deve fazer agora (ex: 'Dê um passo para trás e espere ela investir' ou 'Chame ela para sair agora')."
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: [
-          ...imageParts,
-          { text: prompt }
-        ],
-        config: {
-          responseMimeType: 'application/json',
-          maxOutputTokens: 8192,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-          ]
-        }
+      const contentParts: any[] = [
+        { type: "text", text: prompt }
+      ];
+      
+      selectedImages.forEach(img => {
+        contentParts.push({
+          type: "image_url",
+          imageUrl: img
+        });
       });
 
-      let text = response.text;
+      const response = await client.chat.complete({
+        model: selectedImages.length > 0 ? "pixtral-12b-2409" : "mistral-large-latest",
+        messages: [{ role: "user", content: contentParts }],
+        responseFormat: { type: "json_object" },
+        temperature: 0.7,
+      });
+
+      let text = response.choices?.[0]?.message?.content?.toString() || "{}";
       if (text) {
         // Remove potential markdown formatting
         text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
         try {
           const parsed = JSON.parse(text);
-          setAnalysisResult(parsed);
+          setAnalysisResult({
+            ghostingProbability: typeof parsed.ghostingProbability === 'number' ? parsed.ghostingProbability : 0,
+            toxicityLevel: parsed.toxicityLevel || 'Baixo',
+            redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : [],
+            greenFlags: Array.isArray(parsed.greenFlags) ? parsed.greenFlags : [],
+            verdict: parsed.verdict || "Veredito não disponível.",
+            advice: parsed.advice || "Conselho não disponível."
+          });
         } catch (e) {
           console.error("Failed to parse JSON:", text);
           throw new Error("A IA retornou um formato inválido.");
@@ -143,13 +145,15 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
 
     } catch (error: any) {
       console.error("Red Flag Analysis Error:", error);
-      let finalError = error;
-      try {
-        await handleGeminiError(error);
-      } catch (e) {
-        finalError = e;
+      let errorMessage = "Erro ao analisar a conversa. Tente novamente.";
+      if (error?.message) {
+        if (typeof error.message === 'string') {
+          errorMessage = error.message;
+        } else {
+          errorMessage = JSON.stringify(error.message);
+        }
       }
-      setErrorMsg(finalError.message || "Erro ao analisar a conversa. Tente novamente.");
+      setErrorMsg(errorMessage);
     } finally {
       setStatus(ProcessingState.IDLE);
     }
@@ -295,11 +299,15 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
               <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5 space-y-4`}>
                 <div>
                   <h3 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-2">Veredito</h3>
-                  <p className="text-gray-200 text-sm leading-relaxed">{analysisResult.verdict}</p>
+                  <p className="text-gray-200 text-sm leading-relaxed">
+                    {typeof analysisResult.verdict === 'string' ? analysisResult.verdict : JSON.stringify(analysisResult.verdict)}
+                  </p>
                 </div>
                 <div className="pt-4 border-t border-gold-dim/10">
                   <h3 className="text-xs font-mono text-blue-400 uppercase tracking-widest mb-2">O que fazer agora</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed">{analysisResult.advice}</p>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    {typeof analysisResult.advice === 'string' ? analysisResult.advice : JSON.stringify(analysisResult.advice)}
+                  </p>
                 </div>
               </div>
 
@@ -309,12 +317,12 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   <h3 className="text-[10px] font-mono text-rose-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <AlertTriangle size={12} /> Red Flags
                   </h3>
-                  {analysisResult.redFlags.length > 0 ? (
+                  {(Array.isArray(analysisResult.redFlags) && analysisResult.redFlags.length > 0) ? (
                     <ul className="space-y-2">
                       {analysisResult.redFlags.map((flag, i) => (
                         <li key={i} className="text-xs text-rose-100/80 flex items-start gap-2">
                           <span className="text-rose-500 mt-0.5">•</span>
-                          <span>{flag}</span>
+                          <span>{typeof flag === 'string' ? flag : JSON.stringify(flag)}</span>
                         </li>
                       ))}
                     </ul>
@@ -326,12 +334,12 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   <h3 className="text-[10px] font-mono text-emerald-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <Sparkles size={12} /> Green Flags
                   </h3>
-                  {analysisResult.greenFlags.length > 0 ? (
+                  {(Array.isArray(analysisResult.greenFlags) && analysisResult.greenFlags.length > 0) ? (
                     <ul className="space-y-2">
                       {analysisResult.greenFlags.map((flag, i) => (
                         <li key={i} className="text-xs text-emerald-100/80 flex items-start gap-2">
                           <span className="text-emerald-500 mt-0.5">•</span>
-                          <span>{flag}</span>
+                          <span>{typeof flag === 'string' ? flag : JSON.stringify(flag)}</span>
                         </li>
                       ))}
                     </ul>

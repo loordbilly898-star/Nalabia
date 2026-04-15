@@ -608,7 +608,9 @@ const App: React.FC = () => {
       
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
       if (typeof error?.message === 'string') {
-        if (error.message.includes("API Key") || error.message.includes("cota") || error.message.includes("janela") || error.message.includes("modelo")) {
+        if (error.message.includes("429") || error.message.includes("Rate limit")) {
+          errorMessage = "Limite de requisições da API excedido. Por favor, aguarde alguns instantes e tente novamente.";
+        } else if (error.message.includes("API Key") || error.message.includes("cota") || error.message.includes("janela") || error.message.includes("modelo")) {
           errorMessage = error.message;
         } else {
           errorMessage = `Erro: ${error.message}`;
@@ -642,10 +644,11 @@ const App: React.FC = () => {
     const msgIndexInMode = currentModeMessages.findIndex(m => m.id === messageId);
     const contextMsg = currentModeMessages[msgIndexInMode - 1];
     const contextText = contextMsg?.content || (contextMsg?.image ? "Image Analysis" : "Unknown Context");
+    const imageBase64 = contextMsg?.image;
 
     setStatus(ProcessingState.CALCULATING);
     try {
-      const labResult = await runLaboratory(contextText, targetMsg.analysis, activeProfile, settings, userAIProfile);
+      const labResult = await runLaboratory(contextText, targetMsg.analysis, activeProfile, settings, userAIProfile, imageBase64);
       
       const newMessages = [...(Array.isArray(activeProfile?.messages) ? activeProfile.messages : [])];
       newMessages[msgIndex] = { ...targetMsg, labResult: labResult };

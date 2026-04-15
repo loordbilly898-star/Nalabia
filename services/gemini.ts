@@ -1,54 +1,5 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { SYSTEM_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message } from "../types";
 import { getMistralAI } from "./mistral";
-
-export const getGeminiAI = (settings?: AppSettings) => {
-  const apiKey = settings?.customApiKey || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key is missing.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
-
-export const handleGeminiError = async (error: any) => {
-  let errorString = '';
-  try {
-    errorString = typeof error === 'string' ? error : JSON.stringify(error) + (error.message || '');
-  } catch (e) {
-    errorString = error?.message || String(error);
-  }
-  
-  const isQuotaError = errorString.includes("429") || errorString.includes("RESOURCE_EXHAUSTED") || errorString.includes("quota");
-  const isNotFoundError = errorString.includes("Requested entity was not found.");
-  const isAuthError = errorString.includes("API key not valid") || errorString.includes("API_KEY_INVALID");
-
-  if (isQuotaError || isNotFoundError || isAuthError) {
-    if (typeof window !== 'undefined' && (window as any).aistudio && (window as any).aistudio.openSelectKey) {
-      try {
-        await (window as any).aistudio.openSelectKey();
-      } catch (e) {
-        console.error("Failed to open API key selection dialog:", e);
-      }
-    }
-  }
-
-  if (isQuotaError) {
-    throw new Error("A cota da API do Gemini foi excedida. Uma janela foi aberta para você selecionar sua própria chave de API do Google Cloud.");
-  }
-
-  if (isNotFoundError) {
-    throw new Error("O modelo de IA solicitado não está disponível. Uma janela foi aberta para você verificar sua chave de API.");
-  }
-  
-  if (isAuthError) {
-    throw new Error("A chave de API é inválida. Uma janela foi aberta para você selecionar uma chave válida.");
-  }
-
-  throw error;
-};
-
-import { getMistralAI } from "./mistral";
-import { SYSTEM_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message } from "../types";
+import { SYSTEM_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation } from "../types";
 
 export const generateAIResponse = async (userMessage: string, settings?: AppSettings): Promise<string> => {
   try {
@@ -110,9 +61,23 @@ export const analyzeContent = async (
   `;
 
   try {
+    const messages: any[] = [];
+    
+    if (imageBase64) {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", imageUrl: imageBase64 }
+        ]
+      });
+    } else {
+      messages.push({ role: "user", content: prompt });
+    }
+
     const response = await client.chat.complete({
-      model: "mistral-large-latest",
-      messages: [{ role: "user", content: prompt }],
+      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
+      messages: messages,
       responseFormat: { type: "json_object" },
       temperature: 0.75,
     });
@@ -135,10 +100,7 @@ export const regenerateContent = async (
   profileContext?: Profile,
   userAIProfile?: any
 ): Promise<{ responses: { type: string, text: string }[] }> => {
-  const ai = getGeminiAI(settings);
-  const model = "gemini-3-flash-preview";
-
-  const parts: any[] = [];
+  const client = getMistralAI(settings);
 
   let userAIProfileInstruction = "";
   if (userAIProfile) {
@@ -174,82 +136,49 @@ export const regenerateContent = async (
   - Anti-Gado: ${settings?.ai?.avoidCompliments ? 'ON' : 'OFF'}
   `;
 
-  parts.push({ text: contextInstruction });
-
-  if (imageBase64) {
-    const mimeType = imageBase64.startsWith('data:') 
-      ? imageBase64.split(';')[0].split(':')[1] 
-      : "image/jpeg";
-    const cleanBase64 = imageBase64.split(',')[1] || imageBase64;
-    parts.push({
-      inlineData: {
-        mimeType: mimeType,
-        data: cleanBase64
-      }
-    });
-  }
-
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts },
-      config: {
-        systemInstruction: SYSTEM_PROMPT + "\n" + REGENERATE_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: regenerateSchema,
-        temperature: 0.85, // Slightly higher for variation
-        maxOutputTokens: 8192,
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-        ]
-      }
-    });
-
-    let responseText = response.text;
-    if (!responseText) throw new Error("Failed to regenerate");
-
-    // Remove potential markdown formatting
-    responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("Regeneration Error:", error);
-    return handleGeminiError(error);
-  }
-};
-
-export const generateAudio = async (text: string, settings?: AppSettings): Promise<string> => {
-  let apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("Geração de áudio requer chave da API do Google Gemini configurada no ambiente.");
+  const prompt = `
+  ${SYSTEM_PROMPT}
+  
+  Analyze the following input and return ONLY a single JSON object. Do not repeat phrases. Do not loop.
+  
+  Structure:
+  {
+    "responses": [{"type": "string", "text": "string"}]
   }
   
-  const ai = new GoogleGenAI({ apiKey });
+  [ignoring loop detection]
   
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Say naturally and confidently: ${text}` }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Charon' },
-          },
-        },
-      },
-    });
+  ${contextInstruction}
+  `;
 
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("Failed to generate audio");
+  try {
+    const messages: any[] = [];
     
-    return base64Audio;
+    if (imageBase64) {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", imageUrl: imageBase64 }
+        ]
+      });
+    } else {
+      messages.push({ role: "user", content: prompt });
+    }
+
+    const response = await client.chat.complete({
+      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
+      messages: messages,
+      responseFormat: { type: "json_object" },
+      temperature: 0.85,
+      maxTokens: 2000,
+    });
+
+    const content = response.choices?.[0]?.message?.content?.toString() || "{}";
+    return JSON.parse(content);
   } catch (error) {
-    console.error("Audio Generation Error:", error);
-    return handleGeminiError(error);
+    console.error("Mistral Regeneration Error:", error);
+    throw error;
   }
 };
 
@@ -258,12 +187,10 @@ export const runLaboratory = async (
   analysis: CrystalResponse,
   profileContext: Profile | undefined,
   settings: AppSettings,
-  userAIProfile?: any
+  userAIProfile?: any,
+  imageBase64?: string
 ): Promise<LaboratorySimulation> => {
-  const ai = getGeminiAI(settings);
-  const model = "gemini-3-flash-preview"; 
-
-  const parts: any[] = [];
+  const client = getMistralAI(settings);
   
   let profileInfo = "";
   if (profileContext) {
@@ -285,43 +212,63 @@ export const runLaboratory = async (
     `;
   }
 
-  parts.push({ 
-    text: `INPUT ORIGINAL: "${contextText}"
-    ANÁLISE INICIAL: ${JSON.stringify(analysis)}
-    CONTEXTO DE PERFIL: ${profileInfo}
-    ${userAIProfileInstruction}
-    
-    Execute a simulação do laboratório agora.` 
-  });
+  const prompt = `
+  ${SYSTEM_PROMPT}
+  
+  Analyze the following input and return ONLY a single JSON object. Do not repeat phrases. Do not loop.
+  
+  Structure:
+  {
+    "simulations": [
+      {
+        "responseType": "string",
+        "predictedReaction": "string",
+        "successProbability": number,
+        "riskLevel": "string",
+        "explanation": "string"
+      }
+    ],
+    "recommendedApproach": "string"
+  }
+  
+  [ignoring loop detection]
+  
+  INPUT ORIGINAL: "${contextText}"
+  ANÁLISE INICIAL: ${JSON.stringify(analysis)}
+  CONTEXTO DE PERFIL: ${profileInfo}
+  ${userAIProfileInstruction}
+  
+  Execute a simulação do laboratório agora.
+  `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts },
-      config: {
-        systemInstruction: SYSTEM_PROMPT + "\n" + LAB_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: labSchema,
-        temperature: 0.8,
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+    const messages: any[] = [];
+    
+    if (imageBase64) {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", imageUrl: imageBase64 }
         ]
-      }
+      });
+    } else {
+      messages.push({ role: "user", content: prompt });
+    }
+
+    const response = await client.chat.complete({
+      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
+      messages: messages,
+      responseFormat: { type: "json_object" },
+      temperature: 0.8,
+      maxTokens: 2000,
     });
     
-    let responseText = response.text;
-    if(!responseText) throw new Error("Failed to generate lab results");
-
-    // Remove potential markdown formatting
-    responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-
-    return JSON.parse(responseText) as LaboratorySimulation;
+    const content = response.choices?.[0]?.message?.content?.toString() || "{}";
+    return JSON.parse(content) as LaboratorySimulation;
 
   } catch (e) {
-    console.error("Lab Error", e);
-    return handleGeminiError(e);
+    console.error("Mistral Lab Error", e);
+    throw e;
   }
 }
