@@ -6,14 +6,29 @@ import { SYSTEM_PROMPT, LAB_PROMPT, REGENERATE_PROMPT, CrystalResponse, Analysis
 
 export const getMistralAI = (settings?: AppSettings) => {
   // Try to get the key from settings, then Vite env vars, then process.env (for server-side)
-  const apiKey = settings?.customApiKey || 
-                 (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_MISTRAL_API_KEY : undefined) || 
-                 (typeof process !== 'undefined' && process.env ? process.env.MISTRAL_API_KEY : undefined);
+  let apiKey = settings?.customApiKey;
+  
+  if (!apiKey && typeof import.meta !== 'undefined' && import.meta.env) {
+    apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
+  }
+  
+  if (!apiKey && typeof process !== 'undefined' && process.env) {
+    apiKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+  }
+  
+  // Prevent literal "undefined" or "null" strings that sometimes happen in build tools
+  if (apiKey === "undefined" || apiKey === "null") {
+    apiKey = undefined;
+  }
                  
   if (!apiKey || apiKey.trim() === '') {
     throw new Error("A chave da API do Mistral está ausente. Verifique se VITE_MISTRAL_API_KEY está configurada na Vercel.");
   }
-  return new Mistral({ apiKey });
+  
+  const cleanKey = apiKey.trim();
+  console.log(`[Mistral Debug] Key found. Length: ${cleanKey.length}, Starts with: ${cleanKey.substring(0, 4)}...`);
+  
+  return new Mistral({ apiKey: cleanKey });
 };
 
 export const generateAIResponse = async (userMessage: string, settings?: AppSettings): Promise<string> => {
