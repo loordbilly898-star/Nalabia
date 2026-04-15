@@ -5,9 +5,13 @@ import { SYSTEM_PROMPT, LAB_PROMPT, REGENERATE_PROMPT, CrystalResponse, Analysis
 // We will need to prompt for JSON and parse it.
 
 export const getMistralAI = (settings?: AppSettings) => {
-  const apiKey = settings?.customApiKey || process.env.MISTRAL_API_KEY;
-  if (!apiKey) {
-    throw new Error("Mistral API Key is missing.");
+  // Try to get the key from settings, then Vite env vars, then process.env (for server-side)
+  const apiKey = settings?.customApiKey || 
+                 (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_MISTRAL_API_KEY : undefined) || 
+                 (typeof process !== 'undefined' && process.env ? process.env.MISTRAL_API_KEY : undefined);
+                 
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error("A chave da API do Mistral está ausente. Verifique se VITE_MISTRAL_API_KEY está configurada na Vercel.");
   }
   return new Mistral({ apiKey });
 };
