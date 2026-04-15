@@ -8,6 +8,12 @@ export const getMistralAI = (settings?: AppSettings) => {
   // Try to get the key from settings, then Vite env vars, then process.env (for server-side)
   let apiKey = settings?.customApiKey;
   
+  // Ignore old Gemini keys saved in user settings
+  if (apiKey && apiKey.trim().startsWith('AIza')) {
+    console.warn("[Mistral] Ignorando chave customizada do Gemini salva nas configurações do usuário.");
+    apiKey = undefined;
+  }
+  
   if (!apiKey && typeof import.meta !== 'undefined' && import.meta.env) {
     apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
   }
@@ -26,6 +32,12 @@ export const getMistralAI = (settings?: AppSettings) => {
   }
   
   const cleanKey = apiKey.trim();
+  
+  // CRITICAL FIX: Prevent using Google/Gemini keys for Mistral
+  if (cleanKey.startsWith('AIza')) {
+    throw new Error("ERRO CRÍTICO: Você está tentando usar uma chave do Google (Gemini) na API da Mistral. Chaves da Mistral não começam com 'AIza'. Verifique suas variáveis de ambiente na Vercel.");
+  }
+  
   console.log(`[Mistral Debug] Key found. Length: ${cleanKey.length}, Starts with: ${cleanKey.substring(0, 4)}...`);
   
   return new Mistral({ apiKey: cleanKey });
