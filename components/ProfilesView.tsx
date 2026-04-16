@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Profile } from '../types';
-import { User, Plus, Search, MessageCircle, BarChart2, Trash2, Edit2, Check } from 'lucide-react';
+import { Profile, Memory } from '../types';
+import { User, Plus, Search, MessageCircle, BarChart2, Trash2, Edit2, Check, BrainCircuit } from 'lucide-react';
 
 interface ProfilesViewProps {
   profiles: Profile[];
+  memories?: Memory[];
   activeProfileId: string;
   onSelectProfile: (id: string) => void;
   onAddProfile: (name: string, description: string) => void;
@@ -11,7 +12,7 @@ interface ProfilesViewProps {
   settings?: any;
 }
 
-const ProfilesView: React.FC<ProfilesViewProps> = ({ profiles, activeProfileId, onSelectProfile, onAddProfile, onDeleteProfile, settings }) => {
+const ProfilesView: React.FC<ProfilesViewProps> = ({ profiles, memories, activeProfileId, onSelectProfile, onAddProfile, onDeleteProfile, settings }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -129,6 +130,23 @@ const ProfilesView: React.FC<ProfilesViewProps> = ({ profiles, activeProfileId, 
                 <span className="text-[10px] text-gray-400 font-bold">{profile.messages.length}</span>
               </div>
             </div>
+            
+            {/* Memory Display */}
+            {memories && memories.find(m => m.id === profile.id)?.observations && (
+              <div className="mt-3 pt-3 border-t border-gray-800/50">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <BrainCircuit size={12} className="text-blue-400" />
+                  <span className="text-[10px] font-mono uppercase text-gray-500 tracking-wider">Memória Estratégica</span>
+                </div>
+                <ul className="space-y-1">
+                  {memories.find(m => m.id === profile.id)?.observations?.map((obs, idx) => (
+                    <li key={idx} className="text-[10px] text-gray-400 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[5px] before:w-1 before:h-1 before:bg-blue-400/50 before:rounded-full">
+                      {obs}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             
             {profile.id !== 'general' && (
               <button 

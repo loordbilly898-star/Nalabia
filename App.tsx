@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeContent, runLaboratory, regenerateContent } from './services/gemini';
-import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile } from './types';
+import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile, Memory } from './types';
 import { sendNotification } from './services/notificationService';
 import AnalysisView from './components/AnalysisView';
 import ResponseOptions from './components/ResponseOptions';
@@ -86,7 +86,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const App: React.FC = () => {
-  const { user, userData, userAIProfile, logout, addXp, updateUserSettings, updateUserProfiles, incrementUsage, loading } = useAuth();
+  const { user, userData, userAIProfile, logout, addXp, updateUserSettings, updateUserProfiles, updateUserMemories, incrementUsage, loading } = useAuth();
   const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
   
   // Global State
@@ -101,6 +101,14 @@ const App: React.FC = () => {
   });
   const [activeProfileId, setActiveProfileId] = useState<string>('general');
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || { id: 'general', name: 'NaLábia', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' };
+
+  const [memories, setMemories] = useState<Memory[]>(() => {
+    try {
+      const saved = localStorage.getItem('nalabia_memories_v1_guest');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
 
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -177,6 +185,18 @@ const App: React.FC = () => {
           }
         } catch (e) {}
       }
+
+      if (Array.isArray(userData.memories) && userData.memories.length > 0) {
+        setMemories(userData.memories);
+      } else {
+        try {
+          const localMemories = localStorage.getItem(`nalabia_memories_v1${keySuffix}`);
+          if (localMemories) {
+            const parsed = JSON.parse(localMemories);
+            if (Array.isArray(parsed)) setMemories(parsed);
+          }
+        } catch (e) {}
+      }
       hasLoadedUserData.current = true;
     } else if (!user && hasLoadedUserData.current) {
       // User logged out, reset to defaults to prevent data leaks
@@ -184,6 +204,7 @@ const App: React.FC = () => {
       setProfiles([
         { id: 'general', name: 'NaLábia', description: 'Human Attraction OS v3.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }
       ]);
+      setMemories([]);
       setActiveProfileId('general');
       hasLoadedUserData.current = false;
     }
@@ -304,18 +325,23 @@ const App: React.FC = () => {
        const userDataProfilesString = JSON.stringify(userData.profiles || []);
        
        if (profilesString !== userDataProfilesString) {
-         const saveProfiles = async () => {
-           try {
-             await updateUserProfiles(strippedProfiles);
-           } catch (e) {
-             console.error("Failed to save profiles to cloud", e);
-           }
-         };
-         const timeoutId = setTimeout(saveProfiles, 2000);
-         return () => clearTimeout(timeoutId);
+         // Immediate trigger without cancel to prevent data loss 
+         // when user closes the app or switches contexts quickly.
+         updateUserProfiles(strippedProfiles).catch(e => {
+           console.error("Failed to save profiles to cloud", e);
+         });
+       }
+
+       const memoriesString = JSON.stringify(memories);
+       const userDataMemoriesString = JSON.stringify(userData.memories || []);
+       
+       if (memoriesString !== userDataMemoriesString) {
+         updateUserMemories(memories).catch(e => {
+           console.error("Failed to save memories to cloud", e);
+         });
        }
     }
-  }, [profiles, user, userData]);
+  }, [profiles, memories, user, userData]);
 
   const handleUpdateSettings = async (newSettings: AppSettings) => {
     setSettings(newSettings);
@@ -525,11 +551,38 @@ const App: React.FC = () => {
         settings,
         activeProfile,
         userAIProfile,
-        currentModeMessages
+        currentModeMessages,
+        memories
       );
       
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
+
+      // Process extracted memories
+      if (analysis.extractedMemories && analysis.extractedMemories.length > 0) {
+        setMemories(prev => {
+          const profileMemoryIndex = prev.findIndex(m => m.id === activeProfile.id);
+          if (profileMemoryIndex !== -1) {
+            const existingObservations = prev[profileMemoryIndex].observations || [];
+            // Merge unique elements
+            const newObservations = Array.from(new Set([...existingObservations, ...analysis.extractedMemories!]));
+            
+            const newMemories = [...prev];
+            newMemories[profileMemoryIndex] = {
+              ...newMemories[profileMemoryIndex],
+              observations: newObservations,
+              lastUpdated: Date.now()
+            };
+            return newMemories;
+          } else {
+            return [...prev, {
+              id: activeProfile.id,
+              observations: analysis.extractedMemories,
+              lastUpdated: Date.now()
+            }];
+          }
+        });
+      }
       
       const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -783,6 +836,7 @@ const App: React.FC = () => {
     return (
       <ProfilesView
         profiles={profiles}
+        memories={memories}
         activeProfileId={activeProfileId}
         onSelectProfile={(id) => { setActiveProfileId(id); setIsProfilesOpen(false); }}
         onAddProfile={(name, desc) => {

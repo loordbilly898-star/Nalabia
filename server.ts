@@ -151,14 +151,26 @@ app.post('/api/verify-payment', async (req, res) => {
     const { userId, type } = req.body;
     if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
+    // 1. CHACAGEM RÁPIDA NO BANCO DE DADOS (Cobertura para Cakto via Webhook)
+    const { data: dbUser } = await supabase.from('users').select('*').eq('userID', userId).single();
+    if (dbUser && dbUser.status === 'ativo') {
+      // Se já está ativo e tem acesso ao item específico, aprova imediatamente!
+      if (type === 'courses' && dbUser.coursesAccess) return res.json({ success: true, message: 'Pago verificado pelo sistema.' });
+      if (type === 'darkpack' && dbUser.darkPackAccess) return res.json({ success: true, message: 'Pago verificado pelo sistema.' });
+      // Se não for pacote específico, basta checar se tem acesso Prime (foi assinado)
+      if ((!type || type !== 'courses' && type !== 'darkpack') && dbUser.nalabiaPrimeAcess) {
+         return res.json({ success: true, message: 'Assinatura verificada pelo sistema.' });
+      }
+    }
+
+    // 2. BUSCAR NO MERCADO PAGO COMO FALLBACK (Apenas se o BD não estiver atualizado)
     if (!payment) return res.status(500).json({ error: 'Mercado Pago not configured' });
     let searchResult = await payment.search({
       options: { external_reference: userId, status: 'approved', sort: 'date_created', criteria: 'desc' }
     });
 
     if (!searchResult.results || searchResult.results.length === 0) {
-      const { data: userDoc } = await supabase.from('users').select('email').eq('userID', userId).single();
-      const email = userDoc?.email;
+      const email = dbUser?.email;
       if (email) {
         searchResult = await payment.search({
           options: { 'payer.email': email, status: 'approved', sort: 'date_created', criteria: 'desc' }
@@ -178,13 +190,16 @@ app.post('/api/verify-payment', async (req, res) => {
         });
       }
 
-      const { data: userData } = await supabase.from('users').select('*').eq('userID', userId).single();
-      if (type === 'courses' && !userData?.coursesAccess) return res.json({ success: false, message: 'Pagamento do curso ainda não aprovado.' });
-      if (type === 'darkpack' && !userData?.darkPackAccess) return res.json({ success: false, message: 'Pagamento do Dark Pack ainda não aprovado.' });
+      // Re-busca o usuário após tentar atualizar via Mercado Pago
+      const { data: updatedUserData } = await supabase.from('users').select('*').eq('userID', userId).single();
+      if (type === 'courses' && !updatedUserData?.coursesAccess) return res.json({ success: false, message: 'Pagamento do curso ainda não aprovado.' });
+      if (type === 'darkpack' && !updatedUserData?.darkPackAccess) return res.json({ success: false, message: 'Pagamento do Dark Pack ainda não aprovado.' });
       
       return res.json({ success: true, message: 'Pagamentos verificados.' });
     }
-    res.json({ success: false, message: 'Nenhum pagamento aprovado encontrado.' });
+    
+    // Se falhou no DB e não há nada no Mercado Pago:
+    res.json({ success: false, message: 'Nenhum pagamento aprovado encontrado. Se usou Cakto, aguarde uns minutos para o sistema receber o pagamento.' });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to verify payment' });
   }
@@ -210,6 +225,7 @@ app.post('/api/cakto/create-checkout', async (req, res) => {
 });
 
 app.post('/api/webhook/cakto', async (req, res) => {
+  console.log('[Cakto] Webhook Received. Full payload:', JSON.stringify(req.body));
   try {
     let payload = req.body.data || req.body;
     if (typeof payload === 'string') {
@@ -217,15 +233,19 @@ app.post('/api/webhook/cakto', async (req, res) => {
     }
     const event = req.body.event || payload.event || payload.status;
     const status = payload.status || event;
+    // Cakto often sends the external reference in the 'src' field or 'metadata'
     const userId = payload.external_reference || payload.reference || payload.metadata?.userId || payload.tracking?.src || payload.src || payload.sck || payload.utm_source;
     const amount = payload.amount ? Number(payload.amount) / 100 : (Number(payload.transaction_amount) || 0);
     const reason = payload.metadata?.planName || payload.product?.name || payload.offer?.name || payload.items?.[0]?.title || '';
+    const payerEmail = payload.customer?.email || payload.client?.email || payload.email || payload.payer_email;
+
+    console.log(`[Cakto] Parsed -> Status: ${status}, UserId: ${userId}, Email: ${payerEmail}, Amount: ${amount}, Reason: ${reason}`);
 
     if (['paid', 'approved', 'payment.paid', 'payment.approved', 'completed'].includes(status)) {
       await processSubscriptionUpdate({
-        id: payload.id?.toString() || payload.transaction_id,
+        id: payload.id?.toString() || payload.transaction_id || `cakto_${Date.now()}`,
         external_reference: userId,
-        payer_email: payload.customer?.email || payload.client?.email || payload.email,
+        payer_email: payerEmail,
         status: 'authorized',
         reason: reason,
         transaction_amount: amount,
@@ -233,9 +253,9 @@ app.post('/api/webhook/cakto', async (req, res) => {
       });
     } else if (['cancelled', 'canceled', 'subscription.canceled'].includes(status)) {
       await processSubscriptionUpdate({
-        id: payload.id?.toString() || payload.transaction_id,
+        id: payload.id?.toString() || payload.transaction_id || `cakto_${Date.now()}`,
         external_reference: userId,
-        payer_email: payload.customer?.email || payload.client?.email || payload.email,
+        payer_email: payerEmail,
         status: 'cancelled',
         reason: reason,
         transaction_amount: amount,
@@ -244,6 +264,7 @@ app.post('/api/webhook/cakto', async (req, res) => {
     }
     res.status(200).send('OK');
   } catch (error: any) {
+    console.error('[Cakto] Webhook parsing error:', error);
     res.status(500).send('Webhook Error');
   }
 });

@@ -1,5 +1,5 @@
 import { getMistralAI } from "./mistral";
-import { SYSTEM_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation } from "../types";
+import { SYSTEM_PROMPT, JSON_FORMAT_INSTRUCTION, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation } from "../types";
 
 export const generateAIResponse = async (userMessage: string, settings?: AppSettings): Promise<string> => {
   try {
@@ -32,32 +32,76 @@ export const analyzeContent = async (
   settings: AppSettings,
   profileContext?: Profile,
   userAIProfile?: any,
-  messageHistory?: Message[]
+  messageHistory?: Message[],
+  memories?: any[]
 ): Promise<CrystalResponse> => {
   // Use Mistral for analysis as requested
   const client = getMistralAI(settings);
-  
-  const prompt = `
-  ${SYSTEM_PROMPT}
-  
-  Analyze the following input and return ONLY a JSON object with the following structure:
-  {
-    "momentReading": "string",
-    "interestLevel": "string",
-    "interestScore": number,
-    "investmentScore": number,
-    "riskScore": number,
-    "meetingChance": number,
-    "emotion": "string",
-    "dynamic": "string",
-    "risk": "string",
-    "detectedMode": "string",
-    "behavioralPattern": "string",
-    "responses": [{"type": "string", "text": "string", "explanation": "string"}],
-    "rhythm": "string"
+
+  let userAIProfileInstruction = "";
+  if (userAIProfile) {
+    userAIProfileInstruction = `
+    🧠 USER PROFILE (CONTEXTO PERMANENTE):
+    Objetivo: ${userAIProfile.goal}
+    Nível de Experiência: ${userAIProfile.experienceLevel}
+    Estilo de Comunicação: ${userAIProfile.communicationStyle}
+    Nível de Flerte: ${userAIProfile.flirtLevel}
+    Tamanho de Resposta: ${userAIProfile.responseLength}
+    Personalidade: ${userAIProfile.personalityType}
+    `;
+  }
+
+  let memoryInstruction = "";
+  if (memories && memories.length > 0 && profileContext) {
+    const profileMemory = memories.find(m => m.id === profileContext.id);
+    if (profileMemory && profileMemory.observations && profileMemory.observations.length > 0) {
+      memoryInstruction = `
+      📁 MEMÓRIA ESTRATÉGICA ATIVA:
+      ${profileMemory.observations.map((obs: string) => `- ${obs}`).join('\\n')}
+      `;
+    }
+  }
+
+  let historyInstruction = "";
+  if (messageHistory && messageHistory.length > 0) {
+    const formattedHistory = messageHistory.slice(-6).map(m => `[${m.role.toUpperCase()}]: ${m.content || '(imagem)'}`).join('\\n');
+    historyInstruction = `
+    📜 HISTÓRICO RECENTE:
+    ${formattedHistory}
+    (NOTA: Evite repetir as respostas ou abordagens visíveis acima. Evolua a conversa.)
+    `;
   }
   
-  Input: ${text}
+  let profileInstruction = "";
+  if (profileContext && profileContext.name !== 'Geral') {
+    profileInstruction = `
+    👤 ALVO (PERFIL ATUAL): ${profileContext.name} (${profileContext.description})
+    - Interesse: ${profileContext.metrics.interest}
+    - Risco: ${profileContext.metrics.risk}
+    - Padrão: ${profileContext.behavioralPattern || "Em análise"}
+    `;
+  }
+
+  const prompt = `
+  ${SYSTEM_PROMPT}
+
+  ⚙️ PARÂMETROS ATUAIS DE GERAÇÃO:
+  - MODO ATIVO: ${mode}
+  - FLERTE: ${flirtLevel}/10
+  - LÁBIA (Witty): ${wittyLevel}/10
+  - DOMINÂNCIA: ${dominanceLevel}/10
+  - MISTÉRIO: ${mysteryLevel}/10
+  - RITMO/VELOCIDADE: ${speed}
+
+  ${userAIProfileInstruction}
+  ${profileInstruction}
+  ${memoryInstruction}
+  ${historyInstruction}
+  
+  ${JSON_FORMAT_INSTRUCTION}
+  
+  Input (Mensagem ou Situação atual fornecida pelo usuário):
+  "${text}"
   `;
 
   try {

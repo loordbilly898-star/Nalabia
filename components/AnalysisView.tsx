@@ -66,7 +66,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 mb-3">
         {/* Emotion */}
         <div className="bg-obsidian/50 p-2 rounded border border-gold-dim/10">
           <div className="flex items-center space-x-2 mb-1">
@@ -102,6 +102,30 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
           <div className="text-sm font-bold text-gold-glow">{typeof analysis.rhythm === 'string' ? analysis.rhythm : JSON.stringify(analysis.rhythm)}</div>
         </div>
       </div>
+
+      {/* Suggested Timing & Error Alert */}
+      {(analysis.suggestedTiming || analysis.errorAlert) && (
+        <div className="space-y-2 border-t border-gold-dim/10 pt-3">
+          {analysis.suggestedTiming && (
+            <div className="bg-obsidian/50 p-2 rounded border border-blue-500/20">
+              <div className="flex items-center space-x-2 mb-1 text-blue-400">
+                <Clock size={12} />
+                <span className="text-[10px] uppercase font-mono">Timing Ideal de Resposta</span>
+              </div>
+              <div className="text-xs text-blue-100">{analysis.suggestedTiming}</div>
+            </div>
+          )}
+          {analysis.errorAlert && (
+            <div className="bg-red-950/30 p-2 rounded border border-red-500/30">
+              <div className="flex items-center space-x-2 mb-1 text-red-400">
+                <AlertTriangle size={12} />
+                <span className="text-[10px] uppercase font-mono font-bold">Alerta Crítico</span>
+              </div>
+              <div className="text-xs text-red-200">{analysis.errorAlert}</div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="text-[10px] font-mono text-gray-600 text-right uppercase mt-2">
         Modo: {typeof analysis.detectedMode === 'string' ? analysis.detectedMode : JSON.stringify(analysis.detectedMode)}

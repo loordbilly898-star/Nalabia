@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
-import { SavedResponse } from '../types';
+import { SavedResponse, Memory } from '../types';
 
 export interface UserAIProfile {
   userID: string;
@@ -26,6 +26,7 @@ interface UserData {
   onboardingCompleted: boolean;
   settings?: any;
   profiles?: any[];
+  memories?: Memory[];
   plano?: string;
   status?: string;
   expiraEm?: string;
@@ -52,6 +53,7 @@ interface AuthContextType {
   completeOnboarding: (profileData: Omit<UserAIProfile, 'userID'>) => Promise<void>;
   updateUserSettings: (settings: any) => Promise<void>;
   updateUserProfiles: (profiles: any[]) => Promise<void>;
+  updateUserMemories: (memories: Memory[]) => Promise<void>;
   updateUserName: (name: string) => Promise<void>;
   updateUserPhoto: (file: File) => Promise<void>;
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -96,7 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             data.coursesAccess = true;
             data.status = 'ativo';
             data.plano = 'Desenvolvedor';
-          } else if (currentUser.email === 'kauanhenrique171822@gmail.com') {
+          } else if (
+            currentUser.email === 'kauanhenrique171822@gmail.com' ||
+            currentUser.email === 'nauandematoss@gmail.com' ||
+            currentUser.email === 'Paz180511@gmail.com' ||
+            currentUser.email === 'encantomirim53@gmail.com'
+          ) {
             data.nalabiaPrimeAcess = true;
             data.darkPackAccess = true;
             data.coursesAccess = true;
@@ -267,7 +274,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (data?.user && !error) {
       const isDeveloper = email === 'loordbilly898@gmail.com';
-      const isLegacyPremium = email === 'kauanhenrique171822@gmail.com' || email === 'gamerbilly898@gmail.com';
+      const isLegacyPremium = email === 'kauanhenrique171822@gmail.com' || email === 'gamerbilly898@gmail.com' || email === 'nauandematoss@gmail.com' || email === 'Paz180511@gmail.com' || email === 'encantomirim53@gmail.com';
+      const hasPackages = email === 'kauanhenrique171822@gmail.com' || email === 'nauandematoss@gmail.com' || email === 'Paz180511@gmail.com' || email === 'encantomirim53@gmail.com' || isDeveloper;
 
       const newUserData: UserData = {
         userID: data.user.id,
@@ -281,6 +289,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: (isDeveloper || isLegacyPremium) ? 'ativo' : 'pendente',
         expiraEm: '',
         nalabiaPrimeAcess: (isDeveloper || isLegacyPremium),
+        darkPackAccess: hasPackages,
+        coursesAccess: hasPackages,
         freeMessagesUsed: 0,
       };
 
@@ -418,6 +428,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserData(prev => prev ? { ...prev, profiles: strippedProfiles } : null);
     } catch (error) {
       console.error("Error updating profiles:", error);
+      throw error;
+    }
+  };
+
+  const updateUserMemories = async (memories: Memory[]) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ memories })
+        .eq('userID', user.id);
+        
+      if (error) throw error;
+      setUserData(prev => prev ? { ...prev, memories } : null);
+    } catch (error) {
+      console.error("Error updating memories:", error);
       throw error;
     }
   };
@@ -654,7 +680,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{ 
       user, userData, userAIProfile, loading, 
       loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout, 
-      addXp, completeOnboarding, updateUserSettings, updateUserProfiles,
+      addXp, completeOnboarding, updateUserSettings, updateUserProfiles, updateUserMemories,
       updateUserName, updateUserPhoto, updateUserPassword, verifyEmail,
       createBackup, restoreBackup, deleteAccount, unlockFreeTrial, incrementUsage,
       saveResponseToVault, getSavedResponses
