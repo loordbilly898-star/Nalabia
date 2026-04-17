@@ -22,7 +22,8 @@ import { TutorialModal } from './components/TutorialModal';
 import { DarkPackModal } from './components/DarkPackModal';
 import CoursesView from './components/CoursesView';
 import { CoursesModal } from './components/CoursesModal';
-import { Send, ImageIcon, X, Trash2, Infinity as InfinityIcon, Camera, MessageCircle, Zap, ShieldAlert, ThermometerSnowflake, Ghost, Repeat2, Bolt, User, Crown, Feather, Settings, Users, HelpCircle, FlaskConical, AlertTriangle, LogIn, LogOut, Bot, Lock, ScanFace, Home, ArrowLeft, Flame, Brain, BookOpen } from 'lucide-react';
+import AssistedModeModal from './components/AssistedModeModal';
+import { Send, ImageIcon, X, Trash2, Infinity as InfinityIcon, Camera, MessageCircle, Zap, ShieldAlert, ThermometerSnowflake, Ghost, Repeat2, Bolt, User, Crown, Feather, Settings, Users, HelpCircle, FlaskConical, AlertTriangle, LogIn, LogOut, Bot, Lock, ScanFace, Home, ArrowLeft, Flame, Brain, BookOpen, Compass, ChevronRight } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import { checkDeviceUsage, incrementDeviceUsage } from './services/antiFraud';
 import { supabase } from './services/supabase';
@@ -120,6 +121,7 @@ const App: React.FC = () => {
   const [isPlansDismissed, setIsPlansDismissed] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [helpMode, setHelpMode] = useState<AnalysisMode | null>(null);
+  const [showAssistedMode, setShowAssistedMode] = useState(false);
   
   // Settings State with Persistence
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -945,23 +947,53 @@ const App: React.FC = () => {
         }}
       />
 
+      {showAssistedMode && (
+        <AssistedModeModal
+          settings={settings}
+          onClose={() => setShowAssistedMode(false)}
+          onSelectMode={handleTabChange}
+        />
+      )}
+
       {/* HEADER */}
       <header className={`flex-none ${getThemeHeaderBg()} z-20 pt-4 pb-2 px-4 flex justify-between items-center border-b border-nalabia-800`}>
-        <div className="flex items-center space-x-3">
-          {activeTab !== 'HOME' && (
-            <button 
-              onClick={() => handleTabChange('HOME')}
-              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
-              title="Voltar ao Início"
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          <div className="flex items-center cursor-pointer p-2" onClick={() => setIsProfilesOpen(true)}>
-            <InfinityIcon className={getAccentText()} size={24} />
+        <div className="flex flex-col">
+          <div className="flex items-center space-x-3 mb-1">
+            {activeTab !== 'HOME' && (
+              <button 
+                onClick={() => handleTabChange('HOME')}
+                className="p-1 px-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
+                title="Voltar ao Início"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <div className="flex items-center cursor-pointer px-1" onClick={() => setIsProfilesOpen(true)}>
+              <InfinityIcon className={getAccentText()} size={22} />
+            </div>
+            
+            {/* Context Indicator */}
+            {activeTab !== 'HOME' && activeTabData && (
+              <div className="hidden sm:flex items-center space-x-1.5 text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                <span>Início</span>
+                <ChevronRight size={10} className="opacity-50" />
+                <span className="text-gold-glow">{activeTabData.label}</span>
+              </div>
+            )}
           </div>
         </div>
+        
         <div className="flex items-center space-x-4">
+          {activeTab === 'HOME' && (
+            <button 
+              onClick={() => setShowAssistedMode(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gold-glow/10 border border-gold-glow/20 rounded-full text-[10px] font-mono text-gold-glow hover:bg-gold-glow/20 transition-all uppercase"
+            >
+              <Compass size={12} />
+              <span>Não sei qual usar</span>
+            </button>
+          )}
+
           {userData && (
             <div className="flex flex-col items-end mr-2">
               <span className="text-[10px] font-mono text-gold">NÍVEL {userData.level}</span>
@@ -974,6 +1006,15 @@ const App: React.FC = () => {
             </div>
           )}
           <div className="flex items-center space-x-1">
+            {activeTab === 'HOME' && (
+              <button 
+                onClick={() => setShowAssistedMode(true)}
+                className="flex sm:hidden text-gold-glow hover:text-white transition-colors p-2"
+                title="Assistente de Escolha"
+              >
+                <Compass size={18} />
+              </button>
+            )}
             <button onClick={() => setHelpMode(activeTab)} className="text-gray-600 hover:text-white transition-colors p-2">
               <HelpCircle size={18} />
             </button>
@@ -1032,13 +1073,91 @@ const App: React.FC = () => {
           {/* CHAT AREA */}
           <main ref={chatContainerRef} className={`flex-1 overflow-y-auto p-4 space-y-8 scroll-smooth ${getThemeBg().split(' ')[0]}`}>
             {(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY')).length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center opacity-30 pointer-events-none p-8">
-            <activeTabData.icon size={48} className="mb-6 text-gray-800" />
-            <div className="text-center space-y-2">
-              <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">{activeTabData.desc.toUpperCase()}</h2>
-              <p className="text-xs text-gray-700 font-light">
-                 {activeProfile.id === 'general' ? 'Aguardando Input Social...' : `Histórico de ${typeof activeProfile.name === 'string' ? activeProfile.name : JSON.stringify(activeProfile.name)} iniciado neste modo.`}
+          <div className="h-full flex flex-col items-center justify-center p-8">
+            <activeTabData.icon size={48} className="mb-6 text-gray-500/30" />
+            <div className="text-center space-y-2 opacity-50">
+              <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">{activeTabData?.desc?.toUpperCase()}</h2>
+              <p className="text-xs text-gray-700 font-light mb-4">
+                 {activeProfile?.id === 'general' ? 'Aguardando Input Social...' : `Histórico de ${typeof activeProfile?.name === 'string' ? activeProfile?.name : 'Alvo'} iniciado neste modo.`}
               </p>
+            </div>
+
+            <div className="mt-8 bg-obsidian-light/50 border border-gold-dim/20 rounded-xl p-4 max-w-sm pointer-events-auto shadow-[0_0_20px_rgba(212,175,55,0.05)] opacity-100">
+              <h3 className="text-sm font-medium text-gold-glow mb-2 flex items-center gap-2">
+                <HelpCircle size={16} /> Quando usar isso:
+              </h3>
+              <ul className="text-xs text-gray-400 space-y-1.5 text-left list-disc list-inside px-2">
+                {activeTab === 'FIRST_CONTACT' && (
+                  <>
+                    <li>Deu match no Tinder/Bumble</li>
+                    <li>Quer reagir ao Story puxando papo de forma diferente</li>
+                    <li>Quer mandar a primeira mensagem no WhatsApp</li>
+                  </>
+                )}
+                {activeTab === 'STORY_REPLY' && (
+                  <>
+                    <li>Ela postou uma foto de si mesma</li>
+                    <li>Ela postou algo num lugar que você conhece</li>
+                    <li>Você quer gerar engajamento instantâneo</li>
+                  </>
+                )}
+                {activeTab === 'FLOWING' && (
+                  <>
+                    <li>A conversa está fluindo mas você quer tensionar mais</li>
+                    <li>A mulher está investindo (manda textos longos)</li>
+                    <li>Você quer evoluir pro encontro naturalmente</li>
+                  </>
+                )}
+                {activeTab === 'VALUE_TEST' && (
+                  <>
+                    <li>Ela foi levemente agressiva ou desafiadora</li>
+                    <li>Ela mandou o clássico: "você joga seu papo em todas"</li>
+                    <li>Testou sua confiança e o seu "Frame"</li>
+                  </>
+                )}
+                {activeTab === 'COLD_RESPONSE' && (
+                  <>
+                    <li>Ela mandou apenas "haha", "kkk" ou emojis vazios</li>
+                    <li>A resposta dela não te dá nada para continuar</li>
+                    <li>Ela está focada em outra coisa</li>
+                  </>
+                )}
+                {activeTab === 'REACTIVATION' && (
+                  <>
+                    <li>Faz semanas ou meses que vocês não se falam</li>
+                    <li>Aquela menina que deixou a conversa morrer no meio</li>
+                    <li>Usar "Gatilhos de Curiosidade" pra fisgá-la novamente</li>
+                  </>
+                )}
+                {activeTab === 'ONE_LINER' && (
+                  <>
+                    <li>Quiser demonstrar máximo desapego</li>
+                    <li>Quiser responder rápido e continuar misterioso</li>
+                    <li>Ela mandou "textão" reclamando e você quer quebrar a emoção</li>
+                  </>
+                )}
+                {activeTab === 'SILENCE' && (
+                  <>
+                    <li>Sofrimento de Ghosting iminente</li>
+                    <li>Ela te deixou no "visualizado"</li>
+                    <li>Ensinar a ela que o vácuo tem consequências (retirada de validação)</li>
+                  </>
+                )}
+                {activeTab === 'NSFW' && (
+                  <>
+                    <li>Quando o flerte casual mudar para tensão sexual</li>
+                    <li>Após um encontro onde o clima já está preparado</li>
+                    <li>Quando ela enviar "armadilhas" (indiretas sensuais)</li>
+                  </>
+                )}
+                {activeTab === 'MANIPULATION' && (
+                  <>
+                    <li>Ela se comportar como se fosse o "prêmio" na conversa</li>
+                    <li>Precisar instalar um "mind-virus" (fazer ela não parar de pensar)</li>
+                    <li>Quiser desestabilizar ou inverter o quadro (gaslighting leve)</li>
+                  </>
+                )}
+              </ul>
             </div>
             
              <div className={`mt-12 text-[10px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}>
@@ -1157,46 +1276,65 @@ const App: React.FC = () => {
              })}
           </div>
 
-          {/* New Grid Layout for Advanced Sliders */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-            {/* Flirt */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase">
-                <span>Flirt</span>
-                <span className={getAccentText()}>{flirtLevel}</span>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              {/* Flirt */}
+              <div className="space-y-1 group relative">
+                <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
+                  <span className="flex items-center gap-1">Flirt <HelpCircle size={8} /></span>
+                  <span className={getAccentText()}>{flirtLevel}</span>
+                </div>
+                <input type="range" min="0" max="10" value={flirtLevel} onChange={(e) => setFlirtLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
+                
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Grau de intenção sedutora. Alto = direto, Baixo = amigável.</p>
+                </div>
               </div>
-              <input type="range" min="0" max="10" value={flirtLevel} onChange={(e) => setFlirtLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
-            </div>
 
-            {/* Dominance */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase">
-                <span>Dominância</span>
-                <span className={getAccentText()}>{dominanceLevel}</span>
+              {/* Dominance */}
+              <div className="space-y-1 group relative">
+                <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
+                  <span className="flex items-center gap-1">Dominância <HelpCircle size={8} /></span>
+                  <span className={getAccentText()}>{dominanceLevel}</span>
+                </div>
+                <input type="range" min="0" max="10" value={dominanceLevel} onChange={(e) => setDominanceLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
+                
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Postura de liderança. Alto = assertivo (controla o frame).</p>
+                </div>
               </div>
-              <input type="range" min="0" max="10" value={dominanceLevel} onChange={(e) => setDominanceLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
-            </div>
 
-             {/* Mystery */}
-             <div className="space-y-1">
-              <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase">
-                <span>Mistério</span>
-                <span className={getAccentText()}>{mysteryLevel}</span>
+               {/* Mystery */}
+               <div className="space-y-1 group relative">
+                <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
+                  <span className="flex items-center gap-1">Mistério <HelpCircle size={8} /></span>
+                  <span className={getAccentText()}>{mysteryLevel}</span>
+                </div>
+                <input type="range" min="0" max="10" value={mysteryLevel} onChange={(e) => setMysteryLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
+                
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Falta de previsibilidade. Alto = instigante (menos é mais).</p>
+                </div>
               </div>
-              <input type="range" min="0" max="10" value={mysteryLevel} onChange={(e) => setMysteryLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
-            </div>
 
-            {/* Speed Toggle */}
-            <div className="flex items-end h-full pb-1">
-               <button 
-                 onClick={() => setSpeed(s => s === 'short' ? 'normal' : s === 'normal' ? 'fluid' : 'short')}
-                 className="w-full flex justify-between items-center bg-nalabia-800/50 px-2 py-1 rounded border border-nalabia-800 hover:border-nalabia-600 text-[9px] font-mono text-gray-400 uppercase"
-               >
-                 <span>Velocidade</span>
-                 <span className={getAccentText()}>{speed === 'short' ? 'Curta' : speed === 'normal' ? 'Normal' : 'Fluida'}</span>
-               </button>
+              {/* Speed Toggle */}
+              <div className="flex items-end h-full pb-1 group relative">
+                 <button 
+                   onClick={() => setSpeed(s => s === 'short' ? 'normal' : s === 'normal' ? 'fluid' : 'short')}
+                   className="w-full flex justify-between items-center bg-nalabia-800/50 px-2 py-1 rounded border border-nalabia-800 hover:border-nalabia-600 text-[9px] font-mono text-gray-400 uppercase cursor-help"
+                 >
+                   <span className="flex items-center gap-1">Velocidade <HelpCircle size={8} /></span>
+                   <span className={getAccentText()}>{speed === 'short' ? 'Curta' : speed === 'normal' ? 'Normal' : 'Fluida'}</span>
+                 </button>
+                 
+                 {/* Tooltip */}
+                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Ritmo da conversa e tamanho do texto enviado.</p>
+                </div>
+              </div>
             </div>
-          </div>
         </div>
 
         {/* INPUT */}

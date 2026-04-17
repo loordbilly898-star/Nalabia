@@ -145,29 +145,31 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab, accentColorTex
               {category.tools.map((tool) => (
                 <div 
                   key={tool.id}
-                  className={`relative group ${getThemeInputBg().split(' ')[0]}/80 backdrop-blur-xl border border-white/5 rounded-2xl p-6 cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] hover:border-white/10 overflow-hidden ${settings?.theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/5'}`}
+                  className={`relative group ${getThemeInputBg().split(' ')[0]}/80 backdrop-blur-xl border border-white/5 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] hover:border-white/10 overflow-hidden ${settings?.theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/5'}`}
                   onClick={() => setActiveTab(tool.id)}
                 >
                   {/* Subtle hover gradient */}
                   <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br from-transparent to-current ${category.color} pointer-events-none`}></div>
                   
-                  <div className="flex items-start justify-between mb-5 relative z-10">
+                  <div className="flex items-start justify-between mb-4 relative z-10">
                     <div className={`p-3.5 rounded-xl ${category.bg} ${category.color} shadow-inner`}>
                       <tool.icon size={26} strokeWidth={1.5} />
                     </div>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTip({ title: tool.label, desc: tool.desc, tip: tool.tip });
-                      }}
-                      className="p-2 text-gray-500 hover:text-white transition-colors rounded-full hover:bg-white/10"
-                      title="Dica de uso"
-                    >
-                      <Info size={20} />
-                    </button>
                   </div>
                   <h3 className="text-gray-100 font-medium text-xl mb-2 relative z-10 tracking-wide">{tool.label}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed relative z-10">{tool.desc}</p>
+                  <p className="text-gray-400 text-sm leading-relaxed relative z-10 mb-4">{tool.desc}</p>
+                  
+                  {/* Interactive Tooltip / Micro-explanation directly visible on hover */}
+                  <div className="relative z-10 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="bg-black/40 border border-white/5 rounded-lg p-3">
+                      <p className="text-xs text-gold-glow flex items-center gap-1.5 mb-1.5 font-medium">
+                        <Info size={12} /> Objetivo
+                      </p>
+                      <p className="text-[11px] text-gray-300 leading-relaxed">
+                        {tool.tip}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

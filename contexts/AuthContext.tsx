@@ -88,37 +88,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error("Error fetching user data:", userError);
         }
 
+        let data: UserData;
         if (userDoc) {
-          let data = userDoc as UserData;
+          data = userDoc as UserData;
           
-          // Developer bypass
-          if (currentUser.email === 'loordbilly898@gmail.com') {
-            data.nalabiaPrimeAcess = true;
-            data.darkPackAccess = true;
-            data.coursesAccess = true;
-            data.status = 'ativo';
-            data.plano = 'Desenvolvedor';
-          } else if (
-            currentUser.email === 'kauanhenrique171822@gmail.com' ||
-            currentUser.email === 'nauandematoss@gmail.com' ||
-            currentUser.email === 'Paz180511@gmail.com' ||
-            currentUser.email === 'encantomirim53@gmail.com'
-          ) {
-            data.nalabiaPrimeAcess = true;
-            data.darkPackAccess = true;
-            data.coursesAccess = true;
-            data.status = 'ativo';
-            data.plano = 'Mensal';
-          } else if (currentUser.email === 'gamerbilly898@gmail.com') {
-            data.nalabiaPrimeAcess = true;
-            data.status = 'ativo';
-            data.plano = 'Mensal';
+          // Auto-expire check
+          if ((data.status === 'ativo' || data.nalabiaPrimeAcess) && data.expiraEm) {
+            const expDate = new Date(data.expiraEm);
+            if (new Date() > expDate) {
+              console.log("Subscription expired! Updating database to pending.");
+              data.status = 'expirado';
+              data.nalabiaPrimeAcess = false;
+              // Update database automatically
+              supabase.from('users').update({ status: 'expirado', nalabiaPrimeAcess: false }).eq('userID', data.userID).then(({error}) => {
+                if (error) console.error("Error auto-expiring:", error);
+              });
+            }
           }
-
-          setUserData(data);
         } else {
            // Fallback to basic user data so the app doesn't break
-           setUserData({
+           data = {
             userID: currentUser.id,
             name: currentUser.user_metadata?.full_name || 'Usuário',
             email: currentUser.email || '',
@@ -127,8 +116,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             xp: 0,
             createdAt: Date.now(),
             onboardingCompleted: true, // Assume true to avoid getting stuck in onboarding while offline
-          });
+          };
         }
+
+        // Developer bypass
+        if (currentUser.email === 'loordbilly898@gmail.com') {
+          data.nalabiaPrimeAcess = true;
+          data.darkPackAccess = true;
+          data.coursesAccess = true;
+          data.status = 'ativo';
+          data.plano = 'Desenvolvedor';
+        } else if (
+          currentUser.email === 'kauanhenrique171822@gmail.com' ||
+          currentUser.email === 'nauandematoss@gmail.com' ||
+          currentUser.email === 'Paz180511@gmail.com' ||
+          currentUser.email === 'encantomirim53@gmail.com'
+        ) {
+          data.nalabiaPrimeAcess = true;
+          data.darkPackAccess = true;
+          data.coursesAccess = true;
+          data.status = 'ativo';
+          data.plano = 'Mensal';
+        } else if (currentUser.email === 'gamerbilly898@gmail.com') {
+          data.nalabiaPrimeAcess = true;
+          data.status = 'ativo';
+          data.plano = 'Mensal';
+        }
+
+        setUserData(data);
 
         const { data: profileDoc, error: profileError } = await supabase
           .from('user_ai_profile')
