@@ -9,7 +9,7 @@ async function unlockUser() {
   const { data: user, error: fetchError } = await supabase
     .from('users')
     .select('*')
-    .eq('email', 'encantomirim53@gmail.com')
+    .eq('email', 'Paz180511@gmail.com')
     .single();
 
   if (fetchError) {
@@ -26,15 +26,14 @@ async function unlockUser() {
         darkPackAccess: true,
         coursesAccess: true,
         plano: 'Mensal',
-        status: 'ativo',
-        assinaturaInicio: new Date().toISOString()
+        status: 'ativo'
       })
-      .eq('email', 'encantomirim53@gmail.com');
+      .eq('email', 'Paz180511@gmail.com');
 
     if (updateError) {
       console.error("Error updating:", updateError);
     } else {
-      console.log("Successfully unlocked packs for encantomirim53@gmail.com!");
+      console.log("Successfully unlocked packs for Paz180511@gmail.com!");
     }
   } else {
     console.log("User not found in DB.");
