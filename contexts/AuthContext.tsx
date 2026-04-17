@@ -106,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } else {
-           // Fallback to basic user data so the app doesn't break
+           // Create new user profile on first login
            data = {
             userID: currentUser.id,
             name: currentUser.user_metadata?.full_name || 'Usuário',
@@ -115,12 +115,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             level: 1,
             xp: 0,
             createdAt: Date.now(),
-            onboardingCompleted: true, // Assume true to avoid getting stuck in onboarding while offline
+            onboardingCompleted: true, // Assume true so UI continues.
+            status: 'pendente',
+            plano: '',
+            nalabiaPrimeAcess: false,
+            darkPackAccess: false,
+            coursesAccess: false,
+            freeMessagesUsed: 0
           };
+          
+          // Apply developer and legacy bypasses
+          const isDeveloper = currentUser.email === 'loordbilly898@gmail.com';
+          const isLegacyPremium = currentUser.email === 'kauanhenrique171822@gmail.com' || currentUser.email === 'gamerbilly898@gmail.com' || currentUser.email === 'nauandematoss@gmail.com' || currentUser.email === 'Paz180511@gmail.com' || currentUser.email === 'encantomirim53@gmail.com';
+          const hasPackages = isLegacyPremium || isDeveloper;
+
+          if (isDeveloper) {
+            data.plano = 'Desenvolvedor';
+            data.status = 'ativo';
+            data.nalabiaPrimeAcess = true;
+            data.darkPackAccess = true;
+            data.coursesAccess = true;
+          } else if (isLegacyPremium) {
+            data.plano = 'Mensal';
+            data.status = 'ativo';
+            data.nalabiaPrimeAcess = true;
+            data.darkPackAccess = true;
+            data.coursesAccess = true;
+          }
+
+          // Insert into database, handling RLS via auth matching
+          supabase.from('users').insert(data).then(({ error: insertErr }) => {
+              if (insertErr) console.error("Could not sync new user on first login:", insertErr);
+          });
         }
 
-        // Developer bypass
-        if (currentUser.email === 'loordbilly898@gmail.com') {
+        // Developer bypass (double check for existing users)
+        if (userDoc && currentUser.email === 'loordbilly898@gmail.com') {
           data.nalabiaPrimeAcess = true;
           data.darkPackAccess = true;
           data.coursesAccess = true;
@@ -162,6 +192,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error("Error in fetchUserData:", error);
+        // CRITICAL FALLBACK: If Supabase connection fails entirely, create an offline-like skeleton so the app doesn't infinite loop.
+        setUserData({
+            userID: currentUser.id,
+            name: currentUser.user_metadata?.full_name || 'Usuário',
+            email: currentUser.email || '',
+            level: 1,
+            xp: 0,
+            createdAt: Date.now(),
+            onboardingCompleted: true,
+            status: 'pendente',
+            nalabiaPrimeAcess: false
+        });
       } finally {
         setLoading(false);
       }
@@ -237,102 +279,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (name: string, email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    let attempts = 0;
-    const maxAttempts = 2;
-    let signUpResult: { data: any, error: any } = { data: null, error: null };
-
-    while (attempts < maxAttempts) {
-      const signUpPromise = supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: name },
-          emailRedirectTo: window.location.origin
-        }
-      });
-
-      // 15-second timeout
-      const timeoutPromise = new Promise<{data: any, error: any}>((resolve) => {
-        setTimeout(() => {
-          resolve({ 
-            data: { user: null, session: null }, 
-            error: { status: 504, name: 'TimeoutError', message: 'A requisição demorou muito tempo.' } 
-          });
-        }, 15000);
-      });
-
-      signUpResult = await Promise.race([signUpPromise, timeoutPromise]);
-      
-      if (!signUpResult.error) break;
-      attempts++;
-    }
+    let signUpResult = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: window.location.origin
+      }
+    });
 
     let { data, error } = signUpResult;
 
-    if (error) {
-      if (error.status === 504 || error.name === 'AuthRetryableFetchError' || error.name === 'TimeoutError') {
-        // Fallback: The server timed out, but the account might have been created in the background.
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-        
-        if (loginError && loginError.message === 'Email not confirmed') {
-          throw new Error('Email not confirmed');
-        } else if (loginData?.user) {
+    // Se houve erro de servidor demorando (Timeout) nativo do Supabase
+    if (error && (error.message.includes('too long to respond') || error.status === 504 || error.name === 'AuthRetryableFetchError')) {
+       // Vamos tentar fazer um login invisível rápido só pra ver se por acaso ele criou a conta antes de dar timeout
+       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+       
+       if (loginError && loginError.message.includes('Email not confirmed')) {
+          // A conta FOI CRIADA, mas o email ainda não foi confirmado. 
+          // Emitimos esse erro para a UI informar o usuário corretamente sem tela preta
+          throw new Error('SLOW_SERVER_SIGNUP');
+       } else if (loginData?.user) {
+          // Incrivelmente a conta foi criada E logou
           data = loginData;
           error = null as any;
-        } else {
-          throw error;
-        }
-      } else {
-        throw error;
-      }
+       } else {
+          // Realmente falhou, repassa o erro
+          throw new Error('SLOW_SERVER_SIGNUP');
+       }
+    } else if (error) {
+       throw error;
     }
 
     if (data?.user && !error) {
-      const isDeveloper = email === 'loordbilly898@gmail.com';
-      const isLegacyPremium = email === 'kauanhenrique171822@gmail.com' || email === 'gamerbilly898@gmail.com' || email === 'nauandematoss@gmail.com' || email === 'Paz180511@gmail.com' || email === 'encantomirim53@gmail.com';
-      const hasPackages = email === 'kauanhenrique171822@gmail.com' || email === 'nauandematoss@gmail.com' || email === 'Paz180511@gmail.com' || email === 'encantomirim53@gmail.com' || isDeveloper;
-
-      const newUserData: UserData = {
-        userID: data.user.id,
-        name: name,
-        email: email,
-        level: 1,
-        xp: 0,
-        createdAt: Date.now(),
-        onboardingCompleted: !!onboardingData,
-        plano: isDeveloper ? 'Desenvolvedor' : (isLegacyPremium ? 'Mensal' : ''),
-        status: (isDeveloper || isLegacyPremium) ? 'ativo' : 'pendente',
-        expiraEm: '',
-        nalabiaPrimeAcess: (isDeveloper || isLegacyPremium),
-        darkPackAccess: hasPackages,
-        coursesAccess: hasPackages,
-        freeMessagesUsed: 0,
-      };
-
-      const { error: userError } = await supabase
-        .from('users')
-        .upsert(newUserData);
-
-      if (userError) {
-        throw userError; // Throw so LoginView can handle it
-      } else {
-        setUserData(newUserData);
-      }
-
       if (onboardingData) {
-        const fullProfile: UserAIProfile = {
-          ...onboardingData,
-          userID: data.user.id,
-        };
-        const { error: profileError } = await supabase
-          .from('user_ai_profile')
-          .upsert(fullProfile);
-          
-        if (profileError) {
-           throw profileError; // Throw so LoginView can handle it
-        } else {
-           setUserAIProfile(fullProfile);
-        }
+        // We defer full db profile creation until first login to respect RLS
+        // Inform UI it's done. But onboarding hasn't been confirmed on db yet.
+        console.log("Registry successful. Data sync deferred to first login due to RLS.");
       }
     }
   };

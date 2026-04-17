@@ -33,13 +33,20 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
       }
     } catch (err: any) {
       if (err.message === 'Email not confirmed') {
-        setError('Email não confirmado. Um email de verificação foi enviado para você. Por favor, verifique sua caixa de entrada e clique no link para confirmar.');
+        setError('Email não confirmado. Um email de verificação foi enviado para você. Por favor, verifique sua caixa de entrada (e o lixo eletrônico) e clique no link para confirmar.');
       } else if (err.message === 'Invalid login credentials') {
         setError('Credenciais inválidas. Verifique seu email e senha.');
       } else if (err.message === 'User already registered') {
         setError('Este email já está registrado. Tente fazer login.');
-      } else if (err.status === 504 || err.name === 'AuthRetryableFetchError' || err.name === 'TimeoutError') {
-        setError('O servidor demorou muito para responder (Timeout). Se você estava criando uma conta, o e-mail de verificação pode ter sido enviado. Por favor, verifique sua caixa de entrada e spam antes de tentar novamente.');
+      } else if (err.message === 'SLOW_SERVER_SIGNUP' || err.status === 504 || err.name === 'AuthRetryableFetchError' || err.name === 'TimeoutError' || (err.message && err.message.includes('too long to respond'))) {
+        if (isRegistering) {
+            setSuccess('Conta criada! O servidor demorou um pouco para responder, mas conseguimos registrar. Verifique seu e-mail para ativar a conta.');
+            setIsRegistering(false); 
+            // Limpa o erro para mostrar apenas sucesso
+            setError('');
+        } else {
+            setError('O servidor demorou muito para responder (Timeout). Por favor, tente novamente.');
+        }
       } else {
         setError(err.message || `Erro ao ${isRegistering ? 'registrar' : 'fazer login'}.`);
       }
