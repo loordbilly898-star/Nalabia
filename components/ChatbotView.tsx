@@ -201,11 +201,17 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
 
       const modelToUse = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
 
-      const responseStream = await client.chat.stream({
+      const apiCall = client.chat.stream({
         model: modelToUse,
         messages: mistralMessages,
         temperature: 0.7,
       });
+
+      const timeoutPromise = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("A API demorou muito para iniciar o chat. Tente novamente.")), 25000)
+      );
+
+      const responseStream = await Promise.race([apiCall, timeoutPromise]);
 
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
@@ -254,7 +260,13 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
       if (typeof error?.message === 'string') {
-        errorMessage = `Erro: ${error.message}`;
+         if (error.message.includes("fetch failed") || error.name === "AbortError" || error.message.includes("network") || error.name === "TypeError") {
+            errorMessage = "Erro de conexão de rede ou timeout externo no assistente.";
+         } else if (error.message.includes("429") || error.message.includes("Rate limit")) {
+            errorMessage = "Limite de requisições da API excedido. Aguarde alguns instantes.";
+         } else {
+            errorMessage = `Erro: ${error.message}`;
+         }
       }
 
       const errMessage: Message = {

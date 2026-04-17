@@ -714,9 +714,13 @@ const App: React.FC = () => {
           body: 'A simulação de cenário foi finalizada.',
         });
       }
-    } catch (e: any) {
-      console.error(e);
-      // Fail silently or just log in console for lab errors
+    } catch (error: any) {
+      console.error(error);
+      let errorMessage = "Erro no Laboratório. Tente novamente.";
+      if (typeof error?.message === 'string') {
+        errorMessage = error.message;
+      }
+      alert(errorMessage);
     } finally {
       setStatus(ProcessingState.IDLE);
     }
@@ -773,8 +777,13 @@ const App: React.FC = () => {
         });
       }
 
-    } catch (e) {
-      console.error("Regeneration failed", e);
+    } catch (error: any) {
+      console.error("Regeneration failed", error);
+      let errorMessage = "Erro na regeneração. Tente novamente.";
+      if (typeof error?.message === 'string') {
+        errorMessage = error.message;
+      }
+      alert(errorMessage);
     } finally {
       setStatus(ProcessingState.IDLE);
     }

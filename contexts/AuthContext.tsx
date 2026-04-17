@@ -78,11 +78,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchUserData = async (currentUser: User) => {
       try {
-        const { data: userDoc, error: userError } = await supabase
+        const fetchPromise = supabase
           .from('users')
           .select('*')
           .eq('userID', currentUser.id)
           .single();
+
+        const timeoutPromise = new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error("Supabase fetch timeout")), 15000)
+        );
+
+        const { data: userDoc, error: userError } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]);
 
         if (userError && userError.code !== 'PGRST116') {
           console.error("Error fetching user data:", userError);
@@ -126,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Apply developer and legacy bypasses
           const isDeveloper = currentUser.email === 'loordbilly898@gmail.com';
-          const isLegacyPremium = currentUser.email === 'kauanhenrique171822@gmail.com' || currentUser.email === 'gamerbilly898@gmail.com' || currentUser.email === 'nauandematoss@gmail.com' || currentUser.email === 'Paz180511@gmail.com' || currentUser.email === 'encantomirim53@gmail.com';
+          const isLegacyPremium = currentUser.email === 'kauanhenrique171822@gmail.com' || currentUser.email === 'gamerbilly898@gmail.com' || currentUser.email === 'nauandematoss@gmail.com' || currentUser.email === 'encantomirim53@gmail.com';
           const hasPackages = isLegacyPremium || isDeveloper;
 
           if (isDeveloper) {
@@ -144,9 +153,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           // Insert into database, handling RLS via auth matching
-          supabase.from('users').insert(data).then(({ error: insertErr }) => {
-              if (insertErr) console.error("Could not sync new user on first login:", insertErr);
-          });
+          Promise.race([
+            supabase.from('users').insert(data),
+            new Promise((_, r) => setTimeout(() => r(new Error('Insert timeout')), 10000))
+          ]).then((res: any) => {
+              if (res && res.error) console.error("Could not sync new user on first login:", res.error);
+          }).catch(e => console.error("Insert timeout/error:", e));
         }
 
         // Developer bypass (double check for existing users)
@@ -175,11 +187,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUserData(data);
 
-        const { data: profileDoc, error: profileError } = await supabase
+        const profilePromise = supabase
           .from('user_ai_profile')
           .select('*')
           .eq('userID', currentUser.id)
           .single();
+          
+        const { data: profileDoc, error: profileError } = await Promise.race([
+          profilePromise,
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase profile fetch timeout")), 10000))
+        ]);
 
         if (profileError && profileError.code !== 'PGRST116') {
           console.error("Error fetching user AI profile:", profileError);
@@ -209,13 +226,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const sessionPromise = supabase.auth.getSession();
+    Promise.race([
+      sessionPromise,
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Session timeout")), 15000))
+    ]).then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchUserData(session.user);
       } else {
         setLoading(false);
       }
+    }).catch(err => {
+      console.error("Session fetch timeout/error:", err);
+      setLoading(false);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -237,10 +261,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithEmail = async (email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const authPromise = supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    const timeoutPromise = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error("O servidor demorou muito para responder. Tente novamente.")), 15000)
+    );
+
+    const { data, error } = await Promise.race([authPromise, timeoutPromise]);
 
     if (error) throw error;
 
@@ -279,7 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (name: string, email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    let signUpResult = await supabase.auth.signUp({
+    const signUpPromise = supabase.auth.signUp({
       email,
       password,
       options: {
@@ -287,6 +317,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: window.location.origin
       }
     });
+
+    const timeoutPromise = new Promise<any>((resolve) => 
+      setTimeout(() => resolve({ data: null, error: { message: 'too long to respond', status: 504 } }), 15000)
+    );
+
+    let signUpResult = await Promise.race([signUpPromise, timeoutPromise]);
 
     let { data, error } = signUpResult;
 
@@ -683,7 +719,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createBackup, restoreBackup, deleteAccount, unlockFreeTrial, incrementUsage,
       saveResponseToVault, getSavedResponses
     }}>
-      {!loading && children}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-gold font-mono">
+          <div className="relative flex items-center justify-center mb-4">
+             <div className="w-16 h-16 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+             <div className="absolute w-8 h-8 border-4 border-gold/10 border-b-gold rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm tracking-widest uppercase animate-pulse">SISTEMA INICIANDO...</p>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

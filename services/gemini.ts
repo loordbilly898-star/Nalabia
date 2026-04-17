@@ -4,7 +4,7 @@ import { SYSTEM_PROMPT, JSON_FORMAT_INSTRUCTION, CrystalResponse, AnalysisMode, 
 export const generateAIResponse = async (userMessage: string, settings?: AppSettings): Promise<string> => {
   try {
     const client = getMistralAI(settings);
-    const response = await client.chat.complete({
+    const apiCall = client.chat.complete({
       model: "mistral-large-latest",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -13,9 +13,18 @@ export const generateAIResponse = async (userMessage: string, settings?: AppSett
       temperature: 0.7,
     });
 
+    const timeoutPromise = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error("A API demorou muito para responder (geração simples).")), 25000)
+    );
+
+    const response = await Promise.race([apiCall, timeoutPromise]);
+
     return response.choices?.[0]?.message?.content?.toString() || "";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Mistral Error:", error);
+    if (error?.message?.includes("fetch failed") || error?.name === "AbortError" || error?.message?.includes("network")) {
+      throw new Error("Erro de conexão de rede ou timeout externo.");
+    }
     throw error;
   }
 };
@@ -119,17 +128,26 @@ export const analyzeContent = async (
       messages.push({ role: "user", content: prompt });
     }
 
-    const response = await client.chat.complete({
+    const apiCall = client.chat.complete({
       model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
       temperature: 0.75,
     });
 
+    const timeoutPromise = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error("A API demorou muito para responder. Tente novamente.")), 25000)
+    );
+
+    const response = await Promise.race([apiCall, timeoutPromise]);
+
     const content = response.choices?.[0]?.message?.content?.toString() || "{}";
     return JSON.parse(content) as CrystalResponse;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Mistral Analysis Error:", error);
+    if (error?.message?.includes("fetch failed") || error?.name === "AbortError" || error?.message?.includes("network")) {
+      throw new Error("Erro de conexão de rede. Verifique sua internet e tente novamente.");
+    }
     throw error;
   }
 };
@@ -210,7 +228,7 @@ export const regenerateContent = async (
       messages.push({ role: "user", content: prompt });
     }
 
-    const response = await client.chat.complete({
+    const apiCall = client.chat.complete({
       model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
@@ -218,10 +236,19 @@ export const regenerateContent = async (
       maxTokens: 2000,
     });
 
+    const timeoutPromise = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error("A API demorou muito para responder na regeneração.")), 25000)
+    );
+
+    const response = await Promise.race([apiCall, timeoutPromise]);
+
     const content = response.choices?.[0]?.message?.content?.toString() || "{}";
     return JSON.parse(content);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Mistral Regeneration Error:", error);
+    if (error?.message?.includes("fetch failed") || error?.name === "AbortError" || error?.message?.includes("network")) {
+      throw new Error("Erro de conexão de rede ou timeout externo na regeneração.");
+    }
     throw error;
   }
 };
@@ -300,7 +327,7 @@ export const runLaboratory = async (
       messages.push({ role: "user", content: prompt });
     }
 
-    const response = await client.chat.complete({
+    const apiCall = client.chat.complete({
       model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
@@ -308,11 +335,20 @@ export const runLaboratory = async (
       maxTokens: 2000,
     });
     
+    const timeoutPromise = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error("A API demorou muito para responder no laboratório.")), 25000)
+    );
+
+    const response = await Promise.race([apiCall, timeoutPromise]);
+    
     const content = response.choices?.[0]?.message?.content?.toString() || "{}";
     return JSON.parse(content) as LaboratorySimulation;
 
-  } catch (e) {
+  } catch (e: any) {
     console.error("Mistral Lab Error", e);
+    if (e?.message?.includes("fetch failed") || e?.name === "AbortError" || e?.message?.includes("network")) {
+      throw new Error("Erro de conexão de rede ou timeout externo no laboratório.");
+    }
     throw e;
   }
 }
