@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ScanFace, Upload, X, Loader2, Sparkles, Copy, Check } from 'lucide-react';
-import { getMistralAI } from '../services/mistral';
+import { analyzeProfile } from '../services/aiService';
 import { AppSettings, ProcessingState } from '../types';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,61 +79,14 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
     setStatus(ProcessingState.ANALYZING);
     setErrorMsg(null);
     try {
-      const client = getMistralAI(settings);
-      
-      const prompt = `Você é um especialista em atração e dinâmica social.
-Analise a(s) imagem(ns) deste perfil de aplicativo de namoro ou rede social (Instagram/Tinder/Bumble).
-Forneça uma análise profunda e gere abridores (icebreakers) altamente personalizados e criativos com base no que você vê nas fotos ou na bio.
+      const data = await analyzeProfile(selectedImages, settings);
 
-Retorne APENAS um JSON válido com a seguinte estrutura:
-{
-  "vibe": "Uma breve descrição da 'vibe' ou personalidade que ela transmite (ex: Aventureira, Caseira, Festeira, Intelectual).",
-  "redFlags": ["Possível red flag 1", "Possível red flag 2"],
-  "greenFlags": ["Ponto positivo 1", "Ponto positivo 2"],
-  "icebreakers": [
-    "Abridor criativo 1 baseado em um detalhe específico da foto/bio",
-    "Abridor provocativo 2",
-    "Abridor engraçado 3"
-  ]
-}`;
-
-      const contentParts: any[] = [
-        { type: "text", text: prompt }
-      ];
-      
-      selectedImages.forEach(img => {
-        contentParts.push({
-          type: "image_url",
-          imageUrl: img
-        });
+      setAnalysisResult({
+        vibe: data.vibe || "Vibe não detectada.",
+        redFlags: Array.isArray(data.redFlags) ? data.redFlags : [],
+        greenFlags: Array.isArray(data.greenFlags) ? data.greenFlags : [],
+        icebreakers: Array.isArray(data.icebreakers) ? data.icebreakers : []
       });
-
-      const response = await client.chat.complete({
-        model: "pixtral-12b-2409",
-        messages: [{ role: "user", content: contentParts }],
-        responseFormat: { type: "json_object" },
-        temperature: 0.7,
-      });
-
-      let text = response.choices?.[0]?.message?.content?.toString() || "{}";
-      if (text) {
-        // Remove potential markdown formatting
-        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        try {
-          const parsed = JSON.parse(text);
-          setAnalysisResult({
-            vibe: parsed.vibe || "Vibe não detectada.",
-            redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : [],
-            greenFlags: Array.isArray(parsed.greenFlags) ? parsed.greenFlags : [],
-            icebreakers: Array.isArray(parsed.icebreakers) ? parsed.icebreakers : []
-          });
-        } catch (e) {
-          console.error("Failed to parse JSON:", text);
-          throw new Error("A IA retornou um formato inválido.");
-        }
-      } else {
-        throw new Error("Resposta vazia da IA.");
-      }
 
       await incrementUsage();
       if (needsSubscription) {

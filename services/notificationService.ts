@@ -7,15 +7,22 @@ export const sendNotification = async (title: string, options?: NotificationOpti
   if (Notification.permission === 'granted') {
     // Try to use service worker if available
     if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      if (registration) {
-        registration.showNotification(title, {
-          icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg',
-          badge: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg',
-          vibrate: [200, 100, 200],
-          ...options,
-        } as any);
-        return;
+      try {
+        const registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
+        ]);
+        if (registration) {
+          registration.showNotification(title, {
+            icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg',
+            badge: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg',
+            vibrate: [200, 100, 200],
+            ...options,
+          } as any);
+          return;
+        }
+      } catch (e) {
+        console.warn('Service worker notification failed', e);
       }
     }
     

@@ -5,11 +5,12 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsI
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function unlockUser() {
-  console.log("Fetching user...");
+  const targetEmail = 'paz180511@gmail.com';
+  console.log(`Fetching user ${targetEmail}...`);
   const { data: user, error: fetchError } = await supabase
     .from('users')
     .select('*')
-    .eq('email', 'Paz180511@gmail.com')
+    .ilike('email', targetEmail)
     .single();
 
   if (fetchError) {
@@ -19,16 +20,20 @@ async function unlockUser() {
 
   if (user) {
     console.log("Updating user...");
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 30);
+    
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
         nalabiaPrimeAcess: true,
         darkPackAccess: true,
         coursesAccess: true,
-        plano: 'Mensal',
-        status: 'ativo'
+        plano: 'Mensal (Manual)',
+        status: 'ativo',
+        expiraEm: expirationDate.toISOString()
       })
-      .eq('email', 'Paz180511@gmail.com');
+      .ilike('email', targetEmail);
 
     if (updateError) {
       console.error("Error updating:", updateError);

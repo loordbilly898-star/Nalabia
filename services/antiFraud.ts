@@ -9,7 +9,11 @@ export async function getDeviceHash(): Promise<string> {
   }
 
   try {
-    const ipRes = await fetch('https://api.ipify.org?format=json');
+    const ipRes = await Promise.race([
+      fetch('https://api.ipify.org?format=json'),
+      new Promise<null>((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+    ]);
+    if (!ipRes) throw new Error('no response');
     const { ip } = await ipRes.json();
     const ua = navigator.userAgent;
     const screen = `${window.screen.width}x${window.screen.height}`;
@@ -19,7 +23,8 @@ export async function getDeviceHash(): Promise<string> {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   } catch (e) {
-    return localId; // Fallback to local storage UUID if IP fetch fails
+    console.warn("Falling back to local ID for anti-fraud", e);
+    return localId; // Fallback to local storage UUID if IP fetch fails or timeouts
   }
 }
 

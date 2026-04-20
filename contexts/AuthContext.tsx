@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 import { SavedResponse, Memory } from '../types';
+import { logEvent } from '../services/logger';
 
 export interface UserAIProfile {
   userID: string;
@@ -74,9 +75,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userAIProfile, setUserAIProfile] = useState<UserAIProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fetchUserData = async (currentUser: User) => {
+      const startTime = Date.now();
       try {
         const fetchPromise = supabase
           .from('users')
@@ -85,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         const timeoutPromise = new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error("Supabase fetch timeout")), 15000)
+          setTimeout(() => reject(new Error("Supabase fetch timeout")), 30000)
         );
 
         const { data: userDoc, error: userError } = await Promise.race([
@@ -94,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
 
         if (userError && userError.code !== 'PGRST116') {
-          console.error("Error fetching user data:", userError);
+          logEvent('auth', 'Error fetching user data', { userId: currentUser.id, errorCode: userError.code, errorDetail: userError.message });
         }
 
         let data: UserData;
@@ -186,6 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         setUserData(data);
+        logEvent('auth', 'User data loaded', { userId: currentUser.id, responseTime: Date.now() - startTime });
 
         const profilePromise = supabase
           .from('user_ai_profile')
@@ -195,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
         const { data: profileDoc, error: profileError } = await Promise.race([
           profilePromise,
-          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase profile fetch timeout")), 10000))
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase profile fetch timeout")), 20000))
         ]);
 
         if (profileError && profileError.code !== 'PGRST116') {
@@ -223,24 +228,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       } finally {
         setLoading(false);
+        if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
       }
     };
 
-    const sessionPromise = supabase.auth.getSession();
-    Promise.race([
-      sessionPromise,
-      new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Session timeout")), 15000))
-    ]).then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user);
-      } else {
+    // Safety timeout to ensure app always starts
+    authTimeoutRef.current = setTimeout(() => {
+      if (loading) {
+        logEvent('system', 'Auth initialization watchdog triggered');
         setLoading(false);
       }
-    }).catch(err => {
-      console.error("Session fetch timeout/error:", err);
-      setLoading(false);
-    });
+    }, 40000);
+
+    const initAuth = async () => {
+      try {
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await Promise.race([
+          sessionPromise,
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Session timeout")), 30000))
+        ]);
+
+        if (sessionError) throw sessionError;
+
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUserData(session.user);
+        } else {
+          setLoading(false);
+        }
+      } catch (err: any) {
+        logEvent('auth', 'Initial session fetch failed', { errorCode: err.code || 'TIMEOUT' });
+        setInitError("Falha na conexão com o servidor. Verifique sua rede.");
+        setLoading(false);
+      }
+    };
+
+    initAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -261,37 +284,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithEmail = async (email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
-    const authPromise = supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    const timeoutPromise = new Promise<any>((_, reject) => 
-      setTimeout(() => reject(new Error("O servidor demorou muito para responder. Tente novamente.")), 15000)
-    );
-
-    const { data, error } = await Promise.race([authPromise, timeoutPromise]);
-
-    if (error) throw error;
-
-    if (onboardingData && data.user) {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ onboardingCompleted: true })
-        .eq('userID', data.user.id);
+    const startTime = Date.now();
+    try {
+      const authPromise = supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      if (updateError) console.error("Error updating onboarding status:", updateError);
+      const timeoutPromise = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("O servidor demorou muito para responder. Tente novamente.")), 15000)
+      );
 
-      const fullProfile: UserAIProfile = {
-        ...onboardingData,
-        userID: data.user.id,
-      };
-      
-      const { error: profileError } = await supabase
-        .from('user_ai_profile')
-        .upsert(fullProfile);
+      const { data, error } = await Promise.race([authPromise, timeoutPromise]);
+
+      if (error) {
+        logEvent('auth', 'Login failed', { email, errorCode: error.status?.toString() || 'AUTH_ERROR', errorDetail: error.message });
+        throw error;
+      }
+
+      logEvent('auth', 'Login successful', { userId: data.user?.id, responseTime: Date.now() - startTime });
+
+      if (onboardingData && data.user) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ onboardingCompleted: true })
+          .eq('userID', data.user.id);
         
-      if (profileError) console.error("Error saving AI profile:", profileError);
+        if (updateError) console.error("Error updating onboarding status:", updateError);
+
+        const fullProfile: UserAIProfile = {
+          ...onboardingData,
+          userID: data.user.id,
+        };
+        
+        const { error: profileError } = await supabase
+          .from('user_ai_profile')
+          .upsert(fullProfile);
+          
+        if (profileError) console.error("Error saving AI profile:", profileError);
+      }
+    } catch (error: any) {
+      logEvent('auth', 'Login exception', { email, errorDetail: error.message });
+      throw error;
     }
   };
 
@@ -309,6 +343,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (name: string, email: string, password: string, onboardingData?: Omit<UserAIProfile, 'userID'>) => {
+    const startTime = Date.now();
     const signUpPromise = supabase.auth.signUp({
       email,
       password,
@@ -328,24 +363,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Se houve erro de servidor demorando (Timeout) nativo do Supabase
     if (error && (error.message.includes('too long to respond') || error.status === 504 || error.name === 'AuthRetryableFetchError')) {
+       logEvent('auth', 'Signup timeout, attempting invisible login check', { email });
        // Vamos tentar fazer um login invisível rápido só pra ver se por acaso ele criou a conta antes de dar timeout
        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
        
        if (loginError && loginError.message.includes('Email not confirmed')) {
           // A conta FOI CRIADA, mas o email ainda não foi confirmado. 
-          // Emitimos esse erro para a UI informar o usuário corretamente sem tela preta
+          logEvent('auth', 'Signup partial success (unconfirmed)', { email, responseTime: Date.now() - startTime });
           throw new Error('SLOW_SERVER_SIGNUP');
        } else if (loginData?.user) {
           // Incrivelmente a conta foi criada E logou
+          logEvent('auth', 'Signup full success after timeout', { userId: loginData.user.id, responseTime: Date.now() - startTime });
           data = loginData;
           error = null as any;
        } else {
           // Realmente falhou, repassa o erro
+          logEvent('auth', 'Signup total timeout', { email, responseTime: Date.now() - startTime });
           throw new Error('SLOW_SERVER_SIGNUP');
        }
     } else if (error) {
+       logEvent('auth', 'Signup failed', { email, errorCode: error.status?.toString() || 'SIGNUP_ERROR', errorDetail: error.message });
        throw error;
     }
+
+    logEvent('auth', 'Signup successful', { userId: data?.user?.id, responseTime: Date.now() - startTime });
 
     if (data?.user && !error) {
       if (onboardingData) {
@@ -726,6 +767,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
              <div className="absolute w-8 h-8 border-4 border-gold/10 border-b-gold rounded-full animate-spin"></div>
           </div>
           <p className="text-sm tracking-widest uppercase animate-pulse">SISTEMA INICIANDO...</p>
+          {initError && (
+             <div className="mt-8 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <p className="text-red-500 text-xs mb-4">{initError}</p>
+               <button 
+                 onClick={() => window.location.reload()}
+                 className="px-6 py-2 bg-gold/10 border border-gold text-gold text-xs rounded-full hover:bg-gold/20 transition-all"
+               >
+                 TENTAR NOVAMENTE
+               </button>
+             </div>
+          )}
         </div>
       ) : (
         children

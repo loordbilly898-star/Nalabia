@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 import { Message, ProcessingState, Profile, AppSettings } from '../types';
 import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send } from 'lucide-react';
-import { getMistralAI } from '../services/mistral';
+import { generateCustomChatResponse } from '../services/aiService';
 
 interface DashboardViewProps {
   activeProfile: Profile;
@@ -96,10 +96,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
 
     try {
-      const client = getMistralAI(settings);
-      
-      const currentModeMessages = [...messages, newMessage];
       const mistralMessages: any[] = [];
+      const currentModeMessages = [...messages, newMessage];
 
       let userAIProfileInstruction = "";
       if (userAIProfile) {
@@ -128,8 +126,6 @@ ${userAIProfileInstruction}
 
 Analise friamente o desempenho dele. Dê conselhos baseados em números e probabilidade. Seja direto, calculista e focado em otimização de conversão social.`;
 
-      mistralMessages.push({ role: "system", content: systemPrompt });
-
       currentModeMessages.forEach(msg => {
         mistralMessages.push({
           role: msg.role === 'assistant' ? 'assistant' : 'user',
@@ -137,11 +133,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
         });
       });
 
-      const response = await client.chat.complete({
-        model: "mistral-large-latest",
-        messages: mistralMessages,
-        temperature: 0.7,
-      });
+      const responseText = await generateCustomChatResponse(mistralMessages, systemPrompt, settings);
 
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
@@ -149,7 +141,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.choices?.[0]?.message?.content?.toString() || '...',
+        content: responseText || '...',
         timestamp: Date.now(),
         mode: 'STATS'
       };

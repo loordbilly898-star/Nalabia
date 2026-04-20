@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AlertTriangle, ShieldAlert, Loader2, Sparkles, Upload, X } from 'lucide-react';
-import { getMistralAI } from '../services/mistral';
+import { detectRedFlags } from '../services/aiService';
 import { AppSettings, ProcessingState } from '../types';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
@@ -78,71 +78,21 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
     setStatus(ProcessingState.ANALYZING);
     setErrorMsg(null);
     try {
-      const client = getMistralAI(settings);
-      
-      const prompt = `Você é um especialista em psicologia comportamental e relacionamentos.
-Analise a seguinte interação entre um homem (o usuário) e uma mulher.
-Identifique "Red Flags" (sinais de alerta de toxicidade, desinteresse, manipulação ou problemas emocionais) e "Green Flags" (sinais de interesse genuíno, maturidade).
-Calcule a probabilidade de "Ghosting" (ela parar de responder) e o nível de toxicidade da interação.
+      const data = await detectRedFlags(chatHistory, selectedImages, settings);
 
-${chatHistory.trim() ? `Histórico em texto:\n${chatHistory}\n` : ''}
-${selectedImages.length > 0 ? `Analise também os prints de tela anexados.\n` : ''}
-
-Retorne APENAS um JSON válido com a seguinte estrutura:
-{
-  "ghostingProbability": 0 a 100,
-  "toxicityLevel": "Baixo" | "Médio" | "Alto",
-  "redFlags": ["Sinal de alerta 1", "Sinal de alerta 2"],
-  "greenFlags": ["Sinal positivo 1", "Sinal positivo 2"],
-  "verdict": "Um resumo direto e brutalmente honesto da situação (ex: 'Ela está te usando para validação' ou 'Ela está muito interessada, mas você está sendo muito carente').",
-  "advice": "O que o usuário deve fazer agora (ex: 'Dê um passo para trás e espere ela investir' ou 'Chame ela para sair agora')."
-}`;
-
-      const contentParts: any[] = [
-        { type: "text", text: prompt }
-      ];
-      
-      selectedImages.forEach(img => {
-        contentParts.push({
-          type: "image_url",
-          imageUrl: img
-        });
+      setAnalysisResult({
+        ghostingProbability: typeof data.ghostingProbability === 'number' ? data.ghostingProbability : 0,
+        toxicityLevel: data.toxicityLevel || 'Baixo',
+        redFlags: Array.isArray(data.redFlags) ? data.redFlags : [],
+        greenFlags: Array.isArray(data.greenFlags) ? data.greenFlags : [],
+        verdict: data.verdict || "Veredito não disponível.",
+        advice: data.advice || "Conselho não disponível."
       });
-
-      const response = await client.chat.complete({
-        model: selectedImages.length > 0 ? "pixtral-12b-2409" : "mistral-large-latest",
-        messages: [{ role: "user", content: contentParts }],
-        responseFormat: { type: "json_object" },
-        temperature: 0.7,
-      });
-
-      let text = response.choices?.[0]?.message?.content?.toString() || "{}";
-      if (text) {
-        // Remove potential markdown formatting
-        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        try {
-          const parsed = JSON.parse(text);
-          setAnalysisResult({
-            ghostingProbability: typeof parsed.ghostingProbability === 'number' ? parsed.ghostingProbability : 0,
-            toxicityLevel: parsed.toxicityLevel || 'Baixo',
-            redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : [],
-            greenFlags: Array.isArray(parsed.greenFlags) ? parsed.greenFlags : [],
-            verdict: parsed.verdict || "Veredito não disponível.",
-            advice: parsed.advice || "Conselho não disponível."
-          });
-        } catch (e) {
-          console.error("Failed to parse JSON:", text);
-          throw new Error("A IA retornou um formato inválido.");
-        }
-      } else {
-        throw new Error("Resposta vazia da IA.");
-      }
 
       await incrementUsage();
       if (needsSubscription) {
         await incrementDeviceUsage();
       }
-
     } catch (error: any) {
       console.error("Red Flag Analysis Error:", error);
       let errorMessage = "Erro ao analisar a conversa. Tente novamente.";

@@ -1,3 +1,4 @@
+import { Mistral } from '@mistralai/mistralai';
 import express from 'express';
 import cors from 'cors';
 import { MercadoPagoConfig, PreApproval, Payment, Customer } from 'mercadopago';
@@ -10,14 +11,105 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const allowedOrigins = [
+  'https://nalabia-prime.run.app',
+  'https://www.nalabia-prime.run.app',
+  'https://ais-dev-2fdtxbfqn7qj57ixyqgzeg-233310227239.us-east1.run.app',
+  'http://localhost:3000',
+  'http://localhost:5173'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: '50mb' }));
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (req.path.startsWith('/api')) {
+      console.log(`[API LOG] ${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`);
+    }
+  });
+  next();
+});
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Initialize Supabase
 const supabaseUrl = 'https://dxnxykpwmgbzsdiohgdo.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bnh5a3B3bWdienNkaW9oZ2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDQzODksImV4cCI6MjA5MTY4MDM4OX0.P5TiAYDvDAoBs4I_T3d4IC6xVKVCfiqZIkVV81IJphs';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Initialize Mistral
+const getMistralClient = () => {
+  const apiKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+  if (!apiKey) {
+    console.error('[SERVER] MISTRAL_API_KEY NO ENCONTRADA');
+    throw new Error('MISTRAL_API_KEY not found');
+  }
+  const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+  console.log(`[SERVER] Inicializando Mistral Client com chave: ${maskedKey}`);
+  return new Mistral({ apiKey });
+};
+
+// AI Routes
+app.post('/api/ai/complete', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body || !body.messages) {
+      return res.status(400).json({ error: 'Corpo da requisição inválido ou ausente.' });
+    }
+    const client = getMistralClient();
+    const response = await client.chat.complete(body);
+    res.json(response);
+  } catch (error: any) {
+    console.error('[AI Error]', error.message || error);
+    const status = error.status || 500;
+    res.status(status).json({ 
+      error: error.message || 'Erro interno na IA.',
+      tip: error.message?.includes('401') ? 'Verifique se a MISTRAL_API_KEY está correta nas configurações.' : undefined
+    });
+  }
+});
+
+app.post('/api/ai/stream', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body || !body.messages) {
+      return res.status(400).json({ error: 'Corpo da requisição inválido ou ausente.' });
+    }
+    const client = getMistralClient();
+    const stream = await client.chat.stream(body);
+    
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    for await (const chunk of stream) {
+      res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (error: any) {
+    console.error('[AI Stream Error]', error.message || error);
+    if (!res.headersSent) {
+      const status = error.status || 500;
+      res.status(status).json({ error: error.message || 'Erro interno no streaming da IA.' });
+    } else {
+      res.end();
+    }
+  }
+});
+
+// ... existing server code
 
 // Initialize Mercado Pago
 let client: MercadoPagoConfig | null = null;

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, Loader2, Sparkles } from 'lucide-react';
-import { getMistralAI } from '../services/mistral';
+import { generateCustomChatResponse } from '../services/aiService';
 import { ProcessingState, Profile, Message, AppSettings } from '../types';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
@@ -102,10 +102,7 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 3500);
 
     try {
-      const client = getMistralAI(settings);
-      
       const scenarioObj = SCENARIOS.find(s => s.id === scenario);
-      
       const currentModeMessages = [...messages, newMessage];
       
       let userAIProfileInstruction = "";
@@ -127,15 +124,7 @@ Histórico da conversa:
 ${currentModeMessages.map(m => `${m.role === 'user' ? 'Ele' : 'Você'}: ${m.content}`).join('\n')}
 Responda apenas com a sua próxima mensagem.`;
 
-      console.log("Prompt enviado:", systemPrompt);
-
-      const response = await client.chat.complete({
-        model: "mistral-large-latest",
-        messages: [{ role: "user", content: systemPrompt }],
-        temperature: 0.7,
-      });
-
-      console.log("Resposta da IA:", response);
+      const responseText = await generateCustomChatResponse([], systemPrompt, settings);
 
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
@@ -143,7 +132,7 @@ Responda apenas com a sua próxima mensagem.`;
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.choices?.[0]?.message?.content?.toString() || '...',
+        content: responseText || '...',
         timestamp: Date.now(),
         mode: 'SIMULATOR'
       };

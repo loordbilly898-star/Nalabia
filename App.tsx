@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { analyzeContent, runLaboratory, regenerateContent } from './services/gemini';
+import { analyzeContent, runLaboratory, regenerateContent } from './services/aiService';
 import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile, Memory } from './types';
 import { sendNotification } from './services/notificationService';
 import AnalysisView from './components/AnalysisView';

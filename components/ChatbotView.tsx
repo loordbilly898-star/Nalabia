@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
-import { getMistralAI } from '../services/mistral';
-import { SYSTEM_PROMPT, AppSettings, Profile, ProcessingState, Message } from '../types';
+import { generateChatStream } from '../services/aiService';
+import { SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, AppSettings, Profile, ProcessingState, Message } from '../types';
 import { sendNotification } from '../services/notificationService';
 import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
 import { useAuth } from '../contexts/AuthContext';
+import { logEvent } from '../services/logger';
 
 interface ChatbotViewProps {
   settings: AppSettings;
@@ -128,90 +129,14 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
 
     try {
-      const client = getMistralAI(settings);
-      
-      const currentModeMessages = [...messages, newMessage];
-      const mistralMessages: any[] = [];
-
-      let profileInstruction = "";
-      if (activeProfile && activeProfile.id !== "general") {
-        profileInstruction = `
-        👤 PERFIL ATIVO: ${activeProfile.name} (${activeProfile.description})
-        HISTÓRICO: O usuário já trocou ${(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).length} mensagens.
-        PADRÃO DELA: ${activeProfile.behavioralPattern || "Ainda em análise"}
-        RISCO ANTERIOR: ${activeProfile.metrics.risk}
-        `;
-      }
-
-      let userAIProfileInstruction = "";
-      if (userAIProfile) {
-        userAIProfileInstruction = `
-        🧠 USER PROFILE (CONTEXTO PERMANENTE):
-        Objetivo: ${userAIProfile.goal}
-        Nível de Experiência: ${userAIProfile.experienceLevel}
-        Estilo de Comunicação: ${userAIProfile.communicationStyle}
-        Nível de Flerte Preferido: ${userAIProfile.flirtLevel}
-        Tamanho de Resposta Preferido: ${userAIProfile.responseLength}
-        Plataforma Principal: ${userAIProfile.mainPlatform}
-        Objetivo da Conversa: ${userAIProfile.conversationGoal}
-        Tipo de Personalidade: ${userAIProfile.personalityType}
-        `;
-      }
-
-      let settingsInstruction = "";
-      if (settings) {
-        settingsInstruction = `
-        ⚙️ CONFIGURAÇÕES ATIVAS (OBRIGATÓRIO SEGUIR):
-        ${settings.ai?.avoidCompliments ? "- EVITAR ELOGIOS: Não use palavras como 'linda', 'gata', 'maravilhosa'. Seja mais frio e desafiador." : ""}
-        ${settings.ai?.shortResponses ? "- RESPOSTAS CURTAS: Seja extremamente conciso. Responda com no máximo 1 ou 2 frases curtas." : ""}
-        ${settings.ai?.avoidQuestions ? "- EVITAR PERGUNTAS: Não faça perguntas diretas. Faça afirmações que induzam ela a responder." : ""}
-        ${settings.ai?.autoAdjustFlirt ? "- AUTO-AJUSTE DE FLERTE: Se a conversa estiver fria, diminua a intensidade do flerte. Se estiver quente, pode ousar mais." : ""}
-        ${settings.safety?.antiNeedy ? "- ANTI-CARÊNCIA: NUNCA demonstre necessidade, desespero ou validação excessiva." : ""}
-        ${settings.safety?.antiLongText ? "- ANTI-TEXTÃO: Nunca envie mensagens longas ou blocos de texto." : ""}
-        ${settings.safety?.antiRobot ? "- ANTI-ROBÔ: Fale como um humano natural, use gírias leves se apropriado, evite linguagem formal demais." : ""}
-        ${settings.safety?.antiOverflirt ? "- ANTI-OVERFLIRT: Não seja agressivo sexualmente fora de contexto. Mantenha a classe." : ""}
-        `;
-      }
-
-      const fullSystemPrompt = `${SYSTEM_PROMPT}\n\nCONTEXTO ATUAL:\n${profileInstruction}\n${userAIProfileInstruction}\n${settingsInstruction}`;
-
-      mistralMessages.push({ role: "system", content: fullSystemPrompt });
-
-      let hasImage = false;
-
-      currentModeMessages.forEach(msg => {
-        if (msg.image) {
-          hasImage = true;
-          mistralMessages.push({
-            role: msg.role === 'assistant' ? 'assistant' : 'user',
-            content: [
-              { type: "text", text: msg.content || "Image" },
-              { type: "image_url", imageUrl: msg.image }
-            ]
-          });
-        } else {
-          mistralMessages.push({
-            role: msg.role === 'assistant' ? 'assistant' : 'user',
-            content: msg.content || ""
-          });
-        }
-      });
-
-      console.log("Prompt enviado:", mistralMessages);
-
-      const modelToUse = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
-
-      const apiCall = client.chat.stream({
-        model: modelToUse,
-        messages: mistralMessages,
-        temperature: 0.7,
-      });
-
-      const timeoutPromise = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("A API demorou muito para iniciar o chat. Tente novamente.")), 25000)
+      const startTime = Date.now();
+      const responseStream = await generateChatStream(
+        [...messages, newMessage],
+        settings,
+        activeProfile || undefined,
+        userAIProfile,
+        userData?.memories
       );
-
-      const responseStream = await Promise.race([apiCall, timeoutPromise]);
 
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
@@ -228,16 +153,22 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       updateActiveProfileMessages(prev => [...prev, currentAssistantMessage]);
 
       let fullText = '';
-      for await (const chunk of responseStream) {
-        if (chunk.data.choices[0]?.delta?.content) {
-          fullText += chunk.data.choices[0].delta.content;
-          currentAssistantMessage = { ...currentAssistantMessage, content: fullText };
-          
-          updateActiveProfileMessages(prev => {
-            const withoutLast = prev.filter(m => m.id !== currentAssistantMessage.id);
-            return [...withoutLast, currentAssistantMessage];
-          });
+      try {
+        for await (const chunk of responseStream as any) {
+          if (chunk.choices?.[0]?.delta?.content) {
+            fullText += chunk.choices[0].delta.content;
+            currentAssistantMessage = { ...currentAssistantMessage, content: fullText };
+            
+            updateActiveProfileMessages(prev => {
+              const withoutLast = prev.filter(m => m.id !== currentAssistantMessage.id);
+              return [...withoutLast, currentAssistantMessage];
+            });
+          }
         }
+        logEvent('api', 'Chatbot stream completed', { responseTime: Date.now() - startTime });
+      } catch (streamError: any) {
+        logEvent('api', 'Chatbot stream interrupted', { errorDetail: streamError.message });
+        if (fullText.length === 0) throw streamError;
       }
 
       setStatus(ProcessingState.IDLE);
