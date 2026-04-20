@@ -237,7 +237,7 @@ export const generateCustomChatResponse = async (
   return withRetry(async () => {
     const client = getMistralAI(settings);
     const modelToUse = messages.some(m => m.content && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')) 
-      ? "pixtral-12b-2409" 
+      ? "pixtral-latest" 
       : "mistral-large-latest";
 
     const response = await client.chat.complete({
@@ -370,7 +370,7 @@ export const analyzeContent = async (
     }
 
     const response = await client.chat.complete({
-      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
+      model: imageBase64 ? "pixtral-latest" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
       temperature: 0.75,
@@ -569,7 +569,7 @@ export const runLaboratory = async (
     }
 
     const response = await client.chat.complete({
-      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
+      model: imageBase64 ? "pixtral-latest" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
       temperature: 0.8,
@@ -658,7 +658,7 @@ export const generateChatStream = async (
     }
   });
 
-  const modelToUse = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
+  const modelToUse = hasImage ? "pixtral-latest" : "mistral-large-latest";
 
   return client.chat.stream({
     model: modelToUse,

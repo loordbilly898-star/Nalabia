@@ -50,10 +50,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize Mistral
 const getMistralClient = () => {
-  const apiKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+  const apiKey = (process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '').trim();
   if (!apiKey) {
-    console.error('[SERVER] MISTRAL_API_KEY NO ENCONTRADA');
-    throw new Error('MISTRAL_API_KEY not found');
+    console.error('[SERVER] MISTRAL_API_KEY NO ENCONTRADA.');
+    console.error('[SERVER] Verifique se a variável MISTRAL_API_KEY está configurada no menu Settings do AI Studio.');
+    throw new Error('MISTRAL_API_KEY not found. Please set it in the environment variables.');
   }
   const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
   console.log(`[SERVER] Inicializando Mistral Client com chave: ${maskedKey}`);
@@ -62,30 +63,41 @@ const getMistralClient = () => {
 
 // AI Routes
 app.post('/api/ai/complete', async (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[AI-COMPLETE][${requestId}] Iniciando requisição completa...`);
   try {
     const body = req.body;
     if (!body || !body.messages) {
+      console.error(`[AI-COMPLETE][${requestId}] Erro: Corpo da requisição inválido.`);
       return res.status(400).json({ error: 'Corpo da requisição inválido ou ausente.' });
     }
+    
+    console.log(`[AI-COMPLETE][${requestId}] Usando modelo: ${body.model}`);
     const client = getMistralClient();
     const response = await client.chat.complete(body);
+    console.log(`[AI-COMPLETE][${requestId}] Sucesso.`);
     res.json(response);
   } catch (error: any) {
-    console.error('[AI Error]', error.message || error);
+    console.error(`[AI-COMPLETE][${requestId}] Erro Fatal:`, error.message || error);
     const status = error.status || 500;
     res.status(status).json({ 
       error: error.message || 'Erro interno na IA.',
-      tip: error.message?.includes('401') ? 'Verifique se a MISTRAL_API_KEY está correta nas configurações.' : undefined
+      tip: error.message?.includes('401') ? 'A chave da API do Mistral parece inválida.' : 'Ocorreu um erro ao processar sua solicitação de IA.'
     });
   }
 });
 
 app.post('/api/ai/stream', async (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[AI-STREAM][${requestId}] Iniciando streaming...`);
   try {
     const body = req.body;
     if (!body || !body.messages) {
+      console.error(`[AI-STREAM][${requestId}] Erro: Corpo da requisição inválido.`);
       return res.status(400).json({ error: 'Corpo da requisição inválido ou ausente.' });
     }
+    
+    console.log(`[AI-STREAM][${requestId}] Usando modelo: ${body.model}`);
     const client = getMistralClient();
     const stream = await client.chat.stream(body);
     
@@ -93,13 +105,17 @@ app.post('/api/ai/stream', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    console.log(`[AI-STREAM][${requestId}] Streaming iniciado.`);
+    let chunkCount = 0;
     for await (const chunk of stream) {
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      chunkCount++;
     }
+    console.log(`[AI-STREAM][${requestId}] Streaming finalizado. Total de chunks: ${chunkCount}`);
     res.write('data: [DONE]\n\n');
     res.end();
   } catch (error: any) {
-    console.error('[AI Stream Error]', error.message || error);
+    console.error(`[AI-STREAM][${requestId}] Erro Fatal:`, error.message || error);
     if (!res.headersSent) {
       const status = error.status || 500;
       res.status(status).json({ error: error.message || 'Erro interno no streaming da IA.' });

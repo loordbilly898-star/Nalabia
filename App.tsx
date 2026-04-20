@@ -48,7 +48,7 @@ const TABS: { id: AnalysisMode; label: string; icon: React.FC<any>; desc: string
   { id: 'SIMULATOR', label: 'Simulador', icon: Users, desc: 'Treino com IA' },
   { id: 'VAULT', label: 'Cofre', icon: Lock, desc: 'Respostas Salvas' },
   { id: 'STATS', label: 'Estatísticas', icon: Crown, desc: 'Dashboard do Usuário' },
-  { id: 'CHATBOT', label: 'Assistente', icon: Bot, desc: 'Assistente IA' },
+  { id: 'CHATBOT', label: 'Assistente', icon: Bot, desc: 'Assistente NaLábia' },
 ];
 
 const PROFILES_STYLES = [
@@ -98,10 +98,10 @@ const App: React.FC = () => {
         return JSON.parse(saved);
       }
     } catch (e) {}
-    return [{ id: 'general', name: 'NaLábia', description: 'NaLábia v5.0 Professional', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
+    return [{ id: 'general', name: 'NaLábia', description: 'NaLábia v5.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
   });
   const [activeProfileId, setActiveProfileId] = useState<string>('general');
-  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || { id: 'general', name: 'NaLábia', description: 'NaLábia v5.0 Professional', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' };
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || { id: 'general', name: 'NaLábia', description: 'NaLábia v5.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' };
 
   const [memories, setMemories] = useState<Memory[]>(() => {
     try {
@@ -204,7 +204,7 @@ const App: React.FC = () => {
       // User logged out, reset to defaults to prevent data leaks
       setSettings(DEFAULT_SETTINGS);
       setProfiles([
-        { id: 'general', name: 'NaLábia', description: 'NaLábia v5.0 Professional', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }
+        { id: 'general', name: 'NaLábia', description: 'NaLábia v5.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }
       ]);
       setMemories([]);
       setActiveProfileId('general');
@@ -859,7 +859,7 @@ const App: React.FC = () => {
         onDeleteProfile={(id) => {
           setProfiles(prev => {
             const newProfiles = prev.filter(p => p.id !== id);
-            return newProfiles.length > 0 ? newProfiles : [{ id: 'general', name: 'NaLábia', description: 'NaLábia v5.0 Professional - Inteligência de Dinâmica Social', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
+            return newProfiles.length > 0 ? newProfiles : [{ id: 'general', name: 'NaLábia', description: 'NaLábia v5.0 - Inteligência de Dinâmica Social', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
           });
           if (activeProfileId === id) setActiveProfileId('general');
         }}
@@ -1422,7 +1422,7 @@ const App: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-center mt-2 px-2 gap-2 sm:gap-0">
             <div className="flex items-center space-x-2">
               <span className={`text-[8px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}>
-                NaLábia Professional
+                NaLábia
               </span>
             </div>
              <div className="flex items-center space-x-2">

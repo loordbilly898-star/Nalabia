@@ -300,7 +300,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="text-center pt-8 pb-4 opacity-50">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">NaLábia Professional</div>
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">NaLábia</div>
         <div className="text-[9px] text-gray-600">Build 5.0.0 • Secure Enclave</div>
       </div>
     </div>
@@ -566,7 +566,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
           <label className="text-xs font-medium text-gray-400">Tom Padrão de Resposta</label>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { id: 'professional', label: 'Profissional' },
+              { id: 'especialista', label: 'Especialista' },
               { id: 'casual', label: 'Casual' },
               { id: 'empathetic', label: 'Empático' },
               { id: 'direct', label: 'Direto' }
@@ -631,7 +631,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
           {[
             { key: 'antiNeedy', label: 'Filtro Anti-Carência', desc: 'Bloqueia mensagens que demonstram necessidade, cobrança ou busca por validação.' },
             { key: 'antiLongText', label: 'Alerta Anti-Textão', desc: 'Avisa se sua mensagem for desproporcionalmente maior que a última recebida.' },
-            { key: 'antiRobot', label: 'Naturalidade (Anti-Robô)', desc: 'Garante que as respostas geradas pela IA pareçam humanas, com gírias e ritmo natural.' },
+            { key: 'antiRobot', label: 'Naturalidade (Anti-Robô)', desc: 'Garante que as respostas geradas pareçam naturais, com gírias e ritmo humano.' },
             { key: 'antiOverflirt', label: 'Controle de Overflirt', desc: 'Evita avanços agressivos ou sexuais fora de contexto que podem gerar bloqueio.' },
             { key: 'nsfwFilter', label: 'Filtro NSFW', desc: 'Bloqueia análise e geração de conteúdo explícito ou inapropriado.' },
             { key: 'toxicityFilter', label: 'Filtro de Toxicidade', desc: 'Evita respostas agressivas, ofensivas ou passivo-agressivas em excesso.' },
