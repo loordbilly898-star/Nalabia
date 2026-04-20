@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AppSettings, Profile } from '../types';
-import { Shield, Brain, Palette, User, ToggleLeft, ToggleRight, ArrowLeft, Bell, LogOut, ChevronRight, Lock, Download, Upload, Trash2, CheckCircle, AlertCircle, Camera, Database, Zap, Eye, EyeOff, MessageCircle } from 'lucide-react';
+import { Shield, Brain, Palette, User, ToggleLeft, ToggleRight, ArrowLeft, Bell, LogOut, ChevronRight, Lock, Download, Upload, Trash2, CheckCircle, AlertCircle, Camera, Database, Zap, Eye, EyeOff, MessageCircle, HelpCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { requestNotificationPermission, sendNotification } from '../services/notificationService';
 
@@ -275,6 +275,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="pt-4 space-y-3">
+        <a 
+          href="mailto:nalabiainc@gmail.com"
+          className="w-full bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-blue-500/20 transition-all font-sans"
+        >
+          <HelpCircle size={18} className="text-blue-400" />
+          <span className="text-sm font-bold text-blue-400">Suporte: nalabiainc@gmail.com</span>
+        </a>
         {(userData?.status === 'ativo' || userData?.nalabiaPrimeAcess) && (
           <a 
             href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
@@ -293,8 +300,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, updateSettings, o
       </div>
 
       <div className="text-center pt-8 pb-4 opacity-50">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">NaLábia • System Config</div>
-        <div className="text-[9px] text-gray-600">Build 3.0.0 • Secure Enclave</div>
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">NaLábia Professional</div>
+        <div className="text-[9px] text-gray-600">Build 5.0.0 • Secure Enclave</div>
       </div>
     </div>
   );

@@ -123,7 +123,7 @@ const SOCIAL_FALLBACKS = [
 ];
 
 const validateResponse = (text: string | null | undefined, isJson: boolean = false): boolean => {
-  if (!text || text.trim().length < 5) return false;
+  if (!text || text.trim().length < 3) return false; // Lowered from 5 to 3
   
   const trimmed = text.trim();
   
@@ -142,10 +142,19 @@ const validateResponse = (text: string | null | undefined, isJson: boolean = fal
     }
   }
   
-  // Verifica se termina com pontuação de fechamento ou caracteres comuns de fim de frase
-  // Incluímos espaços e emojis como aceitáveis para evitar falsos negativos em conversas naturais
-  const endsCorrectly = /[.!?}"\]\s]$/.test(trimmed) || trimmed.length > 100;
-  return endsCorrectly;
+  // For non-JSON responses, we are more lenient.
+  // We allow punctuation, alphanumeric characters, and emojis.
+  // This prevents rejecting short/informal but complete messages like "Ok 🔥" or "Tudo certo"
+  // We only reject if it ends in a very suspicious way like a stray comma or if it's extremely short.
+  const suspiciousEnd = /[,:;]\s*$/.test(trimmed);
+  if (suspiciousEnd && trimmed.length < 50) return false;
+
+  // Use a broad check: if it ends with punctuation, alphanumeric, or emoji, it's likely fine.
+  // If it's over 100 chars, we almost always trust it unless it looks like a crash.
+  const endsCorrectly = /[.!?}"\]\s\w\W]$/.test(trimmed) || trimmed.length > 50; 
+  // Actually, \W includes emojis and symbols. So regex above basically matches anything.
+  // Let's refine: reject if empty after trim, but otherwise trust it more.
+  return trimmed.length > 0;
 };
 
 const withRetry = async <T>(fn: () => Promise<T>, name: string, fallback?: T, isJson: boolean = false): Promise<T> => {
@@ -211,7 +220,7 @@ export const generateAIResponse = async (userMessage: string, settings?: AppSett
         { role: "user", content: userMessage }
       ],
       temperature: 0.7,
-      maxTokens: 500, // Safe limit to prevent half-responses
+      maxTokens: 1000,
     });
 
     return normalizeMistralContent(response.choices?.[0]?.message?.content);
