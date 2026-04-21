@@ -90,20 +90,28 @@ app.post('/api/ai/stream', async (req, res) => {
     }
 
     const mistral = getMistralClient();
+    console.log(`[AI-STREAM][${requestId}] Usando modelo: ${body.model || 'default'}`);
     const stream = await mistral.chat.stream(body);
     
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    for await (const chunk of stream) {
-      if (chunk) {
-        // v2 SDK might wrap the chunk in a data property when serialized
-        const cleanChunk = (chunk as any).data || chunk;
-        res.write(`data: ${JSON.stringify(cleanChunk)}\n\n`);
+    let chunkCount = 0;
+    try {
+      for await (const chunk of stream) {
+        if (chunk) {
+          chunkCount++;
+          // v2 SDK wraps the chunk in a data property
+          const cleanChunk = (chunk as any).data || chunk;
+          res.write(`data: ${JSON.stringify(cleanChunk)}\n\n`);
+        }
       }
+      res.write('data: [DONE]\n\n');
+      console.log(`[AI-STREAM][${requestId}] Stream finalizado com sucesso. Chunks: ${chunkCount}`);
+    } catch (streamError: any) {
+      console.error(`[AI-STREAM][${requestId}] Erro durante a iteração do stream:`, streamError);
     }
-    res.write('data: [DONE]\n\n');
     res.end();
   } catch (error: any) {
     console.error(`[AI-STREAM] Erro:`, error);

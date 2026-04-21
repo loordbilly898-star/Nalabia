@@ -147,9 +147,13 @@ Responda apenas com a sua próxima mensagem.`;
       clearTimeout(stateTimer2);
       console.error("Simulator Error:", error);
       
-      let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
+      let errorMessage = "Erro na IA. Tente novamente em alguns segundos.";
       if (typeof error?.message === 'string') {
-        errorMessage = `Erro: ${error.message}`;
+        if (error.message.includes("429") || error.message.includes("Rate limit") || error.message.includes("capacity exceeded") || error.message.includes("quota")) {
+          errorMessage = "A IA está sobrecarregada ou atingiu o limite de uso. Aguarde um momento.";
+        } else {
+          errorMessage = `Erro: ${error.message.substring(0, 100)}`;
+        }
       }
 
       const errMessage: Message = {

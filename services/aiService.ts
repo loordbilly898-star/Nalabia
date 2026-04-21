@@ -46,17 +46,20 @@ const aiProxy = {
         
         if (value) {
           buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n\n');
+          // Handle both \n\n and \n line endings
+          const lines = buffer.split(/\n+/);
           buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6).trim();
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('data: ')) {
+              const data = trimmedLine.slice(6).trim();
               if (data === '[DONE]') return;
               try {
                 const parsed = JSON.parse(data);
                 // Unwrap v2 data property if present
-                yield parsed.data || parsed;
+                const chunk = parsed.data || parsed;
+                if (chunk) yield chunk;
               } catch (e) {
                 console.error("Erro no parse do stream", e, "Line:", line);
               }
@@ -265,7 +268,7 @@ export const generateCustomChatResponse = async (
   return withRetry(async () => {
     const client = getMistralAI(settings);
     const modelToUse = messages.some(m => m.image || (m.content && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url'))) 
-      ? "pixtral-12b-2409" 
+      ? (settings?.customApiKey ? "pixtral-latest" : "pixtral-12b-2409") 
       : "mistral-large-latest";
 
     // Filtering and cleaning messages for Mistral
@@ -780,15 +783,24 @@ export const generateChatStream = async (
     mistralMessages.push({ role: 'user', content: 'Analise e me dê sua opinião detalhada agora.' });
   }
 
-  const modelToUse = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
+  const modelToUse = hasImage ? (settings?.customApiKey ? "pixtral-latest" : "pixtral-12b-2409") : "mistral-large-latest";
 
   logEvent('api', 'Starting AI Stream', { model: modelToUse, messageCount: mistralMessages.length });
 
-  return client.chat.stream({
+  const stream = await client.chat.stream({
     model: modelToUse,
     messages: mistralMessages,
-    temperature: 0.7
+    temperature: 0.75,
+    maxTokens: 2500
   });
+
+  return (async function* () {
+    for await (const chunk of stream as any) {
+      if (chunk) {
+        yield chunk.data || chunk;
+      }
+    }
+  })();
 };
 
 export const analyzeProfile = async (
@@ -833,7 +845,7 @@ Retorne APENAS um JSON válido:
       messages: [{ role: "user", content: contentParts }],
       responseFormat: { type: "json_object" },
       temperature: 0.7,
-      maxTokens: 1000,
+      maxTokens: 1500
     });
 
     const rawContent = normalizeMistralContent(response.choices?.[0]?.message?.content) || "{}";

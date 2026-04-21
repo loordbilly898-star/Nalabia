@@ -210,8 +210,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       if (typeof error?.message === 'string') {
          if (error.message.includes("fetch failed") || error.name === "AbortError" || error.message.includes("network") || error.name === "TypeError") {
             errorMessage = "Erro de conexão. Verifique sua internet ou tente novamente.";
-         } else if (error.message.includes("429") || error.message.includes("Rate limit")) {
-            errorMessage = "Muitas requisições seguidas. Aguarde 1 minuto.";
+         } else if (error.message.includes("429") || error.message.includes("Rate limit") || error.message.includes("capacity exceeded") || error.message.includes("quota")) {
+            errorMessage = "A IA está sobrecarregada ou atingiu o limite de uso. Tente novamente em 2 minutos.";
          } else if (error.message.includes("A IA não retornou")) {
             errorMessage = error.message;
          } else {
