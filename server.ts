@@ -68,22 +68,15 @@ app.post('/api/ai/complete', async (req, res) => {
   try {
     const body = req.body;
     if (!body || !body.messages) {
-      console.error(`[AI-COMPLETE][${requestId}] Erro: Corpo da requisição inválido.`);
-      return res.status(400).json({ error: 'Corpo da requisição inválido ou ausente.' });
+      return res.status(400).json({ error: 'Mensagens ausentes.' });
     }
     
-    console.log(`[AI-COMPLETE][${requestId}] Usando modelo: ${body.model}`);
-    const client = getMistralClient();
-    const response = await client.chat.complete(body);
-    console.log(`[AI-COMPLETE][${requestId}] Sucesso.`);
+    const mistral = getMistralClient();
+    const response = await mistral.chat.complete(body);
     res.json(response);
   } catch (error: any) {
-    console.error(`[AI-COMPLETE][${requestId}] Erro Fatal:`, error.message || error);
-    const status = error.status || 500;
-    res.status(status).json({ 
-      error: error.message || 'Erro interno na IA.',
-      tip: error.message?.includes('401') ? 'A chave da API do Mistral parece inválida.' : 'Ocorreu um erro ao processar sua solicitação de IA.'
-    });
+    console.error(`[AI-COMPLETE] Erro:`, error);
+    res.status(error.status || 500).json({ error: error.message || 'Erro na IA.' });
   }
 });
 
@@ -93,32 +86,29 @@ app.post('/api/ai/stream', async (req, res) => {
   try {
     const body = req.body;
     if (!body || !body.messages) {
-      console.error(`[AI-STREAM][${requestId}] Erro: Corpo da requisição inválido.`);
-      return res.status(400).json({ error: 'Corpo da requisição inválido ou ausente.' });
+      return res.status(400).json({ error: 'Mensagens ausentes.' });
     }
-    
-    console.log(`[AI-STREAM][${requestId}] Usando modelo: ${body.model}`);
-    const client = getMistralClient();
-    const stream = await client.chat.stream(body);
+
+    const mistral = getMistralClient();
+    const stream = await mistral.chat.stream(body);
     
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    console.log(`[AI-STREAM][${requestId}] Streaming iniciado.`);
-    let chunkCount = 0;
     for await (const chunk of stream) {
-      res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-      chunkCount++;
+      if (chunk) {
+        // v2 SDK might wrap the chunk in a data property when serialized
+        const cleanChunk = (chunk as any).data || chunk;
+        res.write(`data: ${JSON.stringify(cleanChunk)}\n\n`);
+      }
     }
-    console.log(`[AI-STREAM][${requestId}] Streaming finalizado. Total de chunks: ${chunkCount}`);
     res.write('data: [DONE]\n\n');
     res.end();
   } catch (error: any) {
-    console.error(`[AI-STREAM][${requestId}] Erro Fatal:`, error.message || error);
+    console.error(`[AI-STREAM] Erro:`, error);
     if (!res.headersSent) {
-      const status = error.status || 500;
-      res.status(status).json({ error: error.message || 'Erro interno no streaming da IA.' });
+      res.status(error.status || 500).json({ error: error.message || 'Erro na IA.' });
     } else {
       res.end();
     }
@@ -128,17 +118,17 @@ app.post('/api/ai/stream', async (req, res) => {
 // ... existing server code
 
 // Initialize Mercado Pago
-let client: MercadoPagoConfig | null = null;
+let mpClient: MercadoPagoConfig | null = null;
 let preapproval: PreApproval | null = null;
 let payment: Payment | null = null;
 let customer: Customer | null = null;
 
 try {
   if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
-    client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-    preapproval = new PreApproval(client);
-    payment = new Payment(client);
-    customer = new Customer(client);
+    mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+    preapproval = new PreApproval(mpClient);
+    payment = new Payment(mpClient);
+    customer = new Customer(mpClient);
   }
 } catch (error) {
   console.error('Failed to initialize Mercado Pago:', error);

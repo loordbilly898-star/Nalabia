@@ -128,6 +128,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
     const stateTimer1 = setTimeout(() => setStatus(ProcessingState.PROCESSING), 1000);
     const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
 
+    let assistantMessageId = '';
+    let currentAssistantMessage: any = null;
     try {
       const startTime = Date.now();
       const responseStream = await generateChatStream(
@@ -141,34 +143,42 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
 
-      const assistantMessageId = (Date.now() + 1).toString();
-      let currentAssistantMessage: Message = {
-        id: assistantMessageId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        mode: 'CHATBOT'
-      };
-      
-      updateActiveProfileMessages(prev => [...prev, currentAssistantMessage]);
-
+      let assistantMessageAdded = false;
       let fullText = '';
       try {
         for await (const chunk of responseStream as any) {
-          if (chunk.choices?.[0]?.delta?.content) {
-            fullText += chunk.choices[0].delta.content;
+          const content = chunk.choices?.[0]?.delta?.content || "";
+          if (content) {
+            if (!assistantMessageAdded) {
+               assistantMessageId = (Date.now() + 1).toString();
+               currentAssistantMessage = {
+                 id: assistantMessageId,
+                 role: 'assistant',
+                 content: '',
+                 timestamp: Date.now(),
+                 mode: 'CHATBOT'
+               };
+               updateActiveProfileMessages(prev => [...prev, currentAssistantMessage]);
+               assistantMessageAdded = true;
+            }
+
+            fullText += content;
             currentAssistantMessage = { ...currentAssistantMessage, content: fullText };
             
             updateActiveProfileMessages(prev => {
-              const withoutLast = prev.filter(m => m.id !== currentAssistantMessage.id);
-              return [...withoutLast, currentAssistantMessage];
+              return prev.map(m => m.id === assistantMessageId ? { ...m, content: fullText } : m);
             });
           }
         }
+
+        if (!assistantMessageAdded || !fullText.trim()) {
+           throw new Error("A IA não retornou conteúdo. Tente novamente.");
+        }
+
         logEvent('api', 'Chatbot stream completed', { responseTime: Date.now() - startTime });
       } catch (streamError: any) {
         logEvent('api', 'Chatbot stream interrupted', { errorDetail: streamError.message });
-        if (fullText.length === 0) throw streamError;
+        if (!fullText.trim()) throw streamError;
       }
 
       setStatus(ProcessingState.IDLE);
@@ -179,9 +189,13 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         });
       }
 
-      await incrementUsage();
-      if (needsSubscription) {
-        await incrementDeviceUsage();
+      try {
+        await incrementUsage();
+        if (needsSubscription) {
+          await incrementDeviceUsage();
+        }
+      } catch (postError) {
+        console.error("Error updating usage:", postError);
       }
 
     } catch (error: any) {
@@ -189,14 +203,19 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       clearTimeout(stateTimer2);
       console.error("Chatbot Error:", error);
       
-      let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
+      // Remove the empty placeholder if it exists and is empty to avoid polluting history
+      updateActiveProfileMessages(prev => prev.filter(m => m.id !== assistantMessageId || (m.content && m.content.trim().length > 0)));
+      
+      let errorMessage = "Erro na IA. Tente reformular ou enviar novamente em alguns segundos.";
       if (typeof error?.message === 'string') {
          if (error.message.includes("fetch failed") || error.name === "AbortError" || error.message.includes("network") || error.name === "TypeError") {
-            errorMessage = "Erro de conexão de rede ou timeout externo no assistente.";
+            errorMessage = "Erro de conexão. Verifique sua internet ou tente novamente.";
          } else if (error.message.includes("429") || error.message.includes("Rate limit")) {
-            errorMessage = "Limite de requisições da API excedido. Aguarde alguns instantes.";
+            errorMessage = "Muitas requisições seguidas. Aguarde 1 minuto.";
+         } else if (error.message.includes("A IA não retornou")) {
+            errorMessage = error.message;
          } else {
-            errorMessage = `Erro: ${error.message}`;
+            errorMessage = `Ops! Algo deu errado: ${error.message.substring(0, 100)}`;
          }
       }
 

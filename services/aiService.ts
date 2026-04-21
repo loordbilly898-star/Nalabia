@@ -24,7 +24,17 @@ const aiProxy = {
         body: JSON.stringify(body)
       });
       
-      if (!response.ok) throw new Error(`Erro no streaming: ${response.status}`);
+      if (!response.ok) {
+        let errorMsg = `Erro no streaming: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errorMsg = errorData.error;
+        } catch (e) {
+          // Fallback if not JSON
+        }
+        throw new Error(errorMsg);
+      }
+      
       if (!response.body) throw new Error("Sem corpo na resposta de streaming");
 
       const reader = response.body.getReader();
@@ -33,22 +43,40 @@ const aiProxy = {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
         
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') return;
-            try {
-              yield JSON.parse(data);
-            } catch (e) {
-              console.error("Erro no parse do stream", e);
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') return;
+              try {
+                const parsed = JSON.parse(data);
+                // Unwrap v2 data property if present
+                yield parsed.data || parsed;
+              } catch (e) {
+                console.error("Erro no parse do stream", e, "Line:", line);
+              }
             }
           }
+        }
+
+        if (done) {
+          // Process remaining buffer if it looks like a data line
+          if (buffer.startsWith('data: ')) {
+            const data = buffer.slice(6).trim();
+            if (data && data !== '[DONE]') {
+              try {
+                yield JSON.parse(data);
+              } catch (e) {
+                // Ignore final partial chunks
+              }
+            }
+          }
+          break;
         }
       }
     }
@@ -236,15 +264,69 @@ export const generateCustomChatResponse = async (
   
   return withRetry(async () => {
     const client = getMistralAI(settings);
-    const modelToUse = messages.some(m => m.content && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')) 
-      ? "pixtral-latest" 
+    const modelToUse = messages.some(m => m.image || (m.content && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url'))) 
+      ? "pixtral-12b-2409" 
       : "mistral-large-latest";
+
+    // Filtering and cleaning messages for Mistral
+    const finalMessages: any[] = [];
+    messages.forEach(m => {
+      // 1. Determine safe content
+      let safeContent = '';
+      if (typeof m.content === 'string') {
+        safeContent = m.content.trim();
+      } else if (Array.isArray(m.content)) {
+        safeContent = m.content.map(c => (typeof c === 'string' ? c : (c.text || ''))).join(' ').trim();
+      }
+
+      const hasImg = !!m.image;
+      const hasText = safeContent.length > 0;
+
+      // 2. Skip illegal empty messages
+      if (m.role === 'assistant' && !hasText) return;
+      if (m.role === 'user' && !hasText && !hasImg) return;
+
+      // 3. Prevent consecutive same roles
+      const lastMsg = finalMessages[finalMessages.length - 1];
+      if (lastMsg && lastMsg.role === (m.role === 'assistant' ? 'assistant' : 'user')) {
+        if (hasImg) {
+          if (typeof lastMsg.content === 'string') {
+            lastMsg.content = [{ type: "text", text: lastMsg.content }];
+          }
+          if (safeContent) lastMsg.content.push({ type: "text", text: safeContent });
+          lastMsg.content.push({ type: "image_url", imageUrl: { url: m.image } });
+        } else {
+          if (typeof lastMsg.content === 'string') {
+            lastMsg.content += "\n\n" + safeContent;
+          } else {
+            lastMsg.content.push({ type: "text", text: safeContent });
+          }
+        }
+        return;
+      }
+
+      // 4. Push message
+      if (hasImg) {
+        finalMessages.push({
+          role: m.role,
+          content: [
+            { type: "text", text: safeContent || "Analise esta imagem." },
+            { type: "image_url", imageUrl: { url: m.image } }
+          ]
+        });
+      } else {
+        finalMessages.push({
+          role: m.role,
+          content: safeContent
+        });
+      }
+    });
 
     const response = await client.chat.complete({
       model: modelToUse,
       messages: [
         { role: "system", content: `${systemPrompt}\nIMPORTANTE: Responda de forma completa e nunca pare no meio.` },
-        ...messages
+        ...finalMessages
       ],
       temperature: 0.7,
       maxTokens: 1000,
@@ -362,7 +444,7 @@ export const analyzeContent = async (
         role: "user",
         content: [
           { type: "text", text: prompt },
-          { type: "image_url", imageUrl: imageBase64 }
+          { type: "image_url", imageUrl: { url: imageBase64 } }
         ]
       });
     } else {
@@ -370,7 +452,7 @@ export const analyzeContent = async (
     }
 
     const response = await client.chat.complete({
-      model: imageBase64 ? "pixtral-latest" : "mistral-large-latest",
+      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
       temperature: 0.75,
@@ -462,7 +544,7 @@ export const regenerateContent = async (
         role: "user",
         content: [
           { type: "text", text: prompt },
-          { type: "image_url", imageUrl: imageBase64 }
+          { type: "image_url", imageUrl: { url: imageBase64 } }
         ]
       });
     } else {
@@ -561,7 +643,7 @@ export const runLaboratory = async (
         role: "user",
         content: [
           { type: "text", text: prompt },
-          { type: "image_url", imageUrl: imageBase64 }
+          { type: "image_url", imageUrl: { url: imageBase64 } }
         ]
       });
     } else {
@@ -569,7 +651,7 @@ export const runLaboratory = async (
     }
 
     const response = await client.chat.complete({
-      model: imageBase64 ? "pixtral-latest" : "mistral-large-latest",
+      model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
       temperature: 0.8,
@@ -637,33 +719,75 @@ export const generateChatStream = async (
 
   const fullSystemPrompt = `${SYSTEM_PROMPT}\n\n${CHAT_RESPONSE_STRUCTURE}\n\nCONTEXTO:\n${profileInstruction}\n${userAIProfileInstruction}\n${memoryInstruction}\n${settingsInstruction}`;
 
-  const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt }];
+  const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt + "\n\n⚠️ INSTRUÇÃO CRUCIAL: Seja extremamente DETALHADO e ÍNTIMO na sua resposta. Não economize nas palavras para descrever a dinâmica e dar conselhos sagazes." }];
   let hasImage = false;
 
   messages.forEach(msg => {
-    if (msg.image) {
-      hasImage = true;
+    const safeContent = typeof msg.content === 'string' ? msg.content.trim() : '';
+    const hasImg = !!msg.image;
+    
+    if (msg.role === 'assistant' && !safeContent) return;
+    if (msg.role === 'user' && !safeContent && !hasImg) return;
+
+    if (hasImg) hasImage = true;
+
+    const lastMsg = mistralMessages[mistralMessages.length - 1];
+    
+    // Merge consecutive messages of the same role
+    if (lastMsg && (lastMsg.role === msg.role || (lastMsg.role === 'assistant' && msg.role === 'assistant') || (lastMsg.role === 'user' && msg.role === 'user'))) {
+      if (hasImg) {
+        if (typeof lastMsg.content === 'string') {
+          lastMsg.content = [{ type: "text", text: lastMsg.content }];
+        }
+        if (safeContent) lastMsg.content.push({ type: "text", text: safeContent });
+        lastMsg.content.push({ type: "image_url", imageUrl: { url: msg.image } });
+      } else {
+        if (typeof lastMsg.content === 'string') {
+          lastMsg.content += "\n\n" + safeContent;
+        } else {
+          lastMsg.content.push({ type: "text", text: safeContent });
+        }
+      }
+      return;
+    }
+
+    // New role
+    if (hasImg) {
       mistralMessages.push({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
         content: [
-          { type: "text", text: msg.content || "" },
-          { type: "image_url", imageUrl: msg.image }
+          { type: "text", text: safeContent || "Análise do print:" },
+          { type: "image_url", imageUrl: { url: msg.image } }
         ]
       });
     } else {
       mistralMessages.push({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content || ""
+        content: safeContent
       });
     }
   });
 
-  const modelToUse = hasImage ? "pixtral-latest" : "mistral-large-latest";
+  // Ensure first message after system is user
+  if (mistralMessages.length > 1 && mistralMessages[1].role === 'assistant') {
+    mistralMessages.splice(1, 0, { role: 'user', content: 'Olá, vamos continuar.' });
+  }
+
+  // Ensure it doesn't end with assistant or system
+  if (mistralMessages.length === 1) {
+    mistralMessages.push({ role: 'user', content: 'Olá, NaLábia. Preciso da sua ajuda.' });
+  } else if (mistralMessages[mistralMessages.length - 1].role !== 'user') {
+    mistralMessages.push({ role: 'user', content: 'Analise e me dê sua opinião detalhada agora.' });
+  }
+
+  const modelToUse = hasImage ? "pixtral-12b-2409" : "mistral-large-latest";
+
+  logEvent('api', 'Starting AI Stream', { model: modelToUse, messageCount: mistralMessages.length });
 
   return client.chat.stream({
     model: modelToUse,
     messages: mistralMessages,
-    temperature: 0.7,
+    temperature: 0.7
   });
 };
 
@@ -701,7 +825,7 @@ Retorne APENAS um JSON válido:
     ];
     
     images.forEach(img => {
-      contentParts.push({ type: "image_url", imageUrl: img });
+      contentParts.push({ type: "image_url", imageUrl: { url: img } });
     });
 
     const response = await client.chat.complete({
@@ -760,7 +884,7 @@ Retorne APENAS o JSON:
 
     const contentParts: any[] = [{ type: "text", text: prompt }];
     images.forEach(img => {
-      contentParts.push({ type: "image_url", imageUrl: img });
+      contentParts.push({ type: "image_url", imageUrl: { url: img } });
     });
 
     const response = await client.chat.complete({
