@@ -46,38 +46,46 @@ const aiProxy = {
         
         if (value) {
           buffer += decoder.decode(value, { stream: true });
-          // Handle both \n\n and \n line endings
-          const lines = buffer.split(/\n+/);
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (trimmedLine.startsWith('data: ')) {
-              const data = trimmedLine.slice(6).trim();
-              if (data === '[DONE]') return;
-              try {
-                const parsed = JSON.parse(data);
-                // Unwrap v2 data property if present
-                const chunk = parsed.data || parsed;
-                if (chunk) yield chunk;
-              } catch (e) {
-                console.error("Erro no parse do stream", e, "Line:", line);
+          
+          let eventBoundaryIndex;
+          while ((eventBoundaryIndex = buffer.indexOf('\n\n')) >= 0) {
+            const eventString = buffer.slice(0, eventBoundaryIndex);
+            buffer = buffer.slice(eventBoundaryIndex + 2);
+            
+            const lines = eventString.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data:')) {
+                const dataStr = line.slice(5).trim();
+                if (dataStr === '[DONE]') return;
+                if (!dataStr) continue;
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  const chunk = parsed.data || parsed;
+                  if (chunk) yield chunk;
+                } catch (e) {
+                  console.error("Erro no parse do stream data:", dataStr.substring(0, 50), "Error:", e);
+                }
               }
             }
           }
         }
 
         if (done) {
-          // Process remaining buffer if it looks like a data line
-          if (buffer.startsWith('data: ')) {
-            const data = buffer.slice(6).trim();
-            if (data && data !== '[DONE]') {
-              try {
-                yield JSON.parse(data);
-              } catch (e) {
-                // Ignore final partial chunks
-              }
-            }
+          // Process what's left if it looks like an event
+          if (buffer.trim()) {
+             const lines = buffer.split('\n');
+             for (const line of lines) {
+               if (line.startsWith('data:')) {
+                 const dataStr = line.slice(5).trim();
+                 if (dataStr && dataStr !== '[DONE]') {
+                   try {
+                     const parsed = JSON.parse(dataStr);
+                     const chunk = parsed.data || parsed;
+                     if (chunk) yield chunk;
+                   } catch (e) {}
+                 }
+               }
+             }
           }
           break;
         }
@@ -99,7 +107,7 @@ export const getMistralAI = (settings?: AppSettings) => {
 };
 
 const MAX_RETRIES = 1;
-const GLOBAL_TIMEOUT = 60000; // 60 seconds for complex vision/analysis tasks
+const GLOBAL_TIMEOUT = 120000; // 120 seconds to prevent frontend from artificially cutting off the 5 minutes backend.
 
 // Helper to normalize Mistral content (which can be string or ContentChunk[])
 const normalizeMistralContent = (content: any): string => {
@@ -725,7 +733,42 @@ export const generateChatStream = async (
   const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt + "\n\n⚠️ INSTRUÇÃO CRUCIAL: Seja extremamente DETALHADO e ÍNTIMO na sua resposta. Não economize nas palavras para descrever a dinâmica e dar conselhos sagazes." }];
   let hasImage = false;
 
-  messages.forEach(msg => {
+  const MAX_MESSAGES_CONTEXT = 30;
+  
+  // Filter out any system/fallback error messages from the app
+  const cleanMessages = messages.filter(m => {
+    if (m.role === 'assistant' && typeof m.content === 'string') {
+      if (m.content.includes("A IA não retornou conteúdo") || 
+          m.content.includes("Erro na IA") || 
+          m.content.includes("Ops! Algo deu errado") ||
+          m.content.includes("A IA está sobrecarregada") ||
+          m.content.includes("Muitas requisições")) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const recentMessages = cleanMessages.slice(-MAX_MESSAGES_CONTEXT);
+  
+  // Count images from new to old, keep only the last 2 images to preserve context limit
+  let imagesCount = 0;
+  const MAX_IMAGES_ALLOWED = 2;
+  
+  const optimizedMessages = [...recentMessages].reverse().map(msg => {
+    let optimizedMsg = { ...msg };
+    if (optimizedMsg.image) {
+      if (imagesCount < MAX_IMAGES_ALLOWED) {
+        imagesCount++;
+      } else {
+        optimizedMsg.image = undefined; // Drop older images to save tokens
+        optimizedMsg.content = (optimizedMsg.content || "") + "\n[Imagem anterior removida da memória recente para economizar espaço]";
+      }
+    }
+    return optimizedMsg;
+  }).reverse();
+
+  optimizedMessages.forEach(msg => {
     const safeContent = typeof msg.content === 'string' ? msg.content.trim() : '';
     const hasImg = !!msg.image;
     

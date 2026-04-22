@@ -93,11 +93,11 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       }
     } else if (!isDeveloper) {
       const today = new Date().toISOString().split('T')[0];
-      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
+      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 1000) {
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!",
+          content: "Você atingiu o limite de segurança da plataforma (1000 requisições). Volte amanhã para continuar usando a IA!",
           timestamp: Date.now(),
           mode: 'CHATBOT'
         };

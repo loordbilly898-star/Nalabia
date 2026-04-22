@@ -48,17 +48,32 @@ const supabaseUrl = 'https://dxnxykpwmgbzsdiohgdo.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bnh5a3B3bWdienNkaW9oZ2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDQzODksImV4cCI6MjA5MTY4MDM4OX0.P5TiAYDvDAoBs4I_T3d4IC6xVKVCfiqZIkVV81IJphs';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Initialize Mistral
+// Initialize Mistral with Key Rotation (Load Balancing)
+let currentKeyIndex = 0;
+
 const getMistralClient = () => {
-  const apiKey = (process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '').trim();
-  if (!apiKey) {
+  const rawKeyText = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '';
+  // Allowed formats: "key1", "key1,key2,key3" or "key1;key2;key3"
+  const apiKeys = rawKeyText.split(/[,;]/).map(k => k.trim()).filter(k => k.length > 0);
+
+  if (apiKeys.length === 0) {
     console.error('[SERVER] MISTRAL_API_KEY NO ENCONTRADA.');
     console.error('[SERVER] Verifique se a variável MISTRAL_API_KEY está configurada no menu Settings do AI Studio.');
     throw new Error('MISTRAL_API_KEY not found. Please set it in the environment variables.');
   }
+
+  // Pick the current key in a round-robin rotation
+  const apiKey = apiKeys[currentKeyIndex];
+  currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length; // move to next key for the next request
+
   const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-  console.log(`[SERVER] Inicializando Mistral Client com chave: ${maskedKey}`);
-  return new Mistral({ apiKey });
+  console.log(`[SERVER] Mistral Load Balancer rodando. Chave escolhida (${currentKeyIndex === 0 ? apiKeys.length : currentKeyIndex}/${apiKeys.length}): ${maskedKey}`);
+  
+  // Increasing default timeout from 30s to 5 minutes to avoid DOMException TimeoutError on long generations
+  return new Mistral({ 
+    apiKey,
+    timeoutMs: 300000 // 300 seconds
+  });
 };
 
 // AI Routes
@@ -71,8 +86,31 @@ app.post('/api/ai/complete', async (req, res) => {
       return res.status(400).json({ error: 'Mensagens ausentes.' });
     }
     
-    const mistral = getMistralClient();
-    const response = await mistral.chat.complete(body);
+    const rawKeyText = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '';
+    const keyArrayMatch = rawKeyText.split(/[,;]/).map(k => k.trim()).filter(k => k.length > 0);
+    const totalKeys = keyArrayMatch.length || 1;
+
+    let response;
+    let retries = totalKeys * 2; // Auto scale retries if they enter multiple keys
+    while (retries >= 0) {
+      try {
+        const mistral = getMistralClient();
+        response = await mistral.chat.complete(body);
+        break;
+      } catch (err: any) {
+        const isRateLimit = err.status === 429 || (err.message && err.message.includes('429'));
+        const isTimeoutOrServerErr = err.name === 'TimeoutError' || (err.message && err.message.toLowerCase().includes('timeout')) || err.status >= 500;
+
+        if (retries > 0 && (isRateLimit || isTimeoutOrServerErr)) {
+          console.warn(`[AI-COMPLETE][${requestId}] Erro ${err.status || 'Timeout'} detectado. Trocando de chave/tentando novamente...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          retries--;
+        } else {
+          throw err;
+        }
+      }
+    }
+    
     res.json(response);
   } catch (error: any) {
     console.error(`[AI-COMPLETE] Erro:`, error);
@@ -89,10 +127,34 @@ app.post('/api/ai/stream', async (req, res) => {
       return res.status(400).json({ error: 'Mensagens ausentes.' });
     }
 
-    const mistral = getMistralClient();
     console.log(`[AI-STREAM][${requestId}] Usando modelo: ${body.model || 'default'}`);
-    const stream = await mistral.chat.stream(body);
     
+    const rawKeyText = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '';
+    // Used to scale retries automatically
+    const keyArrayMatch = rawKeyText.split(/[,;]/).map(k => k.trim()).filter(k => k.length > 0);
+    const totalKeys = keyArrayMatch.length || 1;
+
+    let stream;
+    let retries = totalKeys * 2; // Auto scale retries if they enter multiple keys
+    while (retries >= 0) {
+      try {
+        const mistral = getMistralClient();
+        stream = await mistral.chat.stream(body);
+        break; // Sucesso
+      } catch (err: any) {
+        const isRateLimit = err.status === 429 || (err.message && err.message.includes('429'));
+        const isTimeoutOrServerErr = err.name === 'TimeoutError' || (err.message && err.message.toLowerCase().includes('timeout')) || err.status >= 500;
+        
+        if (retries > 0 && (isRateLimit || isTimeoutOrServerErr)) {
+          console.warn(`[AI-STREAM][${requestId}] Erro ${err.status || 'Timeout'} detectado. Trocando de chave/tentando novamente...`);
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Espera 2s antes de tentar
+          retries--;
+        } else {
+          throw err;
+        }
+      }
+    }
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -111,7 +173,13 @@ app.post('/api/ai/stream', async (req, res) => {
       console.log(`[AI-STREAM][${requestId}] Stream finalizado com sucesso. Chunks: ${chunkCount}`);
     } catch (streamError: any) {
       console.error(`[AI-STREAM][${requestId}] Erro durante a iteração do stream:`, streamError);
+      
+      // Notify client visually that generation was interrupted
+      const errorMsg = { choices: [{ delta: { content: "\n\n**[Erro de Conexão: A resposta da IA foi interrompida por inatividade (Timeout). Por favor, repita a pergunta.]**\n" } }] };
+      res.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
+      res.write('data: [DONE]\n\n');
     }
+    
     res.end();
   } catch (error: any) {
     console.error(`[AI-STREAM] Erro:`, error);

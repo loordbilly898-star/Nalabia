@@ -69,8 +69,8 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
       }
     } else if (!isDeveloper) {
       const today = new Date().toISOString().split('T')[0];
-      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
-        setErrorMsg("Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!");
+      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 1000) {
+        setErrorMsg("Você atingiu o limite de segurança de 1000 requisições. Volte amanhã para continuar!");
         return;
       }
     }
