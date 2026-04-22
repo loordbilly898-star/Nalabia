@@ -27,10 +27,23 @@ const aiProxy = {
       if (!response.ok) {
         let errorMsg = `Erro no streaming: ${response.status}`;
         try {
-          const errorData = await response.json();
-          if (errorData.error) errorMsg = errorData.error;
+          const rawText = await response.text();
+          try {
+            const errorData = JSON.parse(rawText);
+            if (errorData.error) errorMsg = errorData.error;
+          } catch (jsonErr) {
+            // It's HTML or text (like Vercel 500 pages)
+            console.error("[Vercel/Server Error HTML]:", rawText.substring(0, 500));
+            if (rawText.toLowerCase().includes('timeout')) {
+              errorMsg = 'O Provedor (Vercel) encerrou a conexão por tempo limite (Timeout).';
+            } else if (rawText.includes('FUNCTION_INVOCATION_TIMEOUT')) {
+              errorMsg = 'O servidor Vercel limitou o tempo em 10s (Limite Habitual).';
+            } else {
+              errorMsg = `Erro no servidor (Vercel 500). Verifique os logs do Vercel. Detalhe: ${rawText.substring(0, 50)}`;
+            }
+          }
         } catch (e) {
-          // Fallback if not JSON
+          // Fallback if completely unreadable
         }
         throw new Error(errorMsg);
       }

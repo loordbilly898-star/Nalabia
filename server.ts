@@ -160,8 +160,14 @@ app.post('/api/ai/stream', async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    
+    // Força o envio dos cabeçalhos imediatamente
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
 
     let chunkCount = 0;
     try {
