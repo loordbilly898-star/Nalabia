@@ -32,9 +32,12 @@ async function fixUser() {
   expires.setDate(expires.getDate() + 30);
   
   const { error: assinError } = await supabase.from('assinaturas').upsert({
-    userID: user.userID,
+    id: user.userID,
+    email: email,
+    status: 'ativa',
     plano: 'mensal',
-    status: 'ativa'
+    plano_nome: 'Plano Mensal',
+    expira_em: expires.toISOString()
   });
   
   if (assinError) console.error('Assinaturas error:', assinError);
