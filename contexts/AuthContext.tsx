@@ -165,6 +165,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }).catch(e => console.error("Insert timeout/error:", e));
         }
 
+        // --- NEW: Prioritize check in 'assinaturas' table ---
+        const { data: assinatura } = await supabase
+          .from('assinaturas')
+          .select('*')
+          .eq('email', data.email)
+          .order('expira_em', { ascending: false })
+          .maybeSingle();
+
+        if (assinatura && assinatura.status === 'ativa') {
+          const expirationDate = new Date(assinatura.expira_em);
+          if (expirationDate > new Date()) {
+            console.log(`[Auth] Valid assinatura found for ${data.email}. Overriding status.`);
+            data.status = 'ativo';
+            data.nalabiaPrimeAcess = true;
+            data.plano = assinatura.plano_nome;
+            data.expiraEm = assinatura.expira_em;
+          }
+        }
+        // --- END NEW ---
+
         // Developer bypass (double check for existing users)
         if (userDoc && currentUser.email === 'loordbilly898@gmail.com') {
           data.nalabiaPrimeAcess = true;

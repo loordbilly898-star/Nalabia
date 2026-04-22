@@ -415,10 +415,11 @@ app.post('/api/webhook/cakto', async (req, res) => {
     if (typeof payload === 'string') {
       try { payload = JSON.parse(payload); } catch (e) {}
     }
-    const event = req.body.event || payload.event || payload.status;
-    const status = payload.status || event;
+    const event = String(req.body.event || payload.event || payload.status || '').toLowerCase();
+    const status = String(payload.status || event).toLowerCase();
+    
     // Cakto often sends the external reference in the 'src' field or 'metadata'
-    const userId = payload.external_reference || payload.reference || payload.metadata?.userId || payload.tracking?.src || payload.src || payload.sck || payload.utm_source;
+    const userId = payload.external_reference || payload.reference || payload.metadata?.userId || payload.tracking?.src || payload.src || payload.sck || payload.utm_source || payload.tracking?.source;
     const amount = payload.amount ? Number(payload.amount) / 100 : (Number(payload.transaction_amount) || 0);
     const reason = payload.metadata?.planName || payload.product?.name || payload.offer?.name || payload.items?.[0]?.title || '';
     const payerEmail = payload.customer?.email || payload.client?.email || payload.email || payload.payer_email;
@@ -457,7 +458,7 @@ async function processSubscriptionUpdate(subscription: any) {
   const provider = subscription.provider || 'mercadopago';
   let userId = subscription.external_reference;
   const payerEmail = subscription.payer_email || subscription.payer?.email;
-  const status = subscription.status;
+  const status = String(subscription.status || '').toLowerCase();
   const reason = subscription.reason || subscription.description || '';
   const transactionAmount = Number(subscription.transaction_amount || subscription.auto_recurring?.transaction_amount || 0);
   const planName = reason.includes('NaLábia') ? reason.replace('NaLábia - ', '') : (reason || 'Premium');
@@ -466,10 +467,14 @@ async function processSubscriptionUpdate(subscription: any) {
 
   if (!userId && payerEmail) {
     try {
-      const { data: users } = await supabase.from('users').select('userID').eq('email', payerEmail).limit(1);
+      // Trying case-insensitive matching first
+      console.log(`[Payment Process] Searching for userId using ilike for email: ${payerEmail}`);
+      const { data: users } = await supabase.from('users').select('userID').ilike('email', payerEmail).limit(1);
       if (users && users.length > 0) {
         userId = users[0].userID;
-        console.log(`[Payment Process] Found userId ${userId} by email ${payerEmail}`);
+        console.log(`[Payment Process] Found userId ${userId} by ilike email ${payerEmail}`);
+      } else {
+        console.warn(`[Payment Process] User not found by email ${payerEmail} in Supabase`);
       }
     } catch (err) {
       console.error('[Payment Process] Error searching user by email:', err);
@@ -477,93 +482,119 @@ async function processSubscriptionUpdate(subscription: any) {
   }
 
   if (userId) {
-    try {
-      let { data: userData } = await supabase.from('users').select('*').eq('userID', userId).single();
-      
-      // If user document doesn't exist yet, we must create a skeleton so the payment registers!
-      // This happens if the frontend hasn't synced the user doc but they triggered checkout.
-      if (!userData) {
-        console.log(`[Payment Process] User document ${userId} not found! Creating skeleton...`);
-        userData = {
-          userID: userId,
-          email: payerEmail || '',
-          level: 1,
-          xp: 0,
-          createdAt: Date.now(),
-          onboardingCompleted: false
-        };
-      }
-      
-      if (status === 'authorized' || status === 'approved' || status === 'paid' || status === 'payment.paid') {
-        if (userData.lastPaymentId && userData.lastPaymentId === subscription.id) {
-          console.log(`[Payment Process] Payment ${subscription.id} already processed`);
-          return;
+    let retries = 3;
+    let success = false;
+    
+    while (retries > 0 && !success) {
+      try {
+        let { data: userData } = await supabase.from('users').select('*').eq('userID', userId).single();
+        
+        // If user document doesn't exist yet, we must create a skeleton so the payment registers!
+        if (!userData) {
+          console.log(`[Payment Process] User document ${userId} not found! Creating skeleton...`);
+          userData = {
+            userID: userId,
+            email: payerEmail || '',
+            level: 1,
+            xp: 0,
+            createdAt: Date.now(),
+            onboardingCompleted: false
+          };
         }
+        
+        if (status === 'authorized' || status === 'approved' || status === 'paid' || status === 'payment.paid' || status === 'completed') {
+          if (userData.lastPaymentId && userData.lastPaymentId === subscription.id) {
+            console.log(`[Payment Process] Payment ${subscription.id} already processed`);
+            return;
+          }
 
-        const amount = transactionAmount;
-        const isCourse = amount >= 30 && amount <= 45 || reason.toLowerCase().includes('curso') || reason.toLowerCase().includes('academia');
-        const isDarkPack = amount >= 10 && amount <= 18 || reason.toLowerCase().includes('dark') || reason.toLowerCase().includes('18');
+          const amount = transactionAmount;
+          const isCourse = amount >= 30 && amount <= 45 || reason.toLowerCase().includes('curso') || reason.toLowerCase().includes('academia');
+          const isDarkPack = amount >= 10 && amount <= 18 || reason.toLowerCase().includes('dark') || reason.toLowerCase().includes('18');
 
-        // PREPARE UPSERT DATA
-        const updateData: any = {
-          ...userData, // spread existing data to not overwrite
-          status: 'ativo',
-          nalabiaPrimeAcess: true, // Always grant base access on any purchase
-          lastPaymentId: subscription.id,
-          updatedAt: new Date().toISOString()
-        };
+          // PREPARE UPSERT DATA
+          const updateData: any = {
+            ...userData, // spread existing data to not overwrite
+            status: 'ativo',
+            nalabiaPrimeAcess: true, // Always grant base access on any purchase
+            lastPaymentId: subscription.id,
+            updatedAt: new Date().toISOString()
+          };
 
-        if (isCourse) {
-          updateData.coursesAccess = true;
-          updateData.plano = 'Curso Academia';
-          console.log(`[Payment Process] Granting Course Access to ${userId}`);
-        } else if (isDarkPack) {
-          updateData.darkPackAccess = true;
-          updateData.plano = 'Pacote Dark';
-          console.log(`[Payment Process] Granting Dark Pack Access to ${userId}`);
+          if (isCourse) {
+            updateData.coursesAccess = true;
+            updateData.plano = 'Curso Academia';
+            console.log(`[Payment Process] Granting Course Access to ${userId}`);
+          } else if (isDarkPack) {
+            updateData.darkPackAccess = true;
+            updateData.plano = 'Pacote Dark';
+            console.log(`[Payment Process] Granting Dark Pack Access to ${userId}`);
+          } else {
+            // Standard Subscriptions
+            let expiraEm = new Date();
+            if (userData.expiraEm) {
+              const currentExp = new Date(userData.expiraEm);
+              if (currentExp > new Date()) expiraEm = currentExp;
+            }
+
+            if (reason.toLowerCase().includes('trimestral') || planName.toLowerCase().includes('trimestral')) {
+              expiraEm.setDate(expiraEm.getDate() + 90);
+            } else if (reason.toLowerCase().includes('anual') || planName.toLowerCase().includes('anual')) {
+              expiraEm.setDate(expiraEm.getDate() + 365);
+            } else { // default to monthly
+              expiraEm.setDate(expiraEm.getDate() + 30);
+            }
+
+            updateData.plano = planName || 'Premium';
+            updateData.expiraEm = expiraEm.toISOString();
+            console.log(`[Payment Process] Granting Subscription Access to ${userId}, Expires: ${updateData.expiraEm}`);
+          }
+
+          // UPSERT guarantees creation if missing, and update if existing
+          const { error: upsertError } = await supabase.from('users').upsert(updateData);
+          if (upsertError) throw upsertError;
+
+          // 2. Insert/Upsert into assinaturas (The Architecture fix)
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 30); // Default 30 days
+
+          const { error: assinError } = await supabase.from('assinaturas').upsert({
+            email: payerEmail, 
+            status: 'ativa',
+            plano: 'mensal',
+            plano_nome: 'Mensal',
+            valor_pago: '0.00',
+            expira_em: expiresAt.toISOString(),
+            updated_at: new Date().toISOString()
+          });
+          if (assinError) console.error('[Payment Process] Error updating public.assinaturas:', assinError);
+
+          console.log(`[Payment Process] Successfully updated user ${userId}`);
+          success = true;
+        } else if (['cancelled', 'paused', 'canceled', 'subscription.canceled'].includes(status)) {
+          // UPSERT with pending status
+          const updateData: any = {
+            ...userData,
+            status: 'pendente',
+            updatedAt: new Date().toISOString()
+          };
+          await supabase.from('users').upsert(updateData);
+          console.log(`[Payment Process] Subscription cancelled for user ${userId}`);
+          success = true;
         } else {
-          // Standard Subscriptions
-          let expiraEm = new Date();
-          if (userData.expiraEm) {
-            const currentExp = new Date(userData.expiraEm);
-            if (currentExp > new Date()) expiraEm = currentExp;
-          }
-
-          if (reason.toLowerCase().includes('trimestral') || planName.toLowerCase().includes('trimestral')) {
-            expiraEm.setDate(expiraEm.getDate() + 90);
-          } else if (reason.toLowerCase().includes('anual') || planName.toLowerCase().includes('anual')) {
-            expiraEm.setDate(expiraEm.getDate() + 365);
-          } else { // default to monthly
-            expiraEm.setDate(expiraEm.getDate() + 30);
-          }
-
-          updateData.plano = planName || 'Premium';
-          updateData.expiraEm = expiraEm.toISOString();
-          console.log(`[Payment Process] Granting Subscription Access to ${userId}, Expires: ${updateData.expiraEm}`);
+          console.log(`[Payment Process] Ignored status: ${status} for user ${userId}`);
+          success = true; // Not an error to ignore
         }
-
-        // UPSERT guarantees creation if missing, and update if existing
-        const { error: upsertError } = await supabase.from('users').upsert(updateData);
-        if (upsertError) throw upsertError;
-
-        console.log(`[Payment Process] Successfully updated user ${userId}`);
-      } else if (['cancelled', 'paused', 'canceled', 'subscription.canceled'].includes(status)) {
-        // UPSERT with pending status
-        const updateData: any = {
-          ...userData,
-          status: 'pendente',
-          updatedAt: new Date().toISOString()
-        };
-        await supabase.from('users').upsert(updateData);
-        console.log(`[Payment Process] Subscription cancelled for user ${userId}`);
+      } catch (err: any) {
+        console.error(`[Payment Process] Error updating user ${userId} (Retries left: ${retries - 1}):`, err.message || err);
+        retries--;
+        if (retries > 0) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
-    } catch (err) {
-      console.error(`[Payment Process] Error updating user ${userId}:`, err);
     }
   } else {
-    // We don't have a userId. Let's try matching by email purely for an upsert?
-    // Actually, without userId we can't reliably upsert since userID is primary key.
-    console.error(`[Payment Process] Could not identify user for payment ${subscription.id} - Make sure frontend sends userId`);
+    console.error(`[Payment Process] FATAL: Could not identify user for payment ${subscription.id} (Email: ${payerEmail}). User mismatch or frontend didn't pass external_reference.`);
   }
 }
 
