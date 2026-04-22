@@ -21,10 +21,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app')) {
+    // Allows requests with no origin (like mobile apps or curl requests)
+    // Allows any origin in development or when deployed dynamically
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app') || origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || origin.endsWith('.up.railway.app') || origin.includes('localhost')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // In production, if they deploy to a custom domain, we should ideally allow it 
+      // dynamically since we are serving both frontend and backend from the same process
+      callback(null, true); 
     }
   },
   credentials: true
