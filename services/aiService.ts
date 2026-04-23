@@ -1,5 +1,5 @@
 import { Mistral } from '@mistralai/mistralai';
-import { SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMAT_INSTRUCTION, LAB_PROMPT, NalabiaResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation, Memory } from "../types";
+import { SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMAT_INSTRUCTION, LAB_PROMPT, NalabiaResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation, Memory } from "../types";
 import { logEvent } from "./logger";
 
 // Proxy implementation to call AI via the server
@@ -705,28 +705,30 @@ export const generateChatStream = async (
   let profileInstruction = "";
   if (activeProfile && activeProfile.id !== "general") {
     profileInstruction = `
-    👤 PERFIL ATIVO: ${activeProfile.name} (${activeProfile.description})
-    PADRÃO DELA: ${activeProfile.behavioralPattern || "Ainda em análise"}
+    DADOS DA PESSOA QUE ESTAMOS ANALISANDO:
+    Nome: ${activeProfile.name}
+    Descricao: ${activeProfile.description}
+    Padrao de comportamento dela: ${activeProfile.behavioralPattern || "Ainda em análise"}
     `;
   }
 
   let userAIProfileInstruction = "";
   if (userAIProfile) {
     userAIProfileInstruction = `
-    🧠 USER PROFILE:
-    Nível: ${userAIProfile.experienceLevel}
-    Estilo: ${userAIProfile.communicationStyle}
-    Objetivo: ${userAIProfile.goal}
+    SOBRE O MEU DONO (USUÁRIO):
+    Nivel de experiencia: ${userAIProfile.experienceLevel}
+    Estilo de comunicacao: ${userAIProfile.communicationStyle}
+    Objetivo dele: ${userAIProfile.goal}
     `;
   }
 
   let settingsInstruction = "";
   if (settings) {
     settingsInstruction = `
-    ⚙️ DIRETRIZES:
-    ${settings.ai?.avoidCompliments ? "- EVITAR ELOGIOS." : ""}
-    ${settings.ai?.shortResponses ? "- RESPOSTAS CURTAS." : ""}
-    ${settings.ai?.avoidQuestions ? "- EVITAR PERGUNTAS." : ""}
+    REGRAS ATIVAS PARA AS MENSAGENS DELA:
+    ${settings.ai?.avoidCompliments ? "EVITAR ELOGIOS." : ""}
+    ${settings.ai?.shortResponses ? "RESPOSTAS CURTAS." : ""}
+    ${settings.ai?.avoidQuestions ? "EVITAR PERGUNTAS." : ""}
     `;
   }
 
@@ -735,13 +737,13 @@ export const generateChatStream = async (
     const profileMemory = memories.find(m => m.id === activeProfile.id);
     if (profileMemory && profileMemory.observations && profileMemory.observations.length > 0) {
       memoryInstruction = `
-      📁 MEMÓRIA:
-      ${profileMemory.observations.map(obs => `- ${obs}`).join('\n')}
+      FATOS IMPORTANTES QUE LEMBRAMOS SOBRE ELA:
+      ${profileMemory.observations.map(obs => obs).join('\n')}
       `;
     }
   }
 
-  const fullSystemPrompt = `${SYSTEM_PROMPT}\n\n${CHAT_RESPONSE_STRUCTURE}\n\nCONTEXTO:\n${profileInstruction}\n${userAIProfileInstruction}\n${memoryInstruction}\n${settingsInstruction}`;
+  const fullSystemPrompt = `${COACH_SYSTEM_PROMPT}\n\nCONTEXTO:\n${profileInstruction}\n${userAIProfileInstruction}\n${memoryInstruction}\n${settingsInstruction}`;
 
   const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt }];
   let hasImage = false;

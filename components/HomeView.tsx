@@ -55,7 +55,7 @@ const CATEGORIES = [
     tools: [
       { id: 'FLOWING' as AnalysisMode, label: 'Flow', icon: Zap, desc: 'Mantenha o assunto fluindo naturalmente.', tip: 'Use quando a conversa estiver morrendo ou você não souber o que responder.' },
       { id: 'VALUE_TEST' as AnalysisMode, label: 'Teste de Valor', icon: ShieldAlert, desc: 'Inverta o jogo e faça ela se qualificar.', tip: 'Quando ela estiver se achando muito ou te testando (shit tests).' },
-      { id: 'CHATBOT' as AnalysisMode, label: 'Assistente IA', icon: Bot, desc: 'Converse livremente com a IA.', tip: 'Peça conselhos gerais sobre sedução, estilo ou comportamento.' },
+      { id: 'CHATBOT' as AnalysisMode, label: 'Mentoria NaLábia', icon: Bot, desc: 'Seu braço direito nas sombras. Estratégia e mentoria real.', tip: 'Peça a leitura fria de uma conversa, conselhos de frame ou táticas de dominação.' },
     ]
   },
   {

@@ -48,7 +48,7 @@ const TABS: { id: AnalysisMode; label: string; icon: React.FC<any>; desc: string
   { id: 'SIMULATOR', label: 'Simulador', icon: Users, desc: 'Treino com IA' },
   { id: 'VAULT', label: 'Cofre', icon: Lock, desc: 'Respostas Salvas' },
   { id: 'STATS', label: 'Estatísticas', icon: Crown, desc: 'Dashboard do Usuário' },
-  { id: 'CHATBOT', label: 'Assistente', icon: Bot, desc: 'Assistente NaLábia' },
+  { id: 'CHATBOT', label: 'Mentoria', icon: Bot, desc: 'Braço Direito Estratégico' },
 ];
 
 const PROFILES_STYLES = [

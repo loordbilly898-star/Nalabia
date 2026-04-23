@@ -262,9 +262,9 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       <div className={`p-4 border-b border-gold-dim/10 ${getThemeHeaderBg()}`}>
         <h2 className="text-sm font-mono text-gold-glow uppercase tracking-widest flex items-center gap-2">
           <Sparkles size={14} />
-          Assistente IA
+          NaLábia Mentoria
         </h2>
-        <p className="text-xs text-gray-500 mt-1">Faça perguntas ou envie imagens para análise.</p>
+        <p className="text-xs text-gray-500 mt-1">Estratégia, leitura fria e domínio social.</p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -274,9 +274,9 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
               <Bot size={24} className="text-gold-glow" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-300">Como posso ajudar?</h3>
+              <h3 className="text-sm font-bold text-gray-300">Qual a missão de hoje, parceiro?</h3>
               <p className="text-xs text-gray-500 mt-2 max-w-xs mx-auto">
-                Faça uma pergunta sobre relacionamentos, envie um print para análise ou peça dicas.
+                Diz aí o que está rolando. Print, dúvida ou estratégia? Estou aqui para garantir que você não erre o frame.
               </p>
             </div>
           </div>
@@ -345,7 +345,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte algo ao assistente..."
+              placeholder="Fale com seu braço direito..."
               className={`w-full ${getThemeInputBg()} border border-gold-dim/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold-glow transition-colors`}
             />
           </div>

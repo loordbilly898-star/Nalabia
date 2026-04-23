@@ -32,7 +32,7 @@ const AssistedModeModal: React.FC<AssistedModeModalProps> = ({ onClose, onSelect
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <Search className="text-gold-glow" size={20} />
-            <h2 className="text-xl font-medium text-gray-100">Assistente de Escolha</h2>
+            <h2 className="text-xl font-medium text-gray-100">Bússola Estratégica</h2>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white p-1">
             <X size={20} />
@@ -41,12 +41,12 @@ const AssistedModeModal: React.FC<AssistedModeModalProps> = ({ onClose, onSelect
 
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
-            <p className="text-sm text-gray-400 mb-2">O que você quer fazer agora?</p>
+            <p className="text-sm text-gray-400 mb-2">Selecione seu objetivo tático:</p>
 
             <button onClick={() => { setSelectedGoal('iniciar'); setStep(2); }} className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-gold-glow/40 hover:bg-white/10 rounded-xl transition-all group">
               <div className="flex items-center gap-3">
                 <Flame className="text-orange-400" size={20} />
-                <span className="text-gray-200">Iniciar uma nova conversa</span>
+                <span className="text-gray-200">Infiltração (Abrir conversa)</span>
               </div>
               <ChevronRight size={16} className="text-gray-500 group-hover:text-gold-glow" />
             </button>
@@ -54,7 +54,7 @@ const AssistedModeModal: React.FC<AssistedModeModalProps> = ({ onClose, onSelect
             <button onClick={() => { setSelectedGoal('manter'); setStep(2); }} className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-gold-glow/40 hover:bg-white/10 rounded-xl transition-all group">
               <div className="flex items-center gap-3">
                 <MessageCircle className="text-blue-400" size={20} />
-                <span className="text-gray-200">Manter ou melhorar o papo atual</span>
+                <span className="text-gray-200">Manutenção de Frame & Flow</span>
               </div>
               <ChevronRight size={16} className="text-gray-500 group-hover:text-gold-glow" />
             </button>
@@ -62,7 +62,7 @@ const AssistedModeModal: React.FC<AssistedModeModalProps> = ({ onClose, onSelect
             <button onClick={() => { setSelectedGoal('problema'); setStep(2); }} className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-gold-glow/40 hover:bg-white/10 rounded-xl transition-all group">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="text-red-400" size={20} />
-                <span className="text-gray-200">Resolver um problema / Frieza</span>
+                <span className="text-gray-200">Contenção de Danos & Contra-Ataque</span>
               </div>
               <ChevronRight size={16} className="text-gray-500 group-hover:text-gold-glow" />
             </button>
