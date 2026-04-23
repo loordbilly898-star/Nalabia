@@ -248,7 +248,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
             </a>
           ) : (
             <button
-              onClick={() => alert('Assine o NaLábia para acessar a comunidade VIP no WhatsApp!')}
+              onClick={() => alert('Assine o NaLábia CLUB para acessar a comunidade VIP no WhatsApp!')}
               className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-gray-800/50 border border-gray-700 text-gray-500 cursor-not-allowed"
             >
               BLOQUEADO

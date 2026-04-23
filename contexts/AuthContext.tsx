@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // --- END NEW ---
 
         // Developer bypass (double check for existing users)
-        if (userDoc && currentUser.email === 'loordbilly898@gmail.com') {
+        if (userDoc && (currentUser.email === 'loordbilly898@gmail.com' || currentUser.email === 'nalabiainc@gmail.com')) {
           data.nalabiaPrimeAcess = true;
           data.darkPackAccess = true;
           data.coursesAccess = true;

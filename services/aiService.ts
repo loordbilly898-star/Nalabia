@@ -1,5 +1,5 @@
 import { Mistral } from '@mistralai/mistralai';
-import { SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMAT_INSTRUCTION, LAB_PROMPT, CrystalResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation, Memory } from "../types";
+import { SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMAT_INSTRUCTION, LAB_PROMPT, NalabiaResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation, Memory } from "../types";
 import { logEvent } from "./logger";
 
 // Proxy implementation to call AI via the server
@@ -374,8 +374,8 @@ export const analyzeContent = async (
   userAIProfile?: any,
   messageHistory?: Message[],
   memories?: any[]
-): Promise<CrystalResponse> => {
-  const fallback: CrystalResponse = {
+): Promise<NalabiaResponse> => {
+  const fallback: NalabiaResponse = {
     momentReading: "A leitura oscilou por um segundo, mas o subtexto é de teste de frame. Ela quer ver se você perde o equilíbrio. Não perca.",
     interestLevel: "Médio",
     interestScore: 50,
@@ -490,7 +490,7 @@ export const analyzeContent = async (
       console.error("[AI SERVICE] Validation failed for analyzeContent. Content preview:", content.substring(0, 100));
       throw new Error("JSON Inválido na análise.");
     }
-    return JSON.parse(content) as CrystalResponse;
+    return JSON.parse(content) as NalabiaResponse;
   }, 'analyzeContent', fallback, true);
 };
 
@@ -596,7 +596,7 @@ export const regenerateContent = async (
 
 export const runLaboratory = async (
   contextText: string,
-  analysis: CrystalResponse,
+  analysis: NalabiaResponse,
   profileContext: Profile | undefined,
   settings: AppSettings,
   userAIProfile?: any,
@@ -743,7 +743,7 @@ export const generateChatStream = async (
 
   const fullSystemPrompt = `${SYSTEM_PROMPT}\n\n${CHAT_RESPONSE_STRUCTURE}\n\nCONTEXTO:\n${profileInstruction}\n${userAIProfileInstruction}\n${memoryInstruction}\n${settingsInstruction}`;
 
-  const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt + "\n\n⚠️ INSTRUÇÃO CRUCIAL: Seja extremamente DETALHADO e ÍNTIMO na sua resposta. Não economize nas palavras para descrever a dinâmica e dar conselhos sagazes." }];
+  const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt }];
   let hasImage = false;
 
   const MAX_MESSAGES_CONTEXT = 30;

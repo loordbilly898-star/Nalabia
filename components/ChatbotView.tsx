@@ -84,7 +84,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         const errMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.",
+          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando a NaLábia.",
           timestamp: Date.now(),
           mode: 'CHATBOT'
         };

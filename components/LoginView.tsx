@@ -60,7 +60,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
       <div className="w-full max-w-md p-8 bg-[#0a0a0a] rounded-2xl border border-nalabia-800 shadow-2xl flex flex-col items-center">
         <InfinityIcon className="text-gold mb-6" size={48} />
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold tracking-[0.2em] font-mono text-white">NaLábia</h1>
+          <h1 className="text-2xl font-bold tracking-[0.2em] font-mono text-white">NALÁBIA</h1>
           <p className="text-xs font-mono tracking-widest mt-2 text-gold opacity-70">OS ∞</p>
           {isRegistering && (
             <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">

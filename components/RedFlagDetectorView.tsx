@@ -64,7 +64,7 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
       const deviceAllowed = await checkDeviceUsage();
       
       if (userFreeMessages >= 2 || !deviceAllowed) {
-        setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando o NaLábia.");
+        setErrorMsg("Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando a NaLábia.");
         return;
       }
     } else if (!isDeveloper) {

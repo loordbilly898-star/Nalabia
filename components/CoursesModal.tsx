@@ -105,7 +105,7 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
           
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <BookOpen className="text-blue-500" size={24} />
-            ACADEMIA NaLÁBIA
+            ACADEMIA NALÁBIA
           </h2>
           <p className="text-gray-400 text-sm mt-2">
             Acesso completo a todos os cursos de psicologia sombria, sedução e manipulação.

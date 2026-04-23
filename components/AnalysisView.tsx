@@ -1,9 +1,9 @@
 import React from 'react';
-import { CrystalResponse } from '../types';
+import { NalabiaResponse } from '../types';
 import { Activity, Thermometer, Zap, AlertTriangle, Clock, Target } from 'lucide-react';
 
 interface AnalysisViewProps {
-  analysis: CrystalResponse;
+  analysis: NalabiaResponse;
 }
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {

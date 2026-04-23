@@ -52,7 +52,7 @@ const SLIDES = [
   {
     id: 'community',
     title: 'Comunidade Exclusiva',
-    subtitle: 'Ao assinar o NaLábia, você ganha acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB. Troque experiências, receba dicas avançadas e evolua junto com outros membros.',
+    subtitle: 'Ao assinar o NaLábia Prime, você ganha acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB. Troque experiências, receba dicas avançadas e evolua junto com outros membros.',
     icon: MessageCircle,
     features: [
       'Networking de Alto Nível',
@@ -63,7 +63,7 @@ const SLIDES = [
   {
     id: 'cta',
     title: 'A Vantagem Injusta',
-    subtitle: 'O acesso ao NaLábia é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB.',
+    subtitle: 'O acesso ao NaLábia Prime é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB.',
     icon: Star,
     cta: 'CRIAR MINHA CONTA AGORA'
   }
