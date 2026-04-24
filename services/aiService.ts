@@ -124,16 +124,21 @@ const GLOBAL_TIMEOUT = 120000; // 120 seconds to prevent frontend from artificia
 
 // Helper to normalize Mistral content (which can be string or ContentChunk[])
 const normalizeMistralContent = (content: any): string => {
+  let result = "";
   if (!content) return "";
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content.map(item => {
+  if (typeof content === 'string') {
+    result = content;
+  } else if (Array.isArray(content)) {
+    result = content.map(item => {
       if (!item) return "";
       if (typeof item === 'string') return item;
       return item.text || item.content || "";
     }).join("");
+  } else {
+    result = String(content);
   }
-  return String(content);
+  // Remove markdown asterisks completely to avoid them bleeding into the UI
+  return result.replace(/\*/g, '');
 };
 
 // Robust JSON extraction from AI response
@@ -487,7 +492,7 @@ export const analyzeContent = async (
     const content = extractJson(rawContent);
     
     if (!validateResponse(content, true)) {
-      console.error("[AI SERVICE] Validation failed for analyzeContent. Content preview:", content.substring(0, 100));
+      console.error("[AI SERVICE] Validation failed for analyzeContent. Content preview:", content.substring(0, 1000));
       throw new Error("JSON Inválido na análise.");
     }
     return JSON.parse(content) as NalabiaResponse;
@@ -587,7 +592,7 @@ export const regenerateContent = async (
     const content = extractJson(rawContent);
     
     if (!validateResponse(content, true)) {
-      console.error("[AI SERVICE] Validation failed for regenerateContent.");
+      console.error("[AI SERVICE] Validation failed for regenerateContent. Content preview:", content.substring(0, 1000));
       throw new Error("JSON Inválido na regeneração.");
     }
     return JSON.parse(content);
@@ -686,7 +691,7 @@ export const runLaboratory = async (
     const content = extractJson(rawContent);
     
     if (!validateResponse(content, true)) {
-      console.error("[AI SERVICE] Validation failed for runLaboratory.");
+      console.error("[AI SERVICE] Validation failed for runLaboratory. Content preview:", content.substring(0, 1000));
       throw new Error("JSON Inválido no laboratório.");
     }
     return JSON.parse(content) as LaboratorySimulation;
@@ -969,8 +974,8 @@ Retorne APENAS o JSON:
     const content = extractJson(rawContent);
     
     if (!validateResponse(content, true)) {
-      console.error("[AI SERVICE] Validation failed for detectRedFlags.");
-      throw new Error("JSON Inválido nas Red Flags.");
+       console.error("[AI SERVICE] Validation failed for detectRedFlags. Content preview:", content.substring(0, 1000));
+       throw new Error("JSON Inválido nas Red Flags.");
     }
     return JSON.parse(content);
   }, 'detectRedFlags', fallback, true);

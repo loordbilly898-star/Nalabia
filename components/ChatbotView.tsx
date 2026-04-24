@@ -149,6 +149,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
         for await (const chunk of responseStream as any) {
           const content = chunk.choices?.[0]?.delta?.content || "";
           if (content) {
+            const cleanContent = content.replace(/\*/g, '');
             if (!assistantMessageAdded) {
                assistantMessageId = (Date.now() + 1).toString();
                currentAssistantMessage = {
@@ -162,7 +163,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
                assistantMessageAdded = true;
             }
 
-            fullText += content;
+            fullText += cleanContent;
             currentAssistantMessage = { ...currentAssistantMessage, content: fullText };
             
             updateActiveProfileMessages(prev => {
@@ -345,7 +346,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Fale com seu braço direito..."
+              placeholder="Fale com seu parceiro (Dica: Use 'Ela:', 'Eu:')"
               className={`w-full ${getThemeInputBg()} border border-gold-dim/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold-glow transition-colors`}
             />
           </div>

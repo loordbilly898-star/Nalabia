@@ -1399,7 +1399,7 @@ const App: React.FC = () => {
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder={activeTab === 'STORY_REPLY' ? "Anexar Story ou descrever..." : `Comando para modo ${activeTabData.label}...`}
+                  placeholder={activeTab === 'STORY_REPLY' ? "Anexar Story ou descrever..." : "Cole a conversa estruturada: Ela: ..., Eu: ..."}
                   className={`w-full ${getThemeInputBg()} placeholder-gray-700 rounded-xl py-3 px-4 border border-nalabia-800 focus:border-white/20 focus:ring-1 focus:ring-white/10 focus:outline-none transition-all font-sans text-sm`}
                   disabled={status !== ProcessingState.IDLE}
                 />
