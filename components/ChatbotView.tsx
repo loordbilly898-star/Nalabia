@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
+import { Send, Bot, User, ImageIcon, Loader2, Sparkles, X, ScanFace, Ghost, Crown, AlertTriangle, Zap } from 'lucide-react';
 import { generateChatStream } from '../services/aiService';
 import { SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, AppSettings, Profile, ProcessingState, Message } from '../types';
 import { sendNotification } from '../services/notificationService';
@@ -258,6 +258,59 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
     }
   };
 
+  const renderMentorMessage = (content: string) => {
+    const sections = [
+      { key: '[LEITURA]', label: 'Leitura do Momento', icon: <Sparkles size={12} />, color: 'text-blue-400' },
+      { key: '[VISÃO]', label: 'Visão Estratégica', icon: <ScanFace size={12} />, color: 'text-purple-400' },
+      { key: '[AJUSTE]', label: 'Ajuste de Rota', icon: <AlertTriangle size={12} />, color: 'text-red-400' },
+      { key: '[VERSÃO MELHOR]', label: 'Sugestão de Resposta', icon: <Zap size={12} />, color: 'text-gold-glow' },
+      { key: '[REGRA]', label: 'Regra de Ouro', icon: <Crown size={12} />, color: 'text-emerald-400' },
+    ];
+
+    let currentContent = content;
+    const parts: { label: string; text: string; icon: any; color: string }[] = [];
+
+    sections.forEach((section, index) => {
+      if (currentContent.includes(section.key)) {
+        const nextSection = sections.slice(index + 1).find(s => currentContent.includes(s.key));
+        const start = currentContent.indexOf(section.key) + section.key.length;
+        const end = nextSection ? currentContent.indexOf(nextSection.key) : currentContent.length;
+        
+        parts.push({
+          label: section.label,
+          text: currentContent.substring(start, end).trim(),
+          icon: section.icon,
+          color: section.color
+        });
+      }
+    });
+
+    if (parts.length === 0) {
+      return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+    }
+
+    return (
+      <div className="space-y-4">
+        {parts.map((p, i) => (
+          <div key={i} className="space-y-1.5">
+            <div className={`flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-widest ${p.color}`}>
+              {p.icon}
+              {p.label}
+            </div>
+            <div className={`text-sm leading-relaxed ${p.label === 'Sugestão de Resposta' ? 'bg-gold-glow/5 border border-gold-glow/20 rounded-lg p-3 font-medium text-gold-glow' : 'text-gray-300'}`}>
+              {p.text === 'NÃO RESPONDA' ? (
+                <div className="flex items-center gap-2 text-blue-400">
+                  <Ghost size={14} />
+                  <span>Mantenha o silêncio absoluto agora.</span>
+                </div>
+              ) : p.text}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className={`p-4 border-b border-gold-dim/10 ${getThemeHeaderBg()}`}>
@@ -292,7 +345,11 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
                 {msg.image && (
                   <img src={msg.image} alt="Upload" className="max-w-full rounded-lg mb-2 border border-gray-800" />
                 )}
-                <p className="text-sm whitespace-pre-wrap">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
+                {msg.role === 'assistant' ? (
+                  renderMentorMessage(typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
+                )}
               </div>
             </div>
           ))

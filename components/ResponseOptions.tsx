@@ -67,6 +67,8 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
     }
   };
 
+  if (!responses || responses.length === 0) return null;
+
   return (
     <div className="space-y-3 w-full animate-fade-in">
       <div className="flex items-center justify-between px-1">

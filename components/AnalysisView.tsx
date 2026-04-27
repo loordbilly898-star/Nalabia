@@ -1,6 +1,6 @@
 import React from 'react';
 import { NalabiaResponse } from '../types';
-import { Activity, Thermometer, Zap, AlertTriangle, Clock, Target } from 'lucide-react';
+import { Activity, Thermometer, Zap, AlertTriangle, Clock, Target, Ghost } from 'lucide-react';
 
 interface AnalysisViewProps {
   analysis: NalabiaResponse;
@@ -102,6 +102,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
           <div className="text-sm font-bold text-gold-glow">{typeof analysis.rhythm === 'string' ? analysis.rhythm : JSON.stringify(analysis.rhythm)}</div>
         </div>
       </div>
+
+      {/* No Reply Warning */}
+      {analysis.shouldReply === false && (
+        <div className="bg-blue-900/40 border border-blue-500/50 rounded-lg p-3 flex items-start space-x-3 mb-2 animate-pulse">
+          <div className="bg-blue-500 p-1.5 rounded-full mt-0.5">
+            <Ghost size={14} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1">Estratégia: Sem Resposta</h4>
+            <p className="text-[11px] text-blue-100 leading-snug">
+              A última mensagem identificada é sua. O NaLábia recomenda aguardar o movimento dela para não parecer ansioso ou reativo.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Suggested Timing & Error Alert */}
       {(analysis.suggestedTiming || analysis.errorAlert) && (

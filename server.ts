@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 
 const allowedOrigins = [
   'https://nalabia-prime.run.app',

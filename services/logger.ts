@@ -7,7 +7,7 @@ interface LogDetails {
   [key: string]: any;
 }
 
-export const logEvent = (type: 'auth' | 'api' | 'system', message: string, details: LogDetails = {}) => {
+export const logEvent = (type: 'auth' | 'api' | 'system' | 'ui', message: string, details: LogDetails = {}) => {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,

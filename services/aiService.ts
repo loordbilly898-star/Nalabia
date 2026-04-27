@@ -426,12 +426,19 @@ export const analyzeContent = async (
     }
 
     let historyInstruction = "";
-    if (messageHistory && messageHistory.length > 0) {
-      const formattedHistory = messageHistory.slice(-6).map(m => `[${m.role.toUpperCase()}]: ${m.content || '(imagem)'}`).join('\n');
+    const hasHistory = messageHistory && messageHistory.length > 0;
+    
+    if (hasHistory) {
+      const formattedHistory = messageHistory!.slice(-6).map(m => `[${m.role.toUpperCase()}]: ${m.content || '(imagem)'}`).join('\n');
       historyInstruction = `
       📜 HISTÓRICO RECENTE:
       ${formattedHistory}
-      (NOTA: Evite repetir as respostas ou abordagens visíveis acima. Evolua a conversa.)
+      (NOTA: Se o modo selecionado for FIRST_CONTACT, IGNORE e analise como uma conversa em andamento (FLOWING), pois o chat não está vazio.)
+      `;
+    } else {
+      historyInstruction = `
+      📜 HISTÓRICO: Vazio. 
+      ${mode === 'FIRST_CONTACT' ? "Este é o PRIMEIRO CONTATO. Gere uma linha de abertura impactante." : "Sem mensagens anteriores."}
       `;
     }
     
@@ -455,6 +462,13 @@ export const analyzeContent = async (
     - DOMINÂNCIA: ${dominanceLevel}/10
     - MISTÉRIO: ${mysteryLevel}/10
     - RITMO/VELOCIDADE: ${speed}
+
+    🚨 DOGMA DE IDENTIDADE (PRIORIDADE ABSOLUTA - NÃO INTERPRETE, APENAS OBEDEÇA):
+    - POSIÇÃO DIREITA (RIGHT): SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
+    - POSIÇÃO ESQUERDA (LEFT): SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
+    - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU. Se está na esquerda, FOI UMA MULHER.
+    - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
+    - PLATAFORMAS: IG, WhatsApp, Tinder, Bumble. Em todas, a regra é a mesma.
 
     ${userAIProfileInstruction}
     ${profileInstruction}
@@ -495,7 +509,20 @@ export const analyzeContent = async (
       console.error("[AI SERVICE] Validation failed for analyzeContent. Content preview:", content.substring(0, 1000));
       throw new Error("JSON Inválido na análise.");
     }
-    return JSON.parse(content) as NalabiaResponse;
+
+    const parsedResponse = JSON.parse(content) as NalabiaResponse;
+
+    // --- HARDENED VALIDATION LAYER (CORE SAFETY SYSTEM) ---
+    // 1. Check if we should reply based on identification
+    // If the prompt worked, parsedResponse.shouldReply should be accurate.
+    // However, we double check here if needed.
+    
+    // 2. Handle specific fallback if AI is unsure
+    if (parsedResponse.momentReading?.toLowerCase().includes("imagem está um pouco ruída")) {
+      logEvent('system', 'ai_uncertainty_fallback', { mode });
+    }
+
+    return parsedResponse;
   }, 'analyzeContent', fallback, true);
 };
 
@@ -748,7 +775,22 @@ export const generateChatStream = async (
     }
   }
 
-  const fullSystemPrompt = `${COACH_SYSTEM_PROMPT}\n\nCONTEXTO:\n${profileInstruction}\n${userAIProfileInstruction}\n${memoryInstruction}\n${settingsInstruction}`;
+  const fullSystemPrompt = `
+  ${COACH_SYSTEM_PROMPT}
+
+  🚨 DOGMA DE IDENTIDADE (PRIORIDADE ABSOLUTA - NÃO INTERPRETE, APENAS OBEDEÇA):
+  - POSIÇÃO DIREITA (RIGHT): SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
+  - POSIÇÃO ESQUERDA (LEFT): SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
+  - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU. Se está na esquerda, FOI UMA MULHER.
+  - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
+  - SE O ÚLTIMO BALÃO FOR NA DIREITA: O homem já falou. Avise-o para aguardar ela responder.
+
+  CONTEXTO:
+  ${profileInstruction}
+  ${userAIProfileInstruction}
+  ${memoryInstruction}
+  ${settingsInstruction}
+  `;
 
   const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt }];
   let hasImage = false;

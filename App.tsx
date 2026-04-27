@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeContent, runLaboratory, regenerateContent } from './services/aiService';
+import { logEvent } from './services/logger';
 import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile, Memory } from './types';
 import { sendNotification } from './services/notificationService';
 import AnalysisView from './components/AnalysisView';
@@ -119,7 +120,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isPlansDismissed, setIsPlansDismissed] = useState(false);
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(false);
   const [helpMode, setHelpMode] = useState<AnalysisMode | null>(null);
   const [showAssistedMode, setShowAssistedMode] = useState(false);
   
@@ -372,6 +373,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleTabChange = (tabId: AnalysisMode) => {
+    logEvent('ui', 'module_opened', { module: tabId });
     if ((tabId === 'NSFW' || tabId === 'MANIPULATION') && !userData?.darkPackAccess) {
       setPendingDarkTab(tabId);
       setShowDarkPackModal(true);
