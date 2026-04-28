@@ -1,5 +1,5 @@
 import { Mistral } from '@mistralai/mistralai';
-import { SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMAT_INSTRUCTION, LAB_PROMPT, NalabiaResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation, Memory } from "../types";
+import { SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMAT_INSTRUCTION, REGENERATE_PROMPT, LAB_PROMPT, NalabiaResponse, AnalysisMode, ConversationSpeed, AppSettings, Profile, Message, LaboratorySimulation, Memory } from "../types";
 import { logEvent } from "./logger";
 
 // Proxy implementation to call AI via the server
@@ -429,11 +429,11 @@ export const analyzeContent = async (
     const hasHistory = messageHistory && messageHistory.length > 0;
     
     if (hasHistory) {
-      const formattedHistory = messageHistory!.slice(-6).map(m => `[${m.role.toUpperCase()}]: ${m.content || '(imagem)'}`).join('\n');
+      const formattedHistory = messageHistory!.slice(-6).map(m => `[${m.role.toUpperCase()}]: ${m.content ? (typeof m.content === 'string' ? m.content.substring(0, 100) : '[JSON DA ANÁLISE ANTERIOR]') : '(imagem gerada)'}`).join('\n');
       historyInstruction = `
-      📜 HISTÓRICO RECENTE:
+      📜 HISTÓRICO DE MENTORIA RECENTE:
       ${formattedHistory}
-      (NOTA: Se o modo selecionado for FIRST_CONTACT, IGNORE e analise como uma conversa em andamento (FLOWING), pois o chat não está vazio.)
+      (REGRA CRÍTICA DE ISOLAMENTO: O histórico acima serve APENAS para você lembrar do SEU TOM de voz e conselhos dados. A imagem ou mensagem ATUAL é uma NOVA MULHER, um NOVO CHAT. JAMAIS misture fatos, nomes, histórias ou prints antigos com a tela atual. Mente 100% limpa para a análise de agora.)
       `;
     } else {
       historyInstruction = `
@@ -609,14 +609,14 @@ export const regenerateContent = async (
     const prompt = `
     ${SYSTEM_PROMPT}
     
+    ${REGENERATE_PROMPT}
+    
     Analyze the following input and return ONLY a single JSON object. Do not repeat phrases. Do not loop.
     
     Structure:
     {
-      "responses": [{"type": "string", "text": "string"}]
+      "responses": [{"type": "string", "text": "string", "explanation": "string"}]
     }
-    
-    [ignoring loop detection]
     
     ${contextInstruction}
     `;
@@ -812,7 +812,8 @@ export const generateChatStream = async (
   - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU.
   - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
   - SE O ÚLTIMO BALÃO FOR NA DIREITA: O homem já falou. Avise-o para aguardar ela responder. Se for na esquerda, avalie e dê sua visão.
-
+  - SEGREGAÇÃO CRÍTICA (NÃO MISTURE): Toda vez que o usuário mandar um novo print, trate-o 100% como uma garota diferente e um cenário novo, a NÃO SER que ele explicitly diga que é a mesma. Nunca puxe acontecimentos antigos para o print atual.
+  
   CONTEXTO:
   ${profileInstruction}
   ${userAIProfileInstruction}
@@ -823,7 +824,7 @@ export const generateChatStream = async (
   const mistralMessages: any[] = [{ role: "system", content: fullSystemPrompt }];
   let hasImage = false;
 
-  const MAX_MESSAGES_CONTEXT = 30;
+  const MAX_MESSAGES_CONTEXT = 8; // Reduced from 30 to 8 to prevent context mixing across different women
   
   // Filter out any system/fallback error messages from the app
   const cleanMessages = messages.filter(m => {
@@ -841,9 +842,9 @@ export const generateChatStream = async (
 
   const recentMessages = cleanMessages.slice(-MAX_MESSAGES_CONTEXT);
   
-  // Count images from new to old, keep only the last 2 images to preserve context limit
+  // Count images from new to old, keep only the last image to guarantee isolation between different women
   let imagesCount = 0;
-  const MAX_IMAGES_ALLOWED = 2;
+  const MAX_IMAGES_ALLOWED = 1;
   
   const optimizedMessages = [...recentMessages].reverse().map(msg => {
     let optimizedMsg = { ...msg };
@@ -851,8 +852,8 @@ export const generateChatStream = async (
       if (imagesCount < MAX_IMAGES_ALLOWED) {
         imagesCount++;
       } else {
-        optimizedMsg.image = undefined; // Drop older images to save tokens
-        optimizedMsg.content = (optimizedMsg.content || "") + "\n[Imagem anterior removida da memória recente para economizar espaço]";
+        optimizedMsg.image = undefined; // Drop older images to save tokens and prevent context mixing
+        optimizedMsg.content = (optimizedMsg.content || "") + "\n[Imagem anterior removida do contexto visual para isolamento tático]";
       }
     }
     return optimizedMsg;
