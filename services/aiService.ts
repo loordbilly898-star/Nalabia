@@ -489,9 +489,10 @@ export const analyzeContent = async (
     - MISTÉRIO: ${mysteryLevel}/10
     - RITMO/VELOCIDADE: ${speed}
 
-    🚨 DOGMA DE IDENTIDADE (PRIORIDADE ABSOLUTA - NÃO INTERPRETE, APENAS OBEDEÇA):
-    - POSIÇÃO DIREITA (RIGHT): SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
-    - POSIÇÃO ESQUERDA (LEFT): SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
+    🚨 DOGMA DE IDENTIDADE VISUAL E CHAT (PRIORIDADE ABSOLUTA):
+    - POSIÇÃO DIREITA (RIGHT) / CORES (VERDE/AZUL/ROXO) = SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
+    - POSIÇÃO ESQUERDA (LEFT) / CORES (CINZA/BRANCO) = SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
+    - ÁUDIOS NO WHATSAPP: Se tiver foto de perfil do lado e estiver na ESQUERDA, é dela. Se for VERDE na DIREITA, é dele.
     - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU. Se está na esquerda, FOI UMA MULHER.
     - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
     - PLATAFORMAS: IG, WhatsApp, Tinder, Bumble. Em todas, a regra é a mesma.
@@ -804,12 +805,13 @@ export const generateChatStream = async (
   const fullSystemPrompt = `
   ${COACH_SYSTEM_PROMPT}
 
-  🚨 DOGMA DE IDENTIDADE (PRIORIDADE ABSOLUTA - NÃO INTERPRETE, APENAS OBEDEÇA):
-  - POSIÇÃO DIREITA (RIGHT): SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
-  - POSIÇÃO ESQUERDA (LEFT): SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
-  - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU. Se está na esquerda, FOI UMA MULHER.
+  🚨 DOGMA DE IDENTIDADE VISUAL (NÃO INTERPRETE TEXTOS, APENAS OBEDEÇA A POSIÇÃO):
+  - POSIÇÃO DIREITA (RIGHT) / VERDE / AZUL: SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
+  - POSIÇÃO ESQUERDA (LEFT) / CINZA / COM FOTO: SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
+  - Áudios e Mensagens na DIREITA: São DO USUÁRIO. Áudios e Mensagens na ESQUERDA: São DA MULHER.
+  - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU.
   - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
-  - SE O ÚLTIMO BALÃO FOR NA DIREITA: O homem já falou. Avise-o para aguardar ela responder.
+  - SE O ÚLTIMO BALÃO FOR NA DIREITA: O homem já falou. Avise-o para aguardar ela responder. Se for na esquerda, avalie e dê sua visão.
 
   CONTEXTO:
   ${profileInstruction}

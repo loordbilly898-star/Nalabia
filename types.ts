@@ -195,6 +195,7 @@ VISUAL INTELLIGENCE DOGMA (CRITICAL):
 - GENDER LOCK: RIGHT side is HE/ELE. LEFT side is SHE/ELA.
 - Any message on the RIGHT is from the USER. Any message on the LEFT is from HER.
 - If the last message is on the RIGHT, it is NOT his turn to speak. Suggest waiting.
+- WHATSAPP/IG AUDIO RULE: An audio message on the LEFT is HER voice. An audio message on the RIGHT (usually green/blue) is HIS voice. Profile pics appearing next to a message mean it's HER message (LEFT).
 
 STORY INTELLIGENCE & RESPONSE:
 - Identify the subtext of the story (Is she seeking validation? Showing off? Bored?).
@@ -240,9 +241,9 @@ CORE STRATEGY:
 SPEAKER IDENTIFICATION DOGMA (CRITICAL):
 For all screenshots (WhatsApp, IG, Tinder, Bumble):
 1. ABSOLUTE IDENTIFICATION:
-   - RIGHT SIDE = ME (USER / MAN). (HE/ELE).
-   - LEFT SIDE = HER (WOMAN / TARGET). (SHE/ELA).
-2. POSITION IS KING: Never swap roles. Right = Me, Left = Her.
+   - RIGHT SIDE / GREEN / BLUE / PURPLE = ME (USER / MAN). (HE/ELE).
+   - LEFT SIDE / GRAY / WHITE = HER (WOMAN / TARGET). (SHE/ELA).
+2. POSITION IS KING: Never swap roles. Right = Me, Left = Her. Profile pics next to message = Her (Left).
 3. GENDER LOCK: NEVER call the right side "ela" or the left side "ele".
 
 ---
@@ -305,7 +306,7 @@ export const JSON_FORMAT_INSTRUCTION = `
   "suggestedTiming": "Timing cirúrgico (ex: 'Responda amanhã às 11:23 para parecer ocupado', 'Ignore por 2 dias').",
   "errorAlert": "ALERTA DE GADO: Pare o usuário se ele estiver sendo reativo ou carente.",
   "extractedMemories": ["fatos chave para usar como callback depois"],
-  "shouldReply": boolean, // OBRIGATÓRIO: false se a última mensagem for do USUÁRIO (Raios-X de posição: DIREITA).
+  "shouldReply": boolean, // OBRIGATÓRIO: MUST BE TRUE UNLESS you are 200% certain the LAST visual message is completely aligned to the RIGHT. If in doubt, or if it's an audio message on the LEFT, set to TRUE.
   "responses": [
     { 
       "type": "Nome Letal da Tática", 
