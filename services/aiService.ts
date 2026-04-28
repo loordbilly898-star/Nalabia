@@ -452,11 +452,37 @@ export const analyzeContent = async (
       `;
     }
 
+    const getModeInstructions = (mode: AnalysisMode): string => {
+      switch (mode) {
+        case 'FIRST_CONTACT':
+          return "FOCO: Quebra de gelo de elite. O objetivo é curiosidade imediata. Use 'Cold Readings' (adivinhar algo sobre ela) ou 'Hooks' visuais do perfil dela. Zero clichês.";
+        case 'FLOWING':
+          return "FOCO: Manutenção de Frame e Tensão. Intercale conforto com picos de desafio. Não deixe a conversa virar um interrogatório.";
+        case 'STORY_REPLY':
+          return "FOCO: Reação contextualmente irrelevante. Não elogie a foto. Comente algo sobre a 'vibe' ou o subtexto que ela quis passar.";
+        case 'VALUE_TEST':
+          return "FOCO: Shit-test detection. Ela está te testando. Responda com humor, exagero ou indiferença. Jamais se explique.";
+        case 'COLD_RESPONSE':
+          return "FOCO: Retomada de valor. Ela esfriou porque você investiu demais ou ficou chato. Diminua o ritmo drasticamente e use uma 'Quebra de Padrão'.";
+        case 'REACTIVATION':
+          return "FOCO: Ressuscitar o vácuo. Use algo que aconteceu no mundo ou um callback de 1 mês atrás como se tivesse acabado de lembrar. Desapego total.";
+        case 'NSFW':
+          return "FOCO: Escalação sexual subjacente. Use duplo sentido e tensão. O objetivo é levar para o privado ou para o encontro. Seja o 'Lobo', não o 'Carente'.";
+        case 'MANIPULATION':
+          return "FOCO: Gatilhos psicológicos avançados. Use escassez, validação intermitente e ancorage de valor. Transforme-se no prêmio.";
+        case 'RED_FLAG_DETECTOR':
+          return "FOCO: Proteção de tempo. Identifique narcisismo, desinteresse crônico ou busca por atenção. Avise o usuário para pular fora se ela não valer a pena.";
+        default:
+          return "FOCO: Estratégia geral NaLábia. Mantenha o mistério e o interesse alto.";
+      }
+    };
+
     const prompt = `
     ${SYSTEM_PROMPT}
 
     ⚙️ PARÂMETROS ATUAIS DE GERAÇÃO:
     - MODO ATIVO: ${mode}
+    - INSTRUÇÃO TÁTICA DO MODO: ${getModeInstructions(mode)}
     - FLERTE: ${flirtLevel}/10
     - LÁBIA (Witty): ${wittyLevel}/10
     - DOMINÂNCIA: ${dominanceLevel}/10
@@ -498,7 +524,7 @@ export const analyzeContent = async (
       model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
       messages: messages,
       responseFormat: { type: "json_object" },
-      temperature: 0.75,
+      temperature: 0.85,
       maxTokens: 2000,
     });
 
@@ -757,10 +783,10 @@ export const generateChatStream = async (
   let settingsInstruction = "";
   if (settings) {
     settingsInstruction = `
-    REGRAS ATIVAS PARA AS MENSAGENS DELA:
-    ${settings.ai?.avoidCompliments ? "EVITAR ELOGIOS." : ""}
-    ${settings.ai?.shortResponses ? "RESPOSTAS CURTAS." : ""}
-    ${settings.ai?.avoidQuestions ? "EVITAR PERGUNTAS." : ""}
+    ESTILO DE RESPOSTA ATIVO:
+    ${settings.ai?.avoidCompliments ? "- PROIBIDO ELOGIAR. Mantenha o Frame de alto valor." : ""}
+    ${settings.ai?.shortResponses ? "- RESPOSTAS CURTAS: Seja direto e impactante, use o mínimo de palavras para o máximo de efeito (Lábia Afiada)." : "- RESPOSTAS FLUIDAS: Pode elaborar um pouco mais se a estratégia exigir."}
+    ${settings.ai?.avoidQuestions ? "- EVITAR PERGUNTAS: Use afirmações ou provocações frias." : ""}
     `;
   }
 
@@ -895,7 +921,7 @@ export const generateChatStream = async (
   const stream = await client.chat.stream({
     model: modelToUse,
     messages: mistralMessages,
-    temperature: 0.75,
+    temperature: 0.85,
     maxTokens: 2500
   });
 
