@@ -496,6 +496,7 @@ export const analyzeContent = async (
     - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU. Se está na esquerda, FOI UMA MULHER.
     - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
     - PLATAFORMAS: IG, WhatsApp, Tinder, Bumble. Em todas, a regra é a mesma.
+    - ⚠️ ALERTA DE SISTEMA: O modelo de IA tem confundido balões. PRESTE MUITA ATENÇÃO NAS COORDENADAS X DA IMAGEM. Balões encostados na borda DIREITA são SEMPRE do usuário. Balões encostados na borda ESQUERDA com foto de perfil são SEMPRE da mulher. Não adivinhe pelo tom da mensagem, USE A POSIÇÃO.
 
     ${userAIProfileInstruction}
     ${profileInstruction}
@@ -813,6 +814,7 @@ export const generateChatStream = async (
   - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
   - SE O ÚLTIMO BALÃO FOR NA DIREITA: O homem já falou. Avise-o para aguardar ela responder. Se for na esquerda, avalie e dê sua visão.
   - SEGREGAÇÃO CRÍTICA (NÃO MISTURE): Toda vez que o usuário mandar um novo print, trate-o 100% como uma garota diferente e um cenário novo, a NÃO SER que ele explicitly diga que é a mesma. Nunca puxe acontecimentos antigos para o print atual.
+  - ⚠️ ALERTA DE SISTEMA: Você tem falhado em diferenciar DIREITA e ESQUERDA. Siga as coordenadas visuais da imagem rigorosamente. Balões alinhados à direita são ALWAYS do usuário.
   
   CONTEXTO:
   ${profileInstruction}
