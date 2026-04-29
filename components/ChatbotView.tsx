@@ -260,6 +260,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
 
   const renderMentorMessage = (content: string) => {
     const sections = [
+      { key: '[TRANSCRIÇÃO OBRIGATÓRIA]', label: 'Análise Visual Estrita', icon: <ScanFace size={12} />, color: 'text-gray-400' },
       { key: '[LEITURA]', label: 'Leitura do Momento', icon: <Sparkles size={12} />, color: 'text-blue-400' },
       { key: '[VISÃO]', label: 'Visão Estratégica', icon: <ScanFace size={12} />, color: 'text-purple-400' },
       { key: '[AJUSTE]', label: 'Ajuste de Rota', icon: <AlertTriangle size={12} />, color: 'text-red-400' },

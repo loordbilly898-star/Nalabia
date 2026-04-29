@@ -806,15 +806,16 @@ export const generateChatStream = async (
   const fullSystemPrompt = `
   ${COACH_SYSTEM_PROMPT}
 
-  🚨 DOGMA DE IDENTIDADE VISUAL (NÃO INTERPRETE TEXTOS, APENAS OBEDEÇA A POSIÇÃO):
-  - POSIÇÃO DIREITA (RIGHT) / VERDE / AZUL: SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
-  - POSIÇÃO ESQUERDA (LEFT) / CINZA / COM FOTO: SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
-  - Áudios e Mensagens na DIREITA: São DO USUÁRIO. Áudios e Mensagens na ESQUERDA: São DA MULHER.
-  - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU.
-  - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
-  - SE O ÚLTIMO BALÃO FOR NA DIREITA: O homem já falou. Avise-o para aguardar ela responder. Se for na esquerda, avalie e dê sua visão.
+  🚨 DOGMA DE IDENTIDADE VISUAL (NÃO INTERPRETE TEXTOS, APENAS OBEDEÇA A POSIÇÃO DOS BALÕES):
+  - POSIÇÃO DIREITA (CANTO DIREITO DA TELA >>) / BALÕES ROXO, AZUL OU VERDE: SEMPRE O HOMEM (USUÁRIO / ME). É A MENSAGEM QUE ELE DIGITOU E ENVIOU. Pronomes: ELE / DELE.
+  - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / BALÕES CINZA OU BRANCO / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER (ELA / TARGET). É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
+  - REGRAS INQUEBRÁVEIS:
+    1. Se a mensagem está na DIREITA, FOI O HOMEM QUE ESCREVEU. A mulher não escreve na direita.
+    2. Se a mensagem está na ESQUERDA, FOI A MULHER QUE ESCREVEU. O homem não escreve na esquerda.
+    3. NUNCA diga para o homem: "sua resposta 'X' foi...", se 'X' estiver no balão ESQUERDO. O balão ESQUERDO é a resposta DELA.
+    4. Se você chamar o da DIREITA de "ela", você falhou criticamente.
+  - SE O ÚLTIMO BALÃO DA IMAGEM ESTIVER NA DIREITA: O homem é o último a ter falado. A ação correta normalmente é aguardar a resposta DELA (no balão Esquerdo).
   - SEGREGAÇÃO CRÍTICA (NÃO MISTURE): Toda vez que o usuário mandar um novo print, trate-o 100% como uma garota diferente e um cenário novo, a NÃO SER que ele explicitly diga que é a mesma. Nunca puxe acontecimentos antigos para o print atual.
-  - ⚠️ ALERTA DE SISTEMA: Você tem falhado em diferenciar DIREITA e ESQUERDA. Siga as coordenadas visuais da imagem rigorosamente. Balões alinhados à direita são ALWAYS do usuário.
   
   CONTEXTO:
   ${profileInstruction}
@@ -829,7 +830,7 @@ export const generateChatStream = async (
   const MAX_MESSAGES_CONTEXT = 8; // Reduced from 30 to 8 to prevent context mixing across different women
   
   // Filter out any system/fallback error messages from the app
-  const cleanMessages = messages.filter(m => {
+  let cleanMessages = messages.filter(m => {
     if (m.role === 'assistant' && typeof m.content === 'string') {
       if (m.content.includes("A IA não retornou conteúdo") || 
           m.content.includes("Erro na IA") || 
@@ -841,6 +842,13 @@ export const generateChatStream = async (
     }
     return true;
   });
+
+  const lastMsg = cleanMessages.length > 0 ? cleanMessages[cleanMessages.length - 1] : null;
+  if (lastMsg && lastMsg.image) {
+    // REQUISITO DO CLIENTE: "Sempre só vai ler a mensagem que eu mandar e não as outras."
+    // Se enviou print novo, ignora TODO o histórico anterior. Mented limpa.
+    cleanMessages = [lastMsg];
+  }
 
   const recentMessages = cleanMessages.slice(-MAX_MESSAGES_CONTEXT);
   

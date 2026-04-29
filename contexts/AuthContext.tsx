@@ -139,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Apply developer and legacy bypasses
           const isDeveloper = currentUser.email === 'loordbilly898@gmail.com' || currentUser.email === 'nalabiainc@gmail.com';
-          const isLegacyPremium = currentUser.email === 'kauanhenrique171822@gmail.com' || currentUser.email === 'gamerbilly898@gmail.com' || currentUser.email === 'nauandematoss@gmail.com' || currentUser.email === 'encantomirim53@gmail.com';
+          const isLegacyPremium = currentUser.email === 'kauanhenrique171822@gmail.com' || currentUser.email === 'gamerbilly898@gmail.com' || currentUser.email === 'nauandematoss@gmail.com' || currentUser.email === 'encantomirim53@gmail.com' || currentUser.email === 'lucastorresoliveira77@gmail.com' || currentUser.email === 'Luqin.oliiver@gmail.com' || currentUser.email === 'luqin.oliiver@gmail.com';
           const hasPackages = isLegacyPremium || isDeveloper;
 
           if (isDeveloper) {
@@ -196,7 +196,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           currentUser.email === 'kauanhenrique171822@gmail.com' ||
           currentUser.email === 'nauandematoss@gmail.com' ||
           currentUser.email === 'Paz180511@gmail.com' ||
-          currentUser.email === 'encantomirim53@gmail.com'
+          currentUser.email === 'encantomirim53@gmail.com' ||
+          currentUser.email === 'lucastorresoliveira77@gmail.com' ||
+          currentUser.email === 'Luqin.oliiver@gmail.com' ||
+          currentUser.email === 'luqin.oliiver@gmail.com'
         ) {
           data.nalabiaPrimeAcess = true;
           data.darkPackAccess = true;
