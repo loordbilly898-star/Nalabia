@@ -24,7 +24,7 @@ import { DarkPackModal } from './components/DarkPackModal';
 import CoursesView from './components/CoursesView';
 import { CoursesModal } from './components/CoursesModal';
 import AssistedModeModal from './components/AssistedModeModal';
-import { Send, ImageIcon, X, Trash2, Infinity as InfinityIcon, Camera, MessageCircle, Zap, ShieldAlert, ThermometerSnowflake, Ghost, Repeat2, Bolt, User, Crown, Feather, Settings, Users, HelpCircle, FlaskConical, AlertTriangle, LogIn, LogOut, Bot, Lock, ScanFace, Home, ArrowLeft, Flame, Brain, BookOpen, Compass, ChevronRight } from 'lucide-react';
+import { Send, ImageIcon, X, Trash2, Infinity as InfinityIcon, Camera, MessageCircle, Zap, ShieldAlert, ThermometerSnowflake, Ghost, Repeat2, Bolt, User, Crown, Feather, Settings, Users, HelpCircle, FlaskConical, AlertTriangle, LogIn, LogOut, Bot, Lock, ScanFace, Home, ArrowLeft, Flame, Brain, BookOpen, Compass, ChevronRight, BrainCircuit } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import { checkDeviceUsage, incrementDeviceUsage } from './services/antiFraud';
 import { supabase } from './services/supabase';
@@ -586,6 +586,14 @@ const App: React.FC = () => {
             }];
           }
         });
+
+        // Add a "system" notification in chat
+        updatedMessages.push({
+          id: 'system-' + Date.now(),
+          role: 'system',
+          content: `🧠 CONSCIÊNCIA ATUALIZADA: Aprendi ${analysis.extractedMemories.length} novos fatos sobre ${activeProfile.name}.`,
+          timestamp: Date.now()
+        });
       }
       
       const responseMessage: Message = {
@@ -1073,7 +1081,32 @@ const App: React.FC = () => {
         </div>
       ) : activeTab === 'PROFILE_ANALYZER' ? (
         <div className="flex-1 overflow-hidden">
-          <ProfileAnalyzerView settings={settings} />
+          <ProfileAnalyzerView 
+            settings={settings} 
+            onAddProfile={(name, desc, pattern) => {
+              const newId = Date.now().toString();
+              setProfiles(prev => [...prev, { 
+                id: newId, 
+                name, 
+                description: desc, 
+                messages: [], 
+                metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, 
+                behavioralPattern: pattern || '' 
+              }]);
+              setActiveProfileId(newId);
+              // Save to Auth/Firestore if logged in
+              if (user && updateUserProfiles) {
+                updateUserProfiles([...profiles, { 
+                  id: newId, 
+                  name, 
+                  description: desc, 
+                  messages: [], 
+                  metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, 
+                  behavioralPattern: pattern || '' 
+                }]);
+              }
+            }}
+          />
         </div>
       ) : activeTab === 'RED_FLAG_DETECTOR' ? (
         <div className="flex-1 overflow-hidden">
@@ -1178,7 +1211,16 @@ const App: React.FC = () => {
         )}
 
         {(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY')).map((msg) => (
-          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${settings.animations ? 'animate-fade-in' : ''}`}>
+          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${settings.animations ? 'animate-fade-in' : ''} mb-6`}>
+            {msg.role === 'system' && (
+              <div className="w-full flex justify-center my-4 animate-fade-in">
+                <div className="bg-nalabia-gold/5 border border-nalabia-gold/20 text-nalabia-gold/80 px-4 py-2 rounded-full text-[10px] font-mono flex items-center gap-2">
+                  <BrainCircuit size={12} className="animate-pulse" />
+                  <span>{msg.content}</span>
+                </div>
+              </div>
+            )}
+            
             {msg.role === 'user' && (
               <div className="max-w-[85%] text-right">
                  {msg.image && (

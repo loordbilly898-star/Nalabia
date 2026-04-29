@@ -78,7 +78,8 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
     setStatus(ProcessingState.ANALYZING);
     setErrorMsg(null);
     try {
-      const data = await detectRedFlags(chatHistory, selectedImages, settings);
+      const { userAIProfile } = userData || {};
+      const data = await detectRedFlags(chatHistory, selectedImages, settings, userAIProfile);
 
       setAnalysisResult({
         ghostingProbability: typeof data.ghostingProbability === 'number' ? data.ghostingProbability : 0,

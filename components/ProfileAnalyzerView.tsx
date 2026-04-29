@@ -9,9 +9,10 @@ import { resizeImage } from '../utils/imageResizer';
 
 interface ProfileAnalyzerViewProps {
   settings: AppSettings;
+  onAddProfile?: (name: string, description: string, behavioralPattern?: string) => void;
 }
 
-const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) => {
+const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings, onAddProfile }) => {
   const { user, userData, incrementUsage } = useAuth();
   const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
 
@@ -22,10 +23,22 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
     redFlags: string[];
     greenFlags: string[];
     icebreakers: string[];
+    behavioralPattern?: string;
+    bioAnalysis?: string;
   } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSaveToProfile = () => {
+    if (!analysisResult || !onAddProfile) return;
+    
+    const name = `Alvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    const description = `Vibe: ${analysisResult.vibe}. Bio: ${analysisResult.bioAnalysis || 'Análise de print'}`;
+    onAddProfile(name, description, analysisResult.behavioralPattern || '');
+    setIsSaved(true);
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
@@ -79,7 +92,8 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
     setStatus(ProcessingState.ANALYZING);
     setErrorMsg(null);
     try {
-      const data = await analyzeProfile(selectedImages, settings);
+      const { memories, userAIProfile } = userData || {};
+      const data = await analyzeProfile(selectedImages, settings, memories, userAIProfile);
 
       setAnalysisResult({
         vibe: data.vibe || "Vibe não detectada.",
@@ -225,6 +239,24 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({ settings }) =
         <div className="flex flex-col gap-4">
           {analysisResult ? (
             <div className="space-y-6 animate-fade-in">
+              {/* Save to Profile Button */}
+              {onAddProfile && !isSaved && (
+                <button
+                  onClick={handleSaveToProfile}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold tracking-widest uppercase flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(5,150,105,0.2)]"
+                >
+                  <ScanFace size={18} />
+                  Salvar nos Meus Perfis
+                </button>
+              )}
+
+              {isSaved && (
+                <div className="w-full py-4 bg-emerald-950/20 border border-emerald-500/30 text-emerald-500 rounded-xl font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+                  <Check size={18} />
+                  Salvo com Sucesso
+                </div>
+              )}
+
               {/* Vibe */}
               <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5`}>
                 <h3 className="text-xs font-mono text-gold-glow uppercase tracking-widest mb-2">Vibe Detectada</h3>

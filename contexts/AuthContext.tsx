@@ -81,21 +81,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchUserData = async (currentUser: User) => {
       const startTime = Date.now();
+      const FETCH_TIMEOUT = 50000; // 50 seconds timeout for robustness
+      
       try {
-        const fetchPromise = supabase
-          .from('users')
-          .select('*')
-          .eq('userID', currentUser.id)
-          .single();
-
-        const timeoutPromise = new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error("Supabase fetch timeout")), 30000)
-        );
-
-        const { data: userDoc, error: userError } = await Promise.race([
-          fetchPromise,
-          timeoutPromise
+        // Parallelize all three main fetches
+        const [userResult, profileResult, assinaturaResult]: any[] = await Promise.all([
+          Promise.race([
+            supabase.from('users').select('*').eq('userID', currentUser.id).single(),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase fetch timeout (users)")), FETCH_TIMEOUT))
+          ]),
+          Promise.race([
+            supabase.from('user_ai_profile').select('*').eq('userID', currentUser.id).single(),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase fetch timeout (profile)")), FETCH_TIMEOUT))
+          ]),
+          Promise.race([
+            supabase.from('assinaturas').select('*').eq('email', currentUser.email).order('expira_em', { ascending: false }).maybeSingle(),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase fetch timeout (assinaturas)")), FETCH_TIMEOUT))
+          ])
         ]);
+
+        const { data: userDoc, error: userError } = userResult;
+        const { data: profileDoc, error: profileError } = profileResult;
+        const { data: assinatura } = assinaturaResult;
 
         if (userError && userError.code !== 'PGRST116') {
           logEvent('auth', 'Error fetching user data', { userId: currentUser.id, errorCode: userError.code, errorDetail: userError.message });
@@ -140,7 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Apply developer and legacy bypasses
           const isDeveloper = currentUser.email === 'loordbilly898@gmail.com' || currentUser.email === 'nalabiainc@gmail.com';
           const isLegacyPremium = currentUser.email === 'kauanhenrique171822@gmail.com' || currentUser.email === 'gamerbilly898@gmail.com' || currentUser.email === 'nauandematoss@gmail.com' || currentUser.email === 'encantomirim53@gmail.com' || currentUser.email === 'lucastorresoliveira77@gmail.com' || currentUser.email === 'Luqin.oliiver@gmail.com' || currentUser.email === 'luqin.oliiver@gmail.com';
-          const hasPackages = isLegacyPremium || isDeveloper;
 
           if (isDeveloper) {
             data.plano = 'Desenvolvedor';
@@ -166,13 +172,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // --- NEW: Prioritize check in 'assinaturas' table ---
-        const { data: assinatura } = await supabase
-          .from('assinaturas')
-          .select('*')
-          .eq('email', data.email)
-          .order('expira_em', { ascending: false })
-          .maybeSingle();
-
         if (assinatura && assinatura.status === 'ativa') {
           const expirationDate = new Date(assinatura.expira_em);
           if (expirationDate > new Date()) {
@@ -186,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // --- END NEW ---
 
         // Developer bypass (double check for existing users)
-        if (userDoc && (currentUser.email === 'loordbilly898@gmail.com' || currentUser.email === 'nalabiainc@gmail.com')) {
+        if (currentUser.email === 'loordbilly898@gmail.com' || currentUser.email === 'nalabiainc@gmail.com') {
           data.nalabiaPrimeAcess = true;
           data.darkPackAccess = true;
           data.coursesAccess = true;
@@ -214,17 +213,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUserData(data);
         logEvent('auth', 'User data loaded', { userId: currentUser.id, responseTime: Date.now() - startTime });
-
-        const profilePromise = supabase
-          .from('user_ai_profile')
-          .select('*')
-          .eq('userID', currentUser.id)
-          .single();
-          
-        const { data: profileDoc, error: profileError } = await Promise.race([
-          profilePromise,
-          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase profile fetch timeout")), 20000))
-        ]);
 
         if (profileError && profileError.code !== 'PGRST116') {
           console.error("Error fetching user AI profile:", profileError);
@@ -315,7 +303,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       const timeoutPromise = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("O servidor demorou muito para responder. Tente novamente.")), 15000)
+        setTimeout(() => reject(new Error("O servidor demorou muito para responder. Tente novamente.")), 25000)
       );
 
       const { data, error } = await Promise.race([authPromise, timeoutPromise]);
@@ -377,7 +365,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const timeoutPromise = new Promise<any>((resolve) => 
-      setTimeout(() => resolve({ data: null, error: { message: 'too long to respond', status: 504 } }), 15000)
+      setTimeout(() => resolve({ data: null, error: { message: 'too long to respond', status: 504 } }), 25000)
     );
 
     let signUpResult = await Promise.race([signUpPromise, timeoutPromise]);

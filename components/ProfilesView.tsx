@@ -101,10 +101,21 @@ const ProfilesView: React.FC<ProfilesViewProps> = ({ profiles, memories, activeP
                   {profile.avatar || (typeof profile.name === 'string' ? profile.name.charAt(0).toUpperCase() : '?')}
                 </div>
                 <div>
-                  <h3 className={`font-bold text-sm ${activeProfileId === profile.id ? 'text-white' : 'text-gray-300'}`}>
-                    {typeof profile.name === 'string' ? profile.name : JSON.stringify(profile.name)}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`font-bold text-sm ${activeProfileId === profile.id ? 'text-white' : 'text-gray-300'}`}>
+                      {typeof profile.name === 'string' ? profile.name : JSON.stringify(profile.name)}
+                    </h3>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-nalabia-gold/10 border border-nalabia-gold/20 rounded text-[9px] text-nalabia-gold font-mono">
+                      <BrainCircuit size={10} />
+                      <span>{memories?.find(m => m.id === profile.id)?.observations?.length || 0}</span>
+                    </div>
+                  </div>
                   <p className="text-[10px] text-gray-500">{typeof profile.description === 'string' ? profile.description : JSON.stringify(profile.description)}</p>
+                  {profile.behavioralPattern && (
+                    <div className="mt-2 text-[9px] font-mono text-nalabia-gold/70 py-1 px-2 bg-black/30 rounded border border-nalabia-gold/10 italic truncate max-w-[200px]">
+                      DNA: {profile.behavioralPattern}
+                    </div>
+                  )}
                 </div>
               </div>
               

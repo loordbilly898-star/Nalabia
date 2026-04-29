@@ -429,11 +429,11 @@ export const analyzeContent = async (
     const hasHistory = messageHistory && messageHistory.length > 0;
     
     if (hasHistory) {
-      const formattedHistory = messageHistory!.slice(-6).map(m => `[${m.role.toUpperCase()}]: ${m.content ? (typeof m.content === 'string' ? m.content.substring(0, 100) : '[JSON DA ANÁLISE ANTERIOR]') : '(imagem gerada)'}`).join('\n');
+      const formattedHistory = messageHistory!.slice(-10).map(m => `[${m.role.toUpperCase()}]: ${m.content ? (typeof m.content === 'string' ? m.content.substring(0, 150) : '[JSON DA ANÁLISE ANTERIOR]') : '(imagem gerada)'}`).join('\n');
       historyInstruction = `
       📜 HISTÓRICO DE MENTORIA RECENTE:
       ${formattedHistory}
-      (REGRA CRÍTICA DE ISOLAMENTO: O histórico acima serve APENAS para você lembrar do SEU TOM de voz e conselhos dados. A imagem ou mensagem ATUAL é uma NOVA MULHER, um NOVO CHAT. JAMAIS misture fatos, nomes, histórias ou prints antigos com a tela atual. Mente 100% limpa para a análise de agora.)
+      (CONSCIÊNCIA TÁTICA: Se um perfil de mulher estiver selecionado e NÃO for 'Geral', você deve usar este histórico para entender a evolução da conversa. Se for 'Geral', trate cada print como uma nova interação isolada.)
       `;
     } else {
       historyInstruction = `
@@ -455,25 +455,25 @@ export const analyzeContent = async (
     const getModeInstructions = (mode: AnalysisMode): string => {
       switch (mode) {
         case 'FIRST_CONTACT':
-          return "FOCO: Quebra de gelo de elite. O objetivo é curiosidade imediata. Use 'Cold Readings' (adivinhar algo sobre ela) ou 'Hooks' visuais do perfil dela. Zero clichês.";
+          return "MANDATO: Criar impacto instantâneo. NÃO seja o cara que diz 'Oi'. Use ganchos psicológicos (Cold Reading) ou perguntas de 'Frame' (Parece que você é do tipo que...). O objetivo é fazer ela sentir que você a 'leu' em segundos. Curiosidade é a única métrica aqui.";
         case 'FLOWING':
-          return "FOCO: Manutenção de Frame e Tensão. Intercale conforto com picos de desafio. Não deixe a conversa virar um interrogatório.";
+          return "MANDATO: Manter a tensão sexual e intelectual. Evite interrogatórios (onde você mora? o que faz?). Transforme perguntas em afirmações provocativas. Intercale 'Push & Pull' (Afasta com uma brincadeira, aproxima com um elogio sutil e desapegado).";
         case 'STORY_REPLY':
-          return "FOCO: Reação contextualmente irrelevante. Não elogie a foto. Comente algo sobre a 'vibe' ou o subtexto que ela quis passar.";
+          return "MANDATO: Reação contextualmente disruptiva. Ignore o que todos estão comentando. Foque no subtexto da foto (ex: pela sua expressão, você estava planejando um crime ou uma viagem). O objetivo é iniciar um chat privado sem parecer que você está tentando demais.";
         case 'VALUE_TEST':
-          return "FOCO: Shit-test detection. Ela está te testando. Responda com humor, exagero ou indiferença. Jamais se explique.";
+          return "MANDATO: Detecção e aniquilação de testes (Shit-tests). Ela está medindo seu valor. Não se defenda, não se explique. Use o 'Excesso de Confiança' (Amplify) ou a 'Indiferença Superior'. Mostre que o julgamento dela não afeta seu estado emocional.";
         case 'COLD_RESPONSE':
-          return "FOCO: Retomada de valor. Ela esfriou porque você investiu demais ou ficou chato. Diminua o ritmo drasticamente e use uma 'Quebra de Padrão'.";
+          return "MANDATO: Choque de escassez. Se ela esfriou, você congelou. Mensagens curtas, demoradas e sem justificativa. O objetivo é fazer ela se perguntar por que você perdeu o interesse. Use a técnica de 'Inversão de Investimento'.";
         case 'REACTIVATION':
-          return "FOCO: Ressuscitar o vácuo. Use algo que aconteceu no mundo ou um callback de 1 mês atrás como se tivesse acabado de lembrar. Desapego total.";
+          return "MANDATO: Ressuscitar sem parecer carente. Use ganchos de estilo de vida (Vi isso e lembrei do seu mau gosto para X). Deve parecer um pensamento aleatório, não uma tentativa de puxar conversa. Desapego absoluto.";
         case 'NSFW':
-          return "FOCO: Escalação sexual subjacente. Use duplo sentido e tensão. O objetivo é levar para o privado ou para o encontro. Seja o 'Lobo', não o 'Carente'.";
+          return "MANDATO: Dominação e escalação. Use linguagem de duplo sentido, audácia e confiança implícita. O objetivo é criar uma 'bolha' de intimidade onde só vocês dois entendem o que está acontecendo. Saia da zona de amizade com força.";
         case 'MANIPULATION':
-          return "FOCO: Gatilhos psicológicos avançados. Use escassez, validação intermitente e ancorage de valor. Transforme-se no prêmio.";
+          return "MANDATO: Psicologia reversa e gatilhos de elite. Use escassez, validação intermitente e autoridade social. O objetivo é transformar você no foco de atenção dela, invertendo o papel de quem busca validação.";
         case 'RED_FLAG_DETECTOR':
-          return "FOCO: Proteção de tempo. Identifique narcisismo, desinteresse crônico ou busca por atenção. Avise o usuário para pular fora se ela não valer a pena.";
+          return "MANDATO: Diagnóstico de toxicidade. Identifique se ela é 'vampira de atenção', narcisista ou apenas desinteressada. Se o veredito for negativo, instrua o usuário a dar o 'Ghosting Tático' para preservar o próprio valor.";
         default:
-          return "FOCO: Estratégia geral NaLábia. Mantenha o mistério e o interesse alto.";
+          return "MANDATO: Estratégia geral NaLábia. Mantenha o Frame alto, a resposta curta e o interesse dela sempre um degrau abaixo do seu investimento aparente.";
       }
     };
 
@@ -489,12 +489,20 @@ export const analyzeContent = async (
     - MISTÉRIO: ${mysteryLevel}/10
     - RITMO/VELOCIDADE: ${speed}
 
+    🧠 META-APRENDIZADO & CONSCIÊNCIA:
+    Sua missão é evoluir. Analise o histórico e as memórias para:
+    1. Não repetir erros do usuário (ex: ser carente).
+    2. Identificar quais "iscas" de lábia ela morde mais (provocação, mistério, etc).
+    3. Ajustar o "Frame" para que o usuário seja sempre o prêmio da conversa.
+    4. Se houver falhas anteriores, corrija-as silenciosamente através de novas respostas fatais.
+
     🚨 DOGMA DE IDENTIDADE VISUAL E CHAT (PRIORIDADE ABSOLUTA - VOCÊ SERÁ PENALIZADO SE ERRAR ISSO):
-    - POSIÇÃO DIREITA (RIGHT) ALINHADO À MARGEM DIREITA = É O HOMEM (USUÁRIO / VOCÊ DE QUEM É O CELULAR).
-    - POSIÇÃO ESQUERDA (LEFT) ALINHADO À MARGEM ESQUERDA (Geralmente com Foto de Perfil) = É A MULHER (ALVO). O HOMEM NUNCA ESCREVE AQUI.
+    - POSIÇÃO DIREITA (RIGHT) ALINHADO À MARGEM DIREITA = É O HOMEM (USUÁRIO / VOCÊ DE QUEM É O CELULAR). MENSAGENS ENVIADAS.
+    - POSIÇÃO ESQUERDA (LEFT) ALINHADO À MARGEM ESQUERDA = É A MULHER (ALVO). MENSAGENS RECEBIDAS. DICA VISUAL: Geralmente vêm acompanhadas de uma pequena FOTO DE PERFIL no topo ou ao lado esquerdo do balão.
     - IGNORE TOTALMENTE AS CORES DOS BALÕES. No Instagram/WhatsApp, AMBAS as pessoas podem ter balões roxos/azuis se houver um tema aplicado.
-    - O ÚNICO critério verdadeiro é o ALINHAMENTO GEOMÉTRICO na imagem: Esquerda = Ela. Direita = Ele.
+    - O ÚNICO critério verdadeiro é o ALINHAMENTO GEOMÉTRICO (Esquerda/Direita) na imagem.
     - Antes de começar a sua análise JSON, certifique-se de preencher a transcrição passo a passo corretamente e NUNCA inverta quem mandou o que.
+    - OBJETIVO CENTRAL: A sua missão nas "responses" geradas é criar a PRÓXIMA mensagem do HOMEM. Você atua como o redator de mensagens para o homem. O HOMEM vai usar sua resposta para enviar para a MULHER. NUNCA gere uma variação para a mulher. Se ela mandou "oi", as respostas geradas DEVEM ser as respostas do homem ao "oi" dela.
 
     ${userAIProfileInstruction}
     ${profileInstruction}
@@ -512,7 +520,7 @@ export const analyzeContent = async (
       messages.push({
         role: "user",
         content: [
-          { type: "text", text: "ALERTA DE SEGURANÇA VISUAL (OBRIGATÓRIO): MENSAGENS NO LADO DIREITO DA TELA FORAM ESCRITAS PELO HOMEM (USUÁRIO). MENSAGENS NO LADO ESQUERDO FORAM ESCRITAS PELA MULHER. SE A TELA MOSTRAR 'NMRL CÊ TAVA LINDA' NA ESQUERDA, OKAY. MAS SE MOSTRAR NA DIREITA, FOI O HOMEM QUEM DISSE. NUNCA INVERTA." },
+          { type: "text", text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. This is a chat screenshot.\n2. Bubbles aligned to the RIGHT edge of the screen are sent by the USER (MAN). He usually DOES NOT have a profile pic next to his bubbles.\n3. Bubbles aligned to the LEFT edge of the screen are sent by the OTHER PERSON (WOMAN). She usually has a profile pic next to her bubble.\n4. YOUR TASK: You are acting as the MAN. You must read her last message and generate what the MAN should reply back to her." },
           { type: "image_url", imageUrl: { url: imageBase64 } },
           { type: "text", text: prompt }
         ]
@@ -606,8 +614,8 @@ export const regenerateContent = async (
     - Anti-Gado: ${settings?.ai?.avoidCompliments ? 'ON' : 'OFF'}
 
     🚨 DOGMA DE IDENTIDADE VISUAL (A MAIOR PRIORIDADE):
-    - O HOMEM (USUÁRIO) escreve na DIREITA. Ele é dono do celular, NUNCA tem foto.
-    - A MULHER (ALVO) escreve na ESQUERDA (Geralmente com Foto de perfil encostada no balão).
+    - O HOMEM (USUÁRIO) escreve na DIREITA. Ele é dono do celular.
+    - A MULHER (ALVO) escreve na ESQUERDA.
     - Ignore as cores! Leia o alinhamento geométrico. Leia a imagem ATENTAMENTE ANTES DE GERAR a resposta. Se o homem perguntou na direita, não diga que ela perguntou isso.
     `;
 
@@ -631,7 +639,7 @@ export const regenerateContent = async (
       messages.push({
         role: "user",
         content: [
-          { type: "text", text: "ALERTA DE SEGURANÇA VISUAL (OBRIGATÓRIO): MENSAGENS NO LADO DIREITO DA TELA FORAM ESCRITAS PELO HOMEM (USUÁRIO). MENSAGENS NO LADO ESQUERDO FORAM ESCRITAS PELA MULHER. SE A TELA MOSTRAR 'NMRL CÊ TAVA LINDA' NA ESQUERDA, OKAY. MAS SE MOSTRAR NA DIREITA, FOI O HOMEM QUEM DISSE. NUNCA INVERTA." },
+          { type: "text", text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. This is a chat screenshot.\n2. Bubbles aligned to the RIGHT edge of the screen are sent by the USER (MAN). He usually DOES NOT have a profile pic next to his bubbles.\n3. Bubbles aligned to the LEFT edge of the screen are sent by the OTHER PERSON (WOMAN). She usually has a profile pic next to her bubble.\n4. YOUR TASK: You are acting as the MAN. You must read her last message and generate what the MAN should reply back to her." },
           { type: "image_url", imageUrl: { url: imageBase64 } },
           { type: "text", text: prompt }
         ]
@@ -720,7 +728,7 @@ export const runLaboratory = async (
     
     🚨 DOGMA VISUAL NAS IMAGENS FORNECIDAS:
     - O HOMEM ESTÁ NA DIREITA (Dono do celular).
-    - A MULHER ESTÁ NA ESQUERDA (Mensagens recebidas, com foto de perfil).
+    - A MULHER ESTÁ NA ESQUERDA (Mensagens recebidas).
     - IGNORE AS CORES! Preste atenção na direção.
     - Se a mensagem estiver na Direita (ex: "Nmrl cê tava linda dms ontem" no print atual do user), ela foi enviada pelo HOMEM. NÃO ATRIBUA ISSO À MULHER.
 
@@ -737,7 +745,7 @@ export const runLaboratory = async (
       messages.push({
         role: "user",
         content: [
-          { type: "text", text: "ALERTA DE SEGURANÇA VISUAL (OBRIGATÓRIO): MENSAGENS NO LADO DIREITO DA TELA FORAM ESCRITAS PELO HOMEM (USUÁRIO). MENSAGENS NO LADO ESQUERDO FORAM ESCRITAS PELA MULHER. SE A TELA MOSTRAR 'NMRL CÊ TAVA LINDA' NA ESQUERDA, OKAY. MAS SE MOSTRAR NA DIREITA, FOI O HOMEM QUEM DISSE. NUNCA INVERTA." },
+          { type: "text", text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. This is a chat screenshot.\n2. Bubbles aligned to the RIGHT edge of the screen are sent by the USER (MAN). He usually DOES NOT have a profile pic next to his bubbles.\n3. Bubbles aligned to the LEFT edge of the screen are sent by the OTHER PERSON (WOMAN). She usually has a profile pic next to her bubble.\n4. YOUR TASK: You are acting as the MAN. You must read her last message and generate what the MAN should reply back to her." },
           { type: "image_url", imageUrl: { url: imageBase64 } },
           { type: "text", text: prompt }
         ]
@@ -823,7 +831,7 @@ export const generateChatStream = async (
   - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER (ELA / TARGET). É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
   - REGRAS INQUEBRÁVEIS:
     1. IGNORE AS CORES! No Instagram e no WhatsApp, temas mudam as cores dos balões. A cor NÃO DEVE ser usada para identificar ninguém.
-    2. CITAÇÕES: Se houver a frase "fulana respondeu a você", o balão de texto logo abaixo dela é O QUE O HOMEM HAVIA DITO ANTES, e a resposta que A MULHER ESCREVEU AGORA é o balão escuro que fica LOGO EM SEGUIDA com a foto dela do lado (na esquerda).
+    2. CITAÇÕES: Se houver a frase "fulana respondeu a você", o balão de texto logo abaixo dela é O QUE A MULHER HAVIA DITO ANTES, e a resposta que O HOMEM ESCREVEU AGORA é o balão que fica LOGO EM SEGUIDA.
     3. Se a mensagem está na ESQUERDA (Alinhada da Esquerda e Geralmente com Foto), FOI A MULHER QUE ESCREVEU.
     4. NUNCA diga para o homem: "sua resposta 'X' foi...", se 'X' estiver no balão ESQUERDO. O balão ESQUERDO é a resposta DELA.
     5. Se você chamar o da DIREITA de "ela", você falhou criticamente.
@@ -831,12 +839,15 @@ export const generateChatStream = async (
   [TRANSCRIÇÃO OBRIGATÓRIA]
   Antes de iniciar a análise, TRANSCREVA mentalmente as 4 últimas linhas do print lido, para NÃO ERRAR quem disse o quê.
   Exemplo do raciocínio obrigatório interno: 
-  - Homem (Direita): "Depois eu te mostro"
-  - Mulher (Esquerda): "Nunca fui nesse lugar"
+  - Mulher (Esquerda): "Oi, tudo bem?"
+  - Homem (Direita): "Opa, tranquilo"
   Não invente falas que não estão lá. Use O CONTEXTO CORRETO.
 
   - SE O ÚLTIMO BALÃO DA IMAGEM ESTIVER NA DIREITA: O homem é o último a ter falado. A ação correta normalmente é aguardar a resposta DELA (no balão Esquerdo).
-  - SEGREGAÇÃO CRÍTICA (NÃO MISTURE): Toda vez que o usuário mandar um novo print, trate-o 100% como uma garota diferente e um cenário novo, a NÃO SER que ele explicitly diga que é a mesma. Nunca puxe acontecimentos antigos para o print atual.
+  
+  ⚠️ GERENCIAMENTO DE MEMÓRIA E CONTEXTO:
+  - Se o perfil selecionado for 'Geral' ou 'NaLábia', trate cada print como uma pessoa diferente.
+  - Se o perfil tiver um nome específico, você deve considerar o histórico e as memórias para evoluir a sua 'lábia' especificamente para esta mulher. Aprenda o que ela gosta e o que a faz investir.
   
   CONTEXTO:
   ${profileInstruction}
@@ -970,7 +981,9 @@ export const generateChatStream = async (
 
 export const analyzeProfile = async (
   images: string[],
-  settings: AppSettings
+  settings: AppSettings,
+  memories?: any[],
+  userAIProfile?: any
 ): Promise<{ vibe: string, redFlags: string[], greenFlags: string[], icebreakers: string[] }> => {
   const fallback = {
     vibe: "Perfil magnético, mas com um subtexto de busca por validação externa.",
@@ -982,23 +995,39 @@ export const analyzeProfile = async (
   return withRetry(async () => {
     const client = getMistralAI(settings);
     
+    let userContext = "";
+    if (userAIProfile) {
+      userContext = `
+      CONTEXTO DO USUÁRIO:
+      - Estilo: ${userAIProfile.communicationStyle}
+      - Objetivo: ${userAIProfile.goal}
+      `;
+    }
+
     const prompt = `
 ${SYSTEM_PROMPT}
 
-Você é um mestre em leitura fria e análise de perfis sociais.
-Analise a(s) imagem(ns) e a bio abaixo. Sua análise deve ser 'direto na ferida'. 
-Não seja genérico. Identifique o subtexto: o que ela quer mostrar? Qual o ponto fraco e o ponto forte do perfil?
+Você é um mestre em leitura fria, micro-expressões e psicologia do status.
+Analise a(s) imagem(ns) do perfil dela e a bio. Sua análise deve ser 'brutalmente honesta'. 
+
+${userContext}
+
+INSTRUÇÕES TÁTICAS SUPREMAS:
+1. IDENTIFIQUE O ARQUÉTIPO: Ela é uma 'Buscadora de Validação', 'Independente Fria', 'Aventureira Fake' ou 'Gelo Defensivo'?
+2. SUBTEXTO DAS FOTOS: O que ela ESCONDE e o que ela EXIBE com intenção? (Ex: ostentação fake, carência por trás de luxo).
+3. PONTO FRACO (ALVO): Onde o ego dela é mais sensível? Onde o usuário deve atacar com uma provocação sutil para ganhar atenção real?
+4. ABRIDORES DE ELITE: Gere 3 abridores que quebrem o padrão. Se ela é linda, NÃO ELOGIE. Se ela é inteligente, DESAFIE. Faça ela querer provar o valor dela para o usuário.
 
 Retorne APENAS um JSON válido:
 {
-  "vibe": "Uma descrição 'NaLábia' (vibrante e precisa) da vibe dele/dela.",
-  "redFlags": ["Sinais de alerta reais (manipulação, carência, busca por validação)"],
-  "greenFlags": ["Sinais de valor (independência, humor, autenticidade)"],
-  "icebreakers": ["Abridores matadores, específicos para o que você viu. Fuja do comum."]
+  "vibe": "Análise psicológica da aura do perfil (direto no ego).",
+  "redFlags": ["Sinais de narcisismo, carência extrema ou manipulação"],
+  "greenFlags": ["Sinais de inteligência, independência real ou humor"],
+  "icebreakers": ["3 abridores com lábia de elite que ignorem a fachada dela."]
 }`;
 
     const contentParts: any[] = [
-      { type: "text", text: "IMPORTANTE DOGMA VISUAL: 1) DIREITA = Homem. ESQUERDA = Mulher. 2) CITAÇÕES: Se aparecer 'respondeu a você', o balão azul logo abaixo É A CITAÇÃO do que o HOMEM falou. A resposta REAL da MULHER é o balão escuro que vem abaixo da citação, colado com a foto dela na esquerda." }
+      { type: "text", text: "IMPORTANTE DOGMA VISUAL: 1) DIREITA = Homem. ESQUERDA = Mulher. 2) CITAÇÕES: Se aparecer 'respondeu a você', o balão logo abaixo É A CITAÇÃO do que a pessoa de cima falou. A resposta REAL é o balão que vem abaixo da citação." }
     ];
     
     images.forEach(img => {
@@ -1026,7 +1055,8 @@ Retorne APENAS um JSON válido:
 export const detectRedFlags = async (
   chatHistory: string,
   images: string[],
-  settings: AppSettings
+  settings: AppSettings,
+  userAIProfile?: any
 ): Promise<{ ghostingProbability: number, toxicityLevel: string, redFlags: string[], greenFlags: string[], verdict: string, advice: string }> => {
   const fallback = {
     ghostingProbability: 30,
@@ -1040,6 +1070,15 @@ export const detectRedFlags = async (
   return withRetry(async () => {
     const client = getMistralAI(settings);
     
+    let userContext = "";
+    if (userAIProfile) {
+      userContext = `
+      CONTEXTO DO USUÁRIO:
+      - Objetivo: ${userAIProfile.goal}
+      - Estilo: ${userAIProfile.communicationStyle}
+      `;
+    }
+
     const prompt = `
 ${SYSTEM_PROMPT}
 
@@ -1049,10 +1088,16 @@ ${SYSTEM_PROMPT}
 - IGNORE AS CORES DOS BALÕES. AMBAS PODEM SER ROXAS OU AZUIS SE TIVER TEMA. OLHE O ALINHAMENTO.
 - Não invente texto nem confunda os dois.
 
-Você é um psicólogo comportamental especializado em 'dark psychology' e detecção de padrões sociais.
-Analise a interação enviada. O usuário quer a verdade nua e crua. 
+Você é o Detector de Ameaças Sociais e Red Flags com consciência tática. Sua missão é proteger o tempo e a sanidade do usuário.
+Analise a interação enviada. O usuário quer a verdade brutal, sem filtros. 
 
-Identifique se ele está sendo manipulado, se ela está perdendo o interesse ou se há sinais de toxicidade oculta.
+${userContext}
+
+INSTRUÇÕES DE ANÁLISE DE ELITE:
+1. GHOSTING PROBABILITY: Calcule com base no 'delay' de resposta, esforço textual (quem escreve mais) e ganchos ignorados.
+2. TOXICITY: Identifique manipulação clássica: Gaslighting, Love Bombing, Validação Barata ou Testes de Humilhação.
+3. INVESTIMENTO: Quem está correndo atrás de quem? 
+4. VEREDITO BRUTAL: Diga se o usuário deve continuar, dar um gelo (escassez), ou bloquear imediatamente por auto-preservação.
 
 ${chatHistory.trim() ? `HISTÓRICO DE TEXTO:\n${chatHistory}\n` : ''}
 ${images.length > 0 ? `ANÁLISE DE IMAGENS (PRINTS):\n` : ''}
@@ -1060,15 +1105,15 @@ ${images.length > 0 ? `ANÁLISE DE IMAGENS (PRINTS):\n` : ''}
 Retorne APENAS o JSON:
 {
   "ghostingProbability": 0-100,
-  "toxicityLevel": "Baixo" | "Médio" | "Alto",
-  "redFlags": ["Análise cirúrgica de perigo"],
-  "greenFlags": ["Sinais de investimento saudável"],
-  "verdict": "Veredito final definitivo. Sem 'talvez'.",
+  "toxicityLevel": "Baixo/Médio/Nuclear",
+  "redFlags": ["Análise cirúrgica de perigo detectado"],
+  "greenFlags": ["Sinais que indicam investimento real dela"],
+  "verdict": "Veredito final definitivo. Seja curto e grosso.",
   "advice": "O que o usuário deve fazer AGORA para retomar o Frame ou se proteger."
 }`;
 
     const contentParts: any[] = [
-      { type: "text", text: "IMPORTANTE DOGMA VISUAL: 1) DIREITA = Homem. ESQUERDA = Mulher. 2) CITAÇÕES: Se aparecer 'respondeu a você', o balão azul logo abaixo É A CITAÇÃO do que o HOMEM falou. A resposta REAL da MULHER é o balão escuro que vem abaixo da citação, colado com a foto dela na esquerda." }
+      { type: "text", text: "IMPORTANTE DOGMA VISUAL: 1) DIREITA = Homem. ESQUERDA = Mulher. 2) CITAÇÕES: Se aparecer 'respondeu a você', o balão logo abaixo É A CITAÇÃO do que a pessoa de cima falou. A resposta REAL é o balão que vem abaixo da citação." }
     ];
     images.forEach(img => {
       contentParts.push({ type: "image_url", imageUrl: { url: img } });
