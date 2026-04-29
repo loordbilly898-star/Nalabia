@@ -31,11 +31,11 @@ const LaboratoryView: React.FC<LaboratoryViewProps> = ({ simulation }) => {
                   variant.style === 'Provocante' ? 'border-rose-900 text-rose-400 bg-rose-900/10' :
                   'border-purple-900 text-purple-400 bg-purple-900/10'
                 } font-mono uppercase`}>
-                  {variant.style}
+                  {typeof variant.style === 'string' ? variant.style : JSON.stringify(variant.style)}
                 </span>
                 <div className="flex gap-2 text-[8px] font-mono text-gray-500">
-                  <span title="Atração">🔥 {variant.impact?.attraction}</span>
-                  <span title="Risco">⚠️ {variant.impact?.risk}</span>
+                  <span title="Atração">🔥 {typeof variant.impact?.attraction === 'string' ? variant.impact.attraction : JSON.stringify(variant.impact?.attraction)}</span>
+                  <span title="Risco">⚠️ {typeof variant.impact?.risk === 'string' ? variant.impact.risk : JSON.stringify(variant.impact?.risk)}</span>
                 </div>
               </div>
               <p className="text-sm text-gray-200 mb-2 font-medium">"{typeof variant.text === 'string' ? variant.text : JSON.stringify(variant.text)}"</p>

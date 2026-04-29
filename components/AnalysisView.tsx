@@ -127,7 +127,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
                 <Clock size={12} />
                 <span className="text-[10px] uppercase font-mono">Timing Ideal de Resposta</span>
               </div>
-              <div className="text-xs text-blue-100">{analysis.suggestedTiming}</div>
+              <div className="text-xs text-blue-100">{typeof analysis.suggestedTiming === 'string' ? analysis.suggestedTiming : JSON.stringify(analysis.suggestedTiming)}</div>
             </div>
           )}
           {analysis.errorAlert && (
@@ -136,7 +136,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
                 <AlertTriangle size={12} />
                 <span className="text-[10px] uppercase font-mono font-bold">Alerta Crítico</span>
               </div>
-              <div className="text-xs text-red-200">{analysis.errorAlert}</div>
+              <div className="text-xs text-red-200">{typeof analysis.errorAlert === 'string' ? analysis.errorAlert : JSON.stringify(analysis.errorAlert)}</div>
             </div>
           )}
         </div>

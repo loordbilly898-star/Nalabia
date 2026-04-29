@@ -260,6 +260,8 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
 
   const renderMentorMessage = (content: string) => {
     const sections = [
+      { key: '[CONTROLE]', label: 'Análise de Controle', icon: <ScanFace size={12} />, color: 'text-purple-400' },
+      { key: '[RESPOSTA]', label: 'Resposta Recomendada', icon: <Zap size={12} />, color: 'text-gold-glow' },
       { key: '[TRANSCRIÇÃO OBRIGATÓRIA]', label: 'Análise Visual Estrita', icon: <ScanFace size={12} />, color: 'text-gray-400' },
       { key: '[LEITURA]', label: 'Leitura do Momento', icon: <Sparkles size={12} />, color: 'text-blue-400' },
       { key: '[VISÃO]', label: 'Visão Estratégica', icon: <ScanFace size={12} />, color: 'text-purple-400' },
@@ -268,18 +270,26 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
       { key: '[REGRA]', label: 'Regra de Ouro', icon: <Crown size={12} />, color: 'text-emerald-400' },
     ];
 
-    let currentContent = content;
+    let currentContent = content.replace(/\[OUTPUT\]\n/g, '');
     const parts: { label: string; text: string; icon: any; color: string }[] = [];
 
     sections.forEach((section, index) => {
       if (currentContent.includes(section.key)) {
-        const nextSection = sections.slice(index + 1).find(s => currentContent.includes(s.key));
+        // Encontra a próxima tag que existe no texto para saber onde parar
+        let nextIndex = currentContent.length;
+        sections.forEach((s) => {
+          const sIndex = currentContent.indexOf(s.key);
+          const currentSIndex = currentContent.indexOf(section.key);
+          if (sIndex > currentSIndex && sIndex < nextIndex) {
+            nextIndex = sIndex;
+          }
+        });
+
         const start = currentContent.indexOf(section.key) + section.key.length;
-        const end = nextSection ? currentContent.indexOf(nextSection.key) : currentContent.length;
         
         parts.push({
           label: section.label,
-          text: currentContent.substring(start, end).trim(),
+          text: currentContent.substring(start, nextIndex).trim(),
           icon: section.icon,
           color: section.color
         });
@@ -298,7 +308,7 @@ const ChatbotView: React.FC<ChatbotViewProps> = ({ settings, activeProfile, user
               {p.icon}
               {p.label}
             </div>
-            <div className={`text-sm leading-relaxed ${p.label === 'Sugestão de Resposta' ? 'bg-gold-glow/5 border border-gold-glow/20 rounded-lg p-3 font-medium text-gold-glow' : 'text-gray-300'}`}>
+            <div className={`text-sm leading-relaxed ${(p.label === 'Sugestão de Resposta' || p.label === 'Resposta Recomendada') ? 'bg-gold-glow/5 border border-gold-glow/20 rounded-lg p-3 font-medium text-gold-glow' : 'text-gray-300'}`}>
               {p.text === 'NÃO RESPONDA' ? (
                 <div className="flex items-center gap-2 text-blue-400">
                   <Ghost size={14} />

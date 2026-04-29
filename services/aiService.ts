@@ -489,14 +489,12 @@ export const analyzeContent = async (
     - MISTÉRIO: ${mysteryLevel}/10
     - RITMO/VELOCIDADE: ${speed}
 
-    🚨 DOGMA DE IDENTIDADE VISUAL E CHAT (PRIORIDADE ABSOLUTA):
-    - POSIÇÃO DIREITA (RIGHT) / CORES (VERDE/AZUL/ROXO) = SEMPRE O HOMEM (USUÁRIO / ME). Pronomes: ELE / DELE.
-    - POSIÇÃO ESQUERDA (LEFT) / CORES (CINZA/BRANCO) = SEMPRE A MULHER (ELA / TARGET). Pronomes: ELA / DELA.
-    - ÁUDIOS NO WHATSAPP: Se tiver foto de perfil do lado e estiver na ESQUERDA, é dela. Se for VERDE na DIREITA, é dele.
-    - Nunca, sob nenhuma circunstância, troque os gêneros. Se a mensagem está na direita, FOI UM HOMEM QUE ESCREVEU. Se está na esquerda, FOI UMA MULHER.
-    - Se você chamar o da DIREITA de "ela", sua análise será descartada por erro fatal.
-    - PLATAFORMAS: IG, WhatsApp, Tinder, Bumble. Em todas, a regra é a mesma.
-    - ⚠️ ALERTA DE SISTEMA: O modelo de IA tem confundido balões. PRESTE MUITA ATENÇÃO NAS COORDENADAS X DA IMAGEM. Balões encostados na borda DIREITA são SEMPRE do usuário. Balões encostados na borda ESQUERDA com foto de perfil são SEMPRE da mulher. Não adivinhe pelo tom da mensagem, USE A POSIÇÃO.
+    🚨 DOGMA DE IDENTIDADE VISUAL E CHAT (PRIORIDADE ABSOLUTA - VOCÊ SERÁ PENALIZADO SE ERRAR ISSO):
+    - POSIÇÃO DIREITA (RIGHT) ALINHADO À MARGEM DIREITA = É O HOMEM (USUÁRIO / VOCÊ DE QUEM É O CELULAR).
+    - POSIÇÃO ESQUERDA (LEFT) ALINHADO À MARGEM ESQUERDA (Geralmente com Foto de Perfil) = É A MULHER (ALVO). O HOMEM NUNCA ESCREVE AQUI.
+    - IGNORE TOTALMENTE AS CORES DOS BALÕES. No Instagram/WhatsApp, AMBAS as pessoas podem ter balões roxos/azuis se houver um tema aplicado.
+    - O ÚNICO critério verdadeiro é o ALINHAMENTO GEOMÉTRICO na imagem: Esquerda = Ela. Direita = Ele.
+    - Antes de começar a sua análise JSON, certifique-se de preencher a transcrição passo a passo corretamente e NUNCA inverta quem mandou o que.
 
     ${userAIProfileInstruction}
     ${profileInstruction}
@@ -514,8 +512,9 @@ export const analyzeContent = async (
       messages.push({
         role: "user",
         content: [
-          { type: "text", text: prompt },
-          { type: "image_url", imageUrl: { url: imageBase64 } }
+          { type: "text", text: "ALERTA DE SEGURANÇA VISUAL (OBRIGATÓRIO): MENSAGENS NO LADO DIREITO DA TELA FORAM ESCRITAS PELO HOMEM (USUÁRIO). MENSAGENS NO LADO ESQUERDO FORAM ESCRITAS PELA MULHER. SE A TELA MOSTRAR 'NMRL CÊ TAVA LINDA' NA ESQUERDA, OKAY. MAS SE MOSTRAR NA DIREITA, FOI O HOMEM QUEM DISSE. NUNCA INVERTA." },
+          { type: "image_url", imageUrl: { url: imageBase64 } },
+          { type: "text", text: prompt }
         ]
       });
     } else {
@@ -605,6 +604,11 @@ export const regenerateContent = async (
     ⚙️ CONFIGS:
     - Respostas Curtas: ${settings?.ai?.shortResponses ? 'ON' : 'OFF'}
     - Anti-Gado: ${settings?.ai?.avoidCompliments ? 'ON' : 'OFF'}
+
+    🚨 DOGMA DE IDENTIDADE VISUAL (A MAIOR PRIORIDADE):
+    - O HOMEM (USUÁRIO) escreve na DIREITA. Ele é dono do celular, NUNCA tem foto.
+    - A MULHER (ALVO) escreve na ESQUERDA (Geralmente com Foto de perfil encostada no balão).
+    - Ignore as cores! Leia o alinhamento geométrico. Leia a imagem ATENTAMENTE ANTES DE GERAR a resposta. Se o homem perguntou na direita, não diga que ela perguntou isso.
     `;
 
     const prompt = `
@@ -627,8 +631,9 @@ export const regenerateContent = async (
       messages.push({
         role: "user",
         content: [
-          { type: "text", text: prompt },
-          { type: "image_url", imageUrl: { url: imageBase64 } }
+          { type: "text", text: "ALERTA DE SEGURANÇA VISUAL (OBRIGATÓRIO): MENSAGENS NO LADO DIREITO DA TELA FORAM ESCRITAS PELO HOMEM (USUÁRIO). MENSAGENS NO LADO ESQUERDO FORAM ESCRITAS PELA MULHER. SE A TELA MOSTRAR 'NMRL CÊ TAVA LINDA' NA ESQUERDA, OKAY. MAS SE MOSTRAR NA DIREITA, FOI O HOMEM QUEM DISSE. NUNCA INVERTA." },
+          { type: "image_url", imageUrl: { url: imageBase64 } },
+          { type: "text", text: prompt }
         ]
       });
     } else {
@@ -713,6 +718,12 @@ export const runLaboratory = async (
 
     [ALTA PRIORIDADE]: Gere respostas que fujam do óbvio. O usuário quer o 'caminho das pedras' que ninguém conta. 
     
+    🚨 DOGMA VISUAL NAS IMAGENS FORNECIDAS:
+    - O HOMEM ESTÁ NA DIREITA (Dono do celular).
+    - A MULHER ESTÁ NA ESQUERDA (Mensagens recebidas, com foto de perfil).
+    - IGNORE AS CORES! Preste atenção na direção.
+    - Se a mensagem estiver na Direita (ex: "Nmrl cê tava linda dms ontem" no print atual do user), ela foi enviada pelo HOMEM. NÃO ATRIBUA ISSO À MULHER.
+
     INPUT ORIGINAL: "${contextText}"
     ANÁLISE DO MOMENTO: ${JSON.stringify(analysis)}
     CONTEXTO DE PERFIL: ${profileInfo}
@@ -726,8 +737,9 @@ export const runLaboratory = async (
       messages.push({
         role: "user",
         content: [
-          { type: "text", text: prompt },
-          { type: "image_url", imageUrl: { url: imageBase64 } }
+          { type: "text", text: "ALERTA DE SEGURANÇA VISUAL (OBRIGATÓRIO): MENSAGENS NO LADO DIREITO DA TELA FORAM ESCRITAS PELO HOMEM (USUÁRIO). MENSAGENS NO LADO ESQUERDO FORAM ESCRITAS PELA MULHER. SE A TELA MOSTRAR 'NMRL CÊ TAVA LINDA' NA ESQUERDA, OKAY. MAS SE MOSTRAR NA DIREITA, FOI O HOMEM QUEM DISSE. NUNCA INVERTA." },
+          { type: "image_url", imageUrl: { url: imageBase64 } },
+          { type: "text", text: prompt }
         ]
       });
     } else {
@@ -807,13 +819,22 @@ export const generateChatStream = async (
   ${COACH_SYSTEM_PROMPT}
 
   🚨 DOGMA DE IDENTIDADE VISUAL (NÃO INTERPRETE TEXTOS, APENAS OBEDEÇA A POSIÇÃO DOS BALÕES):
-  - POSIÇÃO DIREITA (CANTO DIREITO DA TELA >>) / BALÕES ROXO, AZUL OU VERDE: SEMPRE O HOMEM (USUÁRIO / ME). É A MENSAGEM QUE ELE DIGITOU E ENVIOU. Pronomes: ELE / DELE.
-  - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / BALÕES CINZA OU BRANCO / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER (ELA / TARGET). É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
+  - POSIÇÃO DIREITA (CANTO DIREITO DA TELA >>): SEMPRE O HOMEM (USUÁRIO / ME). É A MENSAGEM QUE ELE DIGITOU E ENVIOU. Pronomes: ELE / DELE.
+  - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER (ELA / TARGET). É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
   - REGRAS INQUEBRÁVEIS:
-    1. Se a mensagem está na DIREITA, FOI O HOMEM QUE ESCREVEU. A mulher não escreve na direita.
-    2. Se a mensagem está na ESQUERDA, FOI A MULHER QUE ESCREVEU. O homem não escreve na esquerda.
-    3. NUNCA diga para o homem: "sua resposta 'X' foi...", se 'X' estiver no balão ESQUERDO. O balão ESQUERDO é a resposta DELA.
-    4. Se você chamar o da DIREITA de "ela", você falhou criticamente.
+    1. IGNORE AS CORES! No Instagram e no WhatsApp, temas mudam as cores dos balões. A cor NÃO DEVE ser usada para identificar ninguém.
+    2. CITAÇÕES: Se houver a frase "fulana respondeu a você", o balão de texto logo abaixo dela é O QUE O HOMEM HAVIA DITO ANTES, e a resposta que A MULHER ESCREVEU AGORA é o balão escuro que fica LOGO EM SEGUIDA com a foto dela do lado (na esquerda).
+    3. Se a mensagem está na ESQUERDA (Alinhada da Esquerda e Geralmente com Foto), FOI A MULHER QUE ESCREVEU.
+    4. NUNCA diga para o homem: "sua resposta 'X' foi...", se 'X' estiver no balão ESQUERDO. O balão ESQUERDO é a resposta DELA.
+    5. Se você chamar o da DIREITA de "ela", você falhou criticamente.
+  
+  [TRANSCRIÇÃO OBRIGATÓRIA]
+  Antes de iniciar a análise, TRANSCREVA mentalmente as 4 últimas linhas do print lido, para NÃO ERRAR quem disse o quê.
+  Exemplo do raciocínio obrigatório interno: 
+  - Homem (Direita): "Depois eu te mostro"
+  - Mulher (Esquerda): "Nunca fui nesse lugar"
+  Não invente falas que não estão lá. Use O CONTEXTO CORRETO.
+
   - SE O ÚLTIMO BALÃO DA IMAGEM ESTIVER NA DIREITA: O homem é o último a ter falado. A ação correta normalmente é aguardar a resposta DELA (no balão Esquerdo).
   - SEGREGAÇÃO CRÍTICA (NÃO MISTURE): Toda vez que o usuário mandar um novo print, trate-o 100% como uma garota diferente e um cenário novo, a NÃO SER que ele explicitly diga que é a mesma. Nunca puxe acontecimentos antigos para o print atual.
   
@@ -903,7 +924,7 @@ export const generateChatStream = async (
       mistralMessages.push({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
         content: [
-          { type: "text", text: safeContent || "Análise do print:" },
+          { type: "text", text: safeContent ? `${safeContent}\n\nInicie sua resposta EXATAMENTE com a tag [TRANSCRIÇÃO OBRIGATÓRIA] e extraia: O que EU (balão direita) disse e o que ELA (balão esquerda/com foto) disse. ALERTA LETAL: SE A FRASE 'Nmrl cê tava linda', 'apaixonsei' OU QUALQUER OUTRA ESTIVER VISÍVEL NO LADO DIREITO, É O USUÁRIO QUEM ESTÁ FALANDO. VOCÊ DEVE OBRIGATORIAMENTE LISTÁ-LA COMO O HOMEM. NÃO A ATRIBUA À MULHER NUNCA. Somente depois use a tag [CONTROLE] e siga o resto do formato.` : "Inicie sua resposta EXATAMENTE com a tag [TRANSCRIÇÃO OBRIGATÓRIA] e extraia: O que EU (balão direita) disse e o que ELA (balão esquerda/com foto) disse. ALERTA LETAL: SE A FRASE 'Nmrl cê tava linda' OU QUALQUER OUTRA ESTIVER VISÍVEL NO LADO DIREITO DA MARGEM, É O USUÁRIO (HOMEM) QUEM ESTÁ FALANDO. VOCÊ DEVE OBRIGATORIAMENTE LISTÁ-LA COMO O HOMEM. NUNCA À MULHER. Somente depois use a tag [CONTROLE] e siga o resto do formato." },
           { type: "image_url", imageUrl: { url: msg.image } }
         ]
       });
@@ -977,12 +998,14 @@ Retorne APENAS um JSON válido:
 }`;
 
     const contentParts: any[] = [
-      { type: "text", text: prompt }
+      { type: "text", text: "IMPORTANTE DOGMA VISUAL: 1) DIREITA = Homem. ESQUERDA = Mulher. 2) CITAÇÕES: Se aparecer 'respondeu a você', o balão azul logo abaixo É A CITAÇÃO do que o HOMEM falou. A resposta REAL da MULHER é o balão escuro que vem abaixo da citação, colado com a foto dela na esquerda." }
     ];
     
     images.forEach(img => {
       contentParts.push({ type: "image_url", imageUrl: { url: img } });
     });
+
+    contentParts.push({ type: "text", text: prompt });
 
     const response = await client.chat.complete({
       model: "pixtral-12b-2409",
@@ -1020,6 +1043,12 @@ export const detectRedFlags = async (
     const prompt = `
 ${SYSTEM_PROMPT}
 
+🚨 DOGMA VISUAL NAS IMAGENS (SE EXISTIREM):
+- O HOMEM (O USUÁRIO) ESTÁ SEMPRE NA DIREITA. ELE É O DONO DO CELULAR.
+- A MULHER ESTÁ SEMPRE NA ESQUERDA (Geralmente com foto de perfil e o nome dela em cima).
+- IGNORE AS CORES DOS BALÕES. AMBAS PODEM SER ROXAS OU AZUIS SE TIVER TEMA. OLHE O ALINHAMENTO.
+- Não invente texto nem confunda os dois.
+
 Você é um psicólogo comportamental especializado em 'dark psychology' e detecção de padrões sociais.
 Analise a interação enviada. O usuário quer a verdade nua e crua. 
 
@@ -1038,10 +1067,13 @@ Retorne APENAS o JSON:
   "advice": "O que o usuário deve fazer AGORA para retomar o Frame ou se proteger."
 }`;
 
-    const contentParts: any[] = [{ type: "text", text: prompt }];
+    const contentParts: any[] = [
+      { type: "text", text: "IMPORTANTE DOGMA VISUAL: 1) DIREITA = Homem. ESQUERDA = Mulher. 2) CITAÇÕES: Se aparecer 'respondeu a você', o balão azul logo abaixo É A CITAÇÃO do que o HOMEM falou. A resposta REAL da MULHER é o balão escuro que vem abaixo da citação, colado com a foto dela na esquerda." }
+    ];
     images.forEach(img => {
       contentParts.push({ type: "image_url", imageUrl: { url: img } });
     });
+    contentParts.push({ type: "text", text: prompt });
 
     const response = await client.chat.complete({
       model: images.length > 0 ? "pixtral-12b-2409" : "mistral-large-latest",

@@ -103,7 +103,7 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
           >
             <div>
               <div className="flex justify-between items-start mb-3">
-                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider border border-white/5 px-2 py-0.5 rounded-full">{res.type || 'Opção'}</span>
+                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider border border-white/5 px-2 py-0.5 rounded-full">{typeof res.type === 'string' ? res.type : JSON.stringify(res.type) || 'Opção'}</span>
                 <div className="flex items-center space-x-3">
                   <button 
                     onClick={(e) => handleSave(typeof res.text === 'string' ? res.text : (typeof res === 'string' ? res : JSON.stringify(res)), typeof res.type === 'string' ? res.type : 'Geral', idx, e)}
@@ -123,7 +123,7 @@ const ResponseOptions: React.FC<ResponseOptionsProps> = ({ responses, onRegenera
                 <div className="mt-3 p-2.5 bg-obsidian-lighter/50 rounded-lg border border-gold-dim/10">
                   <p className="text-[10px] text-gold-glow/80 font-mono leading-relaxed">
                     <span className="font-bold text-gold-glow mr-1">🧠 NaLábia:</span>
-                    {res.explanation}
+                    {typeof res.explanation === 'string' ? res.explanation : JSON.stringify(res.explanation)}
                   </p>
                 </div>
               )}

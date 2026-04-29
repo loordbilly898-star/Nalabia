@@ -231,7 +231,7 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
                     analysisResult.ghostingProbability > 70 ? 'text-rose-500' :
                     analysisResult.ghostingProbability > 40 ? 'text-amber-500' : 'text-emerald-500'
                   }`}>
-                    {analysisResult.ghostingProbability}%
+                    {typeof analysisResult.ghostingProbability === 'number' || typeof analysisResult.ghostingProbability === 'string' ? analysisResult.ghostingProbability : JSON.stringify(analysisResult.ghostingProbability)}%
                   </div>
                 </div>
                 <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-xl p-5 flex flex-col items-center justify-center text-center`}>
@@ -240,7 +240,7 @@ const RedFlagDetectorView: React.FC<RedFlagDetectorViewProps> = ({ settings }) =
                     analysisResult.toxicityLevel === 'Alto' ? 'text-rose-500' :
                     analysisResult.toxicityLevel === 'Médio' ? 'text-amber-500' : 'text-emerald-500'
                   }`}>
-                    {analysisResult.toxicityLevel}
+                    {typeof analysisResult.toxicityLevel === 'string' ? analysisResult.toxicityLevel : JSON.stringify(analysisResult.toxicityLevel)}
                   </div>
                 </div>
               </div>
