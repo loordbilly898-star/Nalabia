@@ -459,7 +459,11 @@ export const analyzeContent = async (
         case 'FLOWING':
           return "MANDATO: Manter a tensão sexual e intelectual. Evite interrogatórios (onde você mora? o que faz?). Transforme perguntas em afirmações provocativas. Intercale 'Push & Pull' (Afasta com uma brincadeira, aproxima com um elogio sutil e desapegado).";
         case 'STORY_REPLY':
-          return "MANDATO: Reação contextualmente disruptiva. Ignore o que todos estão comentando. Foque no subtexto da foto (ex: pela sua expressão, você estava planejando um crime ou uma viagem). O objetivo é iniciar um chat privado sem parecer que você está tentando demais.";
+          return `MANDATO — STORY VISION LOCK & ENGINE V2:
+          1. EYE (VISÃO): Descreva o que você vê (objetivos, ambiente, ação) sem alucinar. Use "VISUAL INCERTO" se necessário.
+          2. CATEGORY: SELFIE, CORPO, COMIDA/BEBIDA, VIAGEM, ACADEMIA ou RANDOM.
+          3. READ: 1 frase sobre o momento (Ex: "Relaxando no sol").
+          4. REPLY: Gere 3 respostas de "Lábia de 2 Segundos". Curtas (máx 1 frase), naturais, fáceis de responder e sem esforço intelectual. Se parecer mensagem pensada, está ERRADA.`;
         case 'VALUE_TEST':
           return "MANDATO: Detecção e aniquilação de testes (Shit-tests). Ela está medindo seu valor. Não se defenda, não se explique. Use o 'Excesso de Confiança' (Amplify) ou a 'Indiferença Superior'. Mostre que o julgamento dela não afeta seu estado emocional.";
         case 'COLD_RESPONSE':
@@ -1007,23 +1011,27 @@ export const analyzeProfile = async (
     const prompt = `
 ${SYSTEM_PROMPT}
 
-Você é um mestre em leitura fria, micro-expressões e psicologia do status.
-Analise a(s) imagem(ns) do perfil dela e a bio. Sua análise deve ser 'brutalmente honesta'. 
+Você é um estrategista social focado em RESULTADOS PRÁTICOS. 
+Analise as imagens e a bio no MODO RAIO-X (Realista e Útil). 
 
 ${userContext}
 
-INSTRUÇÕES TÁTICAS SUPREMAS:
-1. IDENTIFIQUE O ARQUÉTIPO: Ela é uma 'Buscadora de Validação', 'Independente Fria', 'Aventureira Fake' ou 'Gelo Defensivo'?
-2. SUBTEXTO DAS FOTOS: O que ela ESCONDE e o que ela EXIBE com intenção? (Ex: ostentação fake, carência por trás de luxo).
-3. PONTO FRACO (ALVO): Onde o ego dela é mais sensível? Onde o usuário deve atacar com uma provocação sutil para ganhar atenção real?
-4. ABRIDORES DE ELITE: Gere 3 abridores que quebrem o padrão. Se ela é linda, NÃO ELOGIE. Se ela é inteligente, DESAFIE. Faça ela querer provar o valor dela para o usuário.
+DIRETRIZES DO RAIO-X:
+1. DADOS BRUTOS: O que aparece nas fotos? (Selfies no espelho, viagens ostentação, fotos de academia, bio com regras).
+2. TIPO DE PERFIL: Como ela se apresenta ao mundo? (Ex: Visual Padrão, Mais Lifestyle, Focada em Status).
+3. ESTRATÉGIA DE CAMPO: 
+   - O QUE EVITAR: Não elogie o óbvio. Não seja reativo se a bio for exigente.
+   - O QUE FUNCIONA: Use o contraste. Se o perfil é muito luxuoso, seja simples e provocador com algo mundano.
+4. ABORDAGENS: 3 exemplos de abridores curtos, naturais e que gerem curiosidade imediata sobre a 'vibe' visual dela.
+
+PROIBIDO: Diagnósticos psicológicos, falar de traumas, inseguranças ou interpretar intenções ocultas.
 
 Retorne APENAS um JSON válido:
 {
-  "vibe": "Análise psicológica da aura do perfil (direto no ego).",
-  "redFlags": ["Sinais de narcisismo, carência extrema ou manipulação"],
-  "greenFlags": ["Sinais de inteligência, independência real ou humor"],
-  "icebreakers": ["3 abridores com lábia de elite que ignorem a fachada dela."]
+  "vibe": "Descrição prática e realista do perfil.",
+  "redFlags": ["Sinais de que a conversa pode ser difícil ou exigir muito investimento inicial"],
+  "greenFlags": ["Sinais de que ela é receptiva a humor ou simplicidade"],
+  "icebreakers": ["3 abridores do mundo real que não pareçam scripts de IA."]
 }`;
 
     const contentParts: any[] = [
