@@ -255,8 +255,8 @@ RESPOSTA FINAL:
 
 export const CHAT_RESPONSE_STRUCTURE = `
 📤 FORMATO DE SAÍDA PADRÃO
-🧠 LEITURA DO MOMENTO
-(1 frase curta e direta descrevendo a intenção dela e o que ela está tentando esconder)
+🧠 ANÁLISE COMPLETA E PREVISÃO
+(Uma análise profunda da Matrix da conversa. O que ela realmente pensa? O que não está sendo dito? Preveja as próximas ações dela e os caminhos da interação.)
 
 💬 RESPOSTAS PRONTAS
 Opção 1 — Natural & Fluida
@@ -277,7 +277,7 @@ export const JSON_FORMAT_INSTRUCTION = `
     "step2_classification": "SELFIE, CORPO, COMIDA/BEBIDA, VIAGEM/LAZER, ACADEMIA ou RANDOM.",
     "lastMessageDetected": "Transcrição da última mensagem lida (balão ou texto no print)."
   },
-  "momentReading": "🧠 LEITURA DO MOMENTO (SIMPLES): Ex: 'Momento leve de lazer', 'Mostrando rotina', 'Compartilhando algo do dia'.",
+  "momentReading": "🧠 ANÁLISE COMPLETA E PREVISÃO DO FUTURO: Faça uma autopsia detalhada da conversa. O que a mulher realmente está pensando? Qual é o subtexto? O que ela pode fazer em seguida? Preveja a reação dela e analise a dinâmica do jogo em riqueza de detalhes.",
 
   "interestLevel": "Baixo/Médio/Alto/Oscilante",
   "interestScore": 0-100,
