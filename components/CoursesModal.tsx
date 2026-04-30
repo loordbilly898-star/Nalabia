@@ -77,8 +77,9 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({ isOpen, onClose, onS
       if (data.success) {
         setError(null);
         setIsSuccess(true);
-        // Do not call onSuccess manually. 
-        // The useEffect will detect the change in userData.coursesAccess and call onSuccess automatically.
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         setError(data.message || 'Pagamento ainda não aprovado. Tente novamente em instantes.');
       }

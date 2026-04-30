@@ -78,6 +78,9 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({ isOpen, onClose, o
       if (data.success) {
         setError(null);
         setIsSuccess(true);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         setError(data.message || 'Pagamento ainda não aprovado. Tente novamente em instantes.');
       }

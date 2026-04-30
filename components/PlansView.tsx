@@ -72,10 +72,10 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   React.useEffect(() => {
-    // Check if we just returned from Mercado Pago
+    // Check if we just returned from Cakto
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
-    const paymentId = params.get('payment_id') || params.get('preapproval_id');
+    const paymentId = params.get('payment_id') || params.get('transaction_id');
 
     if (status === 'approved' || status === 'authorized' || paymentId) {
       setVerifyingPayment(true);
@@ -176,7 +176,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
         <Loader2 className="w-12 h-12 text-gold animate-spin mb-6" />
         <h1 className="text-2xl font-bold mb-2">Verificando seu pagamento...</h1>
         <p className="text-gray-400 max-w-md">
-          Estamos processando sua assinatura com o Mercado Pago. Isso pode levar alguns segundos.
+          Estamos processando sua assinatura com a Cakto. Isso pode levar alguns segundos.
           Você será redirecionado automaticamente para o painel em instantes.
         </p>
       </div>

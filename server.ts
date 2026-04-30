@@ -1,7 +1,6 @@
 import { Mistral } from '@mistralai/mistralai';
 import express from 'express';
 import cors from 'cors';
-import { MercadoPagoConfig, PreApproval, Payment, Customer } from 'mercadopago';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
@@ -203,131 +202,9 @@ app.post('/api/ai/stream', async (req, res) => {
 
 // ... existing server code
 
-// Initialize Mercado Pago
-let mpClient: MercadoPagoConfig | null = null;
-let preapproval: PreApproval | null = null;
-let payment: Payment | null = null;
-let customer: Customer | null = null;
-
-try {
-  if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
-    mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-    preapproval = new PreApproval(mpClient);
-    payment = new Payment(mpClient);
-    customer = new Customer(mpClient);
-  }
-} catch (error) {
-  console.error('Failed to initialize Mercado Pago:', error);
-}
-
 // API Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
-});
-
-app.post('/api/create-customer', async (req, res) => {
-  try {
-    const { email, name } = req.body;
-    if (!email) return res.status(400).json({ error: 'Missing email' });
-    
-    if (!customer) return res.status(500).json({ error: 'Mercado Pago not configured' });
-    let customerId = '';
-    try {
-      const nameParts = (name || 'User').trim().split(' ');
-      const firstName = nameParts[0].substring(0, 256);
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ').substring(0, 256) : undefined;
-
-      const body: any = { email: email.trim(), first_name: firstName || 'User' };
-      if (lastName) body.last_name = lastName;
-
-      const result = await customer.create({ body });
-      customerId = result.id;
-    } catch (error: any) {
-      try {
-        const searchResult = await customer.search({ options: { email: email.trim() } });
-        if (searchResult.results && searchResult.results.length > 0) {
-          customerId = searchResult.results[0].id;
-        }
-      } catch (searchError) {
-        console.error('Failed to search customer:', searchError);
-      }
-    }
-    res.json({ customer_id: customerId });
-  } catch (error: any) {
-    res.status(500).json({ error: 'Failed to process customer' });
-  }
-});
-
-app.post('/api/create-subscription', async (req, res) => {
-  try {
-    const { planId, userId, userEmail } = req.body;
-    if (!planId || !userId) return res.status(400).json({ error: 'Missing planId or userId' });
-
-    if (!preapproval) return res.status(500).json({ error: 'Mercado Pago not configured' });
-    const result = await preapproval.create({
-      body: {
-        reason: `NaLábia - Subscription`,
-        external_reference: userId,
-        payer_email: userEmail,
-        back_url: `${process.env.APP_URL || 'https://nalabia-prime.run.app'}/dashboard`,
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: 'months',
-          transaction_amount: planId === '9c083be662fc46a483dcb2da62b0b3e6' ? 19.90 : (planId === '73568ef6013441b6a73d428230c2b976' ? 58.90 : 149.90),
-          currency_id: 'BRL'
-        }
-      }
-    });
-
-    res.json({ init_point: result.init_point });
-  } catch (error: any) {
-    res.status(500).json({ error: 'Failed to create subscription' });
-  }
-});
-
-app.post('/api/webhook/mercadopago', async (req, res) => {
-  try {
-    const body = req.body;
-    const query = req.query;
-    
-    // Mercado Pago can send data in body or query params
-    const type = body.type || query.topic || body.resource?.split('/')[3];
-    const id = body.data?.id || query.id || body.resource?.split('/').pop();
-    const action = body.action || '';
-
-    console.log(`[MP Webhook] Received: type=${type}, id=${id}, action=${action}`);
-
-    if (type === 'subscription_preapproval' || action?.includes('subscription_preapproval') || type === 'preapproval') {
-      try {
-        if (!preapproval) throw new Error('Mercado Pago not configured');
-        const subData = await preapproval.get({ id: id });
-        await processSubscriptionUpdate(subData);
-      } catch (err: any) {
-        console.error(`[MP Webhook] Error fetching subscription ${id}:`, err.message || err);
-      }
-    } else if (type === 'payment' || action?.includes('payment')) {
-      try {
-        if (!payment) throw new Error('Mercado Pago not configured');
-        const payData = await payment.get({ id: id });
-        if (payData.status === 'approved' || payData.status === 'authorized') {
-          await processSubscriptionUpdate({
-            id: payData.id?.toString(),
-            external_reference: payData.external_reference,
-            payer_email: payData.payer?.email,
-            status: 'authorized',
-            reason: payData.description || 'NaLábia - Subscription',
-            transaction_amount: payData.transaction_amount
-          });
-        }
-      } catch (err: any) {
-        console.error(`[MP Webhook] Error fetching payment ${id}:`, err.message || err);
-      }
-    }
-    res.status(200).send('OK');
-  } catch (error: any) {
-    console.error('[MP Webhook] Global Error:', error);
-    res.status(500).send('Webhook Error');
-  }
 });
 
 app.post('/api/verify-payment', async (req, res) => {
@@ -347,43 +224,7 @@ app.post('/api/verify-payment', async (req, res) => {
       }
     }
 
-    // 2. BUSCAR NO MERCADO PAGO COMO FALLBACK (Apenas se o BD não estiver atualizado)
-    if (!payment) return res.status(500).json({ error: 'Mercado Pago not configured' });
-    let searchResult = await payment.search({
-      options: { external_reference: userId, status: 'approved', sort: 'date_created', criteria: 'desc' }
-    });
-
-    if (!searchResult.results || searchResult.results.length === 0) {
-      const email = dbUser?.email;
-      if (email) {
-        searchResult = await payment.search({
-          options: { 'payer.email': email, status: 'approved', sort: 'date_created', criteria: 'desc' }
-        });
-      }
-    }
-
-    if (searchResult.results && searchResult.results.length > 0) {
-      for (const p of searchResult.results) {
-        await processSubscriptionUpdate({
-          id: p.id?.toString(),
-          external_reference: p.external_reference || userId,
-          payer_email: p.payer?.email,
-          status: 'authorized',
-          reason: p.description || 'NaLábia - Subscription',
-          transaction_amount: p.transaction_amount
-        });
-      }
-
-      // Re-busca o usuário após tentar atualizar via Mercado Pago
-      const { data: updatedUserData } = await supabase.from('users').select('*').eq('userID', userId).single();
-      if (type === 'courses' && !updatedUserData?.coursesAccess) return res.json({ success: false, message: 'Pagamento do curso ainda não aprovado.' });
-      if (type === 'darkpack' && !updatedUserData?.darkPackAccess) return res.json({ success: false, message: 'Pagamento do Dark Pack ainda não aprovado.' });
-      
-      return res.json({ success: true, message: 'Pagamentos verificados.' });
-    }
-    
-    // Se falhou no DB e não há nada no Mercado Pago:
-    res.json({ success: false, message: 'Nenhum pagamento aprovado encontrado. Se usou Cakto, aguarde uns minutos para o sistema receber o pagamento.' });
+    res.json({ success: false, message: 'Nenhum pagamento aprovado encontrado. Se usou Cakto, aguarde uns minutos para o sistema receber o pagamento via webhook.' });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to verify payment' });
   }
@@ -455,7 +296,6 @@ app.post('/api/webhook/cakto', async (req, res) => {
 });
 
 async function processSubscriptionUpdate(subscription: any) {
-  const provider = subscription.provider || 'mercadopago';
   let userId = subscription.external_reference;
   const payerEmail = subscription.payer_email || subscription.payer?.email;
   const status = String(subscription.status || '').toLowerCase();
@@ -463,7 +303,7 @@ async function processSubscriptionUpdate(subscription: any) {
   const transactionAmount = Number(subscription.transaction_amount || subscription.auto_recurring?.transaction_amount || 0);
   const planName = reason.includes('NaLábia') ? reason.replace('NaLábia - ', '') : (reason || 'Premium');
 
-  console.log(`[Payment Process] Provider: ${provider}, User: ${userId || payerEmail}, Status: ${status}, Amount: ${transactionAmount}, Reason: ${reason}`);
+  console.log(`[Payment Process] User: ${userId || payerEmail}, Status: ${status}, Amount: ${transactionAmount}, Reason: ${reason}`);
 
   if (!userId && payerEmail) {
     try {
@@ -510,7 +350,7 @@ async function processSubscriptionUpdate(subscription: any) {
 
           const amount = transactionAmount;
           const isCourse = amount >= 30 && amount <= 45 || reason.toLowerCase().includes('curso') || reason.toLowerCase().includes('academia');
-          const isDarkPack = amount >= 10 && amount <= 18 || reason.toLowerCase().includes('dark') || reason.toLowerCase().includes('18');
+          const isDarkPack = amount >= 10 && amount <= 18 || reason.toLowerCase().includes('dark') || reason.toLowerCase().includes('18') || reason.toLowerCase().includes('manipula');
 
           // PREPARE UPSERT DATA
           const updateData: any = {
@@ -521,32 +361,44 @@ async function processSubscriptionUpdate(subscription: any) {
             updatedAt: new Date().toISOString()
           };
 
+          let finalExpiraEm = new Date();
+          let finalPlano = planName || 'Premium';
+          let finalPlanoType = 'mensal';
+
           if (isCourse) {
             updateData.coursesAccess = true;
             updateData.plano = 'Curso Academia';
+            finalPlano = 'Curso Academia';
+            finalPlanoType = 'vitalicio';
+            finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10); // Vitalício
             console.log(`[Payment Process] Granting Course Access to ${userId}`);
           } else if (isDarkPack) {
             updateData.darkPackAccess = true;
             updateData.plano = 'Pacote Dark';
+            finalPlano = 'Pacote Dark';
+            finalPlanoType = 'vitalicio';
+            finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10); // Vitalício
             console.log(`[Payment Process] Granting Dark Pack Access to ${userId}`);
           } else {
             // Standard Subscriptions
-            let expiraEm = new Date();
             if (userData.expiraEm) {
               const currentExp = new Date(userData.expiraEm);
-              if (currentExp > new Date()) expiraEm = currentExp;
+              if (currentExp > new Date()) finalExpiraEm = currentExp;
             }
 
             if (reason.toLowerCase().includes('trimestral') || planName.toLowerCase().includes('trimestral')) {
-              expiraEm.setDate(expiraEm.getDate() + 90);
+              finalExpiraEm.setDate(finalExpiraEm.getDate() + 90);
+              finalPlanoType = 'trimestral';
             } else if (reason.toLowerCase().includes('anual') || planName.toLowerCase().includes('anual')) {
-              expiraEm.setDate(expiraEm.getDate() + 365);
+              finalExpiraEm.setDate(finalExpiraEm.getDate() + 365);
+              finalPlanoType = 'anual';
             } else { // default to monthly
-              expiraEm.setDate(expiraEm.getDate() + 30);
+              finalExpiraEm.setDate(finalExpiraEm.getDate() + 30);
+              finalPlanoType = 'mensal';
             }
 
-            updateData.plano = planName || 'Premium';
-            updateData.expiraEm = expiraEm.toISOString();
+            updateData.plano = finalPlano;
+            updateData.expiraEm = finalExpiraEm.toISOString();
             console.log(`[Payment Process] Granting Subscription Access to ${userId}, Expires: ${updateData.expiraEm}`);
           }
 
@@ -555,18 +407,15 @@ async function processSubscriptionUpdate(subscription: any) {
           if (upsertError) throw upsertError;
 
           // 2. Insert/Upsert into assinaturas (The Architecture fix)
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 30); // Default 30 days
-
           const { error: assinError } = await supabase.from('assinaturas').upsert({
-            email: payerEmail, 
+            email: payerEmail || userData.email, 
             status: 'ativa',
-            plano: 'mensal',
-            plano_nome: 'Mensal',
-            valor_pago: '0.00',
-            expira_em: expiresAt.toISOString(),
+            plano: finalPlanoType,
+            plano_nome: finalPlano,
+            valor_pago: String(amount || '0.00'),
+            expira_em: finalExpiraEm.toISOString(),
             updated_at: new Date().toISOString()
-          });
+          }, { onConflict: 'email' });
           if (assinError) console.error('[Payment Process] Error updating public.assinaturas:', assinError);
 
           console.log(`[Payment Process] Successfully updated user ${userId}`);
