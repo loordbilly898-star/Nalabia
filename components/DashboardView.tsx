@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 import { Message, ProcessingState, Profile, AppSettings } from '../types';
-import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send } from 'lucide-react';
+import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send, Calendar, ShieldCheck } from 'lucide-react';
 import { generateCustomChatResponse } from '../services/aiService';
 
 interface DashboardViewProps {
@@ -212,6 +212,34 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
             <h2 className="text-xl font-mono text-white font-bold">{userData.name}</h2>
             <p className="text-sm text-gold-glow font-mono">Nível {userData.level} • Apex</p>
           </div>
+        </div>
+
+        {/* Subscription Status Card */}
+        <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-4 flex items-center justify-between bg-gradient-to-r from-gold-dim/5 to-transparent`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-gold-glow/10 border border-gold-glow/20 flex items-center justify-center">
+              <ShieldCheck size={20} className="text-gold-glow" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold font-mono text-white tracking-wider uppercase">
+                {userData.plano || 'Plano Gratuito'}
+              </h3>
+              <p className="text-[10px] text-gray-500 font-mono">
+                {userData.status === 'ativo' ? 'Status: ATIVO' : 'Status: PENDENTE'}
+              </p>
+            </div>
+          </div>
+          {userData.expiraEm && (
+            <div className="text-right">
+              <div className="flex items-center justify-end space-x-1 text-gold-glow/60 mb-0.5">
+                <Calendar size={10} />
+                <span className="text-[10px] font-mono">VALIDADE</span>
+              </div>
+              <p className="text-xs font-mono text-white">
+                {new Date(userData.expiraEm).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-6 space-y-4`}>

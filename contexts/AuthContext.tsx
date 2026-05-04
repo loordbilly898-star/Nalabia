@@ -28,9 +28,9 @@ interface UserData {
   settings?: any;
   profiles?: any[];
   memories?: Memory[];
-  plano?: string;
-  status?: string;
-  expiraEm?: string;
+  plano?: string; // Nome do plano (ex: 'Plano Mensal', 'Vitalício')
+  status?: string; // 'ativo', 'pendente', 'expirado'
+  expiraEm?: string; // Data de expiração ISO
   nalabiaPrimeAcess?: boolean;
   darkPackAccess?: boolean;
   coursesAccess?: boolean;
