@@ -136,7 +136,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
                 <AlertTriangle size={12} />
                 <span className="text-[10px] uppercase font-mono font-bold">Alerta Crítico</span>
               </div>
-              <div className="text-xs text-red-200">{typeof analysis.errorAlert === 'string' ? analysis.errorAlert : JSON.stringify(analysis.errorAlert)}</div>
+              <div className="text-xs text-red-200 whitespace-pre-wrap">
+                {typeof analysis.errorAlert === 'string' && analysis.errorAlert.includes('[DETECTOR_DE_FALHA]') 
+                  ? '[ANALISE_INTERNA]\nNão foi possível identificar claramente o contexto.\n\n[RESPOSTA_USUARIO]\n"me manda o contexto da conversa rapidinho pra eu te dar algo melhor"' 
+                  : (typeof analysis.errorAlert === 'string' ? analysis.errorAlert : JSON.stringify(analysis.errorAlert))}
+              </div>
             </div>
           )}
         </div>

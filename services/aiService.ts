@@ -3,12 +3,15 @@ import { SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, CHAT_RESPONSE_STRUCTURE, JSON_FORMA
 import { logEvent } from "./logger";
 
 // Proxy implementation to call AI via the server
-const aiProxy = {
+const createAiProxy = (apiKey?: string) => ({
   chat: {
     complete: async (body: any) => {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['x-custom-api-key'] = apiKey;
+      
       const response = await fetch('/api/ai/complete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body)
       });
       if (!response.ok) {
@@ -18,9 +21,12 @@ const aiProxy = {
       return response.json();
     },
     stream: async function* (body: any) {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['x-custom-api-key'] = apiKey;
+
       const response = await fetch('/api/ai/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body)
       });
       
@@ -105,18 +111,20 @@ const aiProxy = {
       }
     }
   }
-};
+});
 
 export const getMistralAI = (settings?: AppSettings) => {
-  // If the user provided a custom key, we still use the client-side SDK for their key
-  // BUT for the system key, we ALWAYS use the proxy to ensure reliability.
+  // Always use the server proxy to avoid CORS errors. 
+  // If the user provides a custom key, pass it via the x-custom-api-key header.
   const customKey = settings?.customApiKey;
+  let customKeyToPass: string | undefined = undefined;
+  
   if (customKey && customKey.trim() !== '' && !customKey.startsWith('AIza')) {
-    return new Mistral({ apiKey: customKey.trim() });
+    customKeyToPass = customKey.trim();
   }
 
-  // Use the server proxy for the default system key
-  return aiProxy as unknown as Mistral;
+  // Use the server proxy
+  return createAiProxy(customKeyToPass) as unknown as Mistral;
 };
 
 const MAX_RETRIES = 1;
@@ -557,7 +565,7 @@ export const analyzeContent = async (
     // However, we double check here if needed.
     
     // 2. Handle specific fallback if AI is unsure
-    if (parsedResponse.momentReading?.toLowerCase().includes("imagem está um pouco ruída")) {
+    if (typeof parsedResponse.momentReading === 'string' && parsedResponse.momentReading.toLowerCase().includes("imagem está um pouco ruída")) {
       logEvent('system', 'ai_uncertainty_fallback', { mode });
     }
 

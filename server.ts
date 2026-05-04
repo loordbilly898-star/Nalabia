@@ -54,7 +54,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Initialize Mistral with Key Rotation (Load Balancing)
 let currentKeyIndex = 0;
 
-const getMistralClient = () => {
+const getMistralClient = (customKey?: string) => {
+  if (customKey && customKey.trim() !== '') {
+    return new Mistral({ apiKey: customKey.trim(), timeoutMs: 300000 });
+  }
+
   const rawKeyText = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '';
   // Allowed formats: "key1", "key1,key2,key3" or "key1;key2;key3"
   const apiKeys = rawKeyText.split(/[,;]/).map(k => k.trim()).filter(k => k.length > 0);
@@ -81,6 +85,7 @@ const getMistralClient = () => {
 
 // AI Routes
 app.post('/api/ai/complete', async (req, res) => {
+  const customKey = req.headers['x-custom-api-key'] as string | undefined;
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[AI-COMPLETE][${requestId}] Iniciando requisição completa...`);
   try {
@@ -91,13 +96,13 @@ app.post('/api/ai/complete', async (req, res) => {
     
     const rawKeyText = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '';
     const keyArrayMatch = rawKeyText.split(/[,;]/).map(k => k.trim()).filter(k => k.length > 0);
-    const totalKeys = keyArrayMatch.length || 1;
+    const totalKeys = customKey ? 1 : (keyArrayMatch.length || 1);
 
     let response;
     let retries = totalKeys * 2; // Auto scale retries if they enter multiple keys
     while (retries >= 0) {
       try {
-        const mistral = getMistralClient();
+        const mistral = getMistralClient(customKey);
         response = await mistral.chat.complete(body);
         break;
       } catch (err: any) {
@@ -122,6 +127,7 @@ app.post('/api/ai/complete', async (req, res) => {
 });
 
 app.post('/api/ai/stream', async (req, res) => {
+  const customKey = req.headers['x-custom-api-key'] as string | undefined;
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[AI-STREAM][${requestId}] Iniciando streaming...`);
   try {
@@ -135,13 +141,13 @@ app.post('/api/ai/stream', async (req, res) => {
     const rawKeyText = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || '';
     // Used to scale retries automatically
     const keyArrayMatch = rawKeyText.split(/[,;]/).map(k => k.trim()).filter(k => k.length > 0);
-    const totalKeys = keyArrayMatch.length || 1;
+    const totalKeys = customKey ? 1 : (keyArrayMatch.length || 1);
 
     let stream;
     let retries = totalKeys * 2; // Auto scale retries if they enter multiple keys
     while (retries >= 0) {
       try {
-        const mistral = getMistralClient();
+        const mistral = getMistralClient(customKey);
         stream = await mistral.chat.stream(body);
         break; // Sucesso
       } catch (err: any) {
