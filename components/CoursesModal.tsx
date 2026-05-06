@@ -38,38 +38,12 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({
     setIsProcessing(true);
     setError(null);
 
+    const checkoutUrl = "https://pay.cakto.com.br/exfk6pm_826428";
+    
     try {
-      const response = await fetch("/api/cakto/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          planId: "curso",
-          userId: user.id,
-          userEmail: user.email,
-          userName: userData?.name || user.displayName,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Cakto API Error:", errorText);
-        throw new Error(
-          `Falha ao criar sessão de pagamento: ${response.status} ${errorText}`,
-        );
-      }
-
-      const data = await response.json();
-
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      } else {
-        throw new Error("Link de pagamento não recebido.");
-      }
+      window.location.href = `${checkoutUrl}?src=${user.id}`;
     } catch (err: any) {
       setError(err.message || "Erro ao redirecionar para o pagamento.");
-    } finally {
       setIsProcessing(false);
     }
   };

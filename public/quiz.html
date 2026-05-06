@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NaLábia - Quiz Oficial</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #d4af37; /* gold */
+        --primary-glow: rgba(212, 175, 55, 0.5);
+        --secondary: #f43f5e; /* rose */
+        --bg: #0a0a0a;
+        --surface: #171717;
+        --surface-hover: #262626;
+        --text: #f5f5f7;
+        --text-muted: #a1a1aa;
+        --border: #333333;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      #app {
+        width: 100%;
+        max-width: 500px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      /* Progress bar */
+      .progress-container {
+        width: 100%;
+        height: 4px;
+        background: var(--surface);
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
+      }
+      .progress-bar {
+        height: 100%;
+        background: var(--primary);
+        width: 0%;
+        transition: width 0.4s ease;
+        box-shadow: 0 0 10px var(--primary-glow);
+      }
+
+      /* Steps */
+      .step {
+        display: none;
+        flex: 1;
+        padding: 40px 24px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        animation: fadeInSlide 0.5s ease forwards;
+        text-align: center;
+      }
+      .step.active {
+        display: flex;
+      }
+
+      @keyframes fadeInSlide {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-weight: 900;
+        margin-bottom: 16px;
+        line-height: 1.2;
+      }
+      p {
+        color: var(--text-muted);
+        margin-bottom: 24px;
+        line-height: 1.5;
+        font-size: 16px;
+      }
+
+      /* Controls */
+      .btn {
+        width: 100%;
+        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+      }
+      .btn:hover {
+        background: var(--surface-hover);
+        border-color: var(--primary);
+        transform: translateY(-2px);
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: #000;
+        border: none;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 20px var(--primary-glow);
+      }
+      .btn-primary:hover {
+        background: #e2be4b;
+        transform: translateY(-2px) scale(1.02);
+      }
+
+      .slider-container {
+        width: 100%;
+        margin: 30px 0;
+      }
+      input[type="range"] {
+        width: 100%;
+        -webkit-appearance: none;
+        background: var(--surface);
+        height: 8px;
+        border-radius: 4px;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+        box-shadow: 0 0 10px var(--primary-glow);
+      }
+      .slider-value {
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--primary);
+        margin-top: 16px;
+        display: block;
+      }
+
+      /* Loading Spinner */
+      .spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid var(--surface);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Results */
+      .result-card {
+        background: var(--surface);
+        border: 1px solid var(--primary);
+        border-radius: 16px;
+        padding: 24px;
+        width: 100%;
+        margin-bottom: 24px;
+        text-align: left;
+        box-shadow: 0 10px 40px rgba(212, 175, 55, 0.1);
+      }
+      .result-item {
+        margin-bottom: 12px;
+      }
+      .result-label {
+        color: var(--text-muted);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .result-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      /* Free Trial */
+      .free-uses {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(212, 175, 55, 0.2);
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .feature-btn {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 16px;
+        padding: 20px;
+      }
+      .feature-icon {
+        font-size: 24px;
+      }
+
+      .chat-box {
+        width: 100%;
+        background: #262626;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+        text-align: left;
+        display: none;
+        border-left: 4px solid var(--primary);
+      }
+      .chat-response {
+        font-size: 15px;
+        color: #fff;
+        margin-bottom: 16px;
+      }
+
+      /* Paywall Overlay */
+      #paywall-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 100;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+      }
+      .countdown {
+        font-size: 40px;
+        font-weight: 900;
+        color: var(--secondary);
+        margin: 20px 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .bonus-list {
+        text-align: left;
+        margin-bottom: 30px;
+        color: #ccc;
+      }
+      .bonus-list li {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .link-muted {
+        color: var(--text-muted);
+        text-decoration: underline;
+        margin-top: 20px;
+        display: inline-block;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <div id="app">
+      <!-- Step 1: Hook -->
+      <div class="step active" id="step-1">
+        <h2>Pare de perder match no 'oi, tudo bem?' 😮‍💨</h2>
+        <p>
+          Descubra em 60s qual seu nível de lábia e a estratégia certa para você
+          dominar conversas.
+        </p>
+        <button class="btn btn-primary" onclick="nextStep(2)">Começar ➔</button>
+      </div>
+
+      <!-- Step 2: Idade -->
+      <div class="step" id="step-2">
+        <h3>Qual sua idade?</h3>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('idade', '18-24');
+            nextStep(3);
+          "
+        >
+          18–24 anos
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('idade', '25-30');
+            nextStep(3);
+          "
+        >
+          25–30 anos
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('idade', '31-40');
+            nextStep(3);
+          "
+        >
+          31–40 anos
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('idade', '40+');
+            nextStep(3);
+          "
+        >
+          40+ anos
+        </button>
+      </div>
+
+      <!-- Step 3: App Principal -->
+      <div class="step" id="step-3">
+        <h3>Onde você mais conversa?</h3>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('app', 'Tinder');
+            nextStep(4);
+          "
+        >
+          Tinder
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('app', 'Bumble');
+            nextStep(4);
+          "
+        >
+          Bumble
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('app', 'Instagram');
+            nextStep(4);
+          "
+        >
+          Instagram
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('app', 'WhatsApp');
+            nextStep(4);
+          "
+        >
+          WhatsApp
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('app', 'Outro');
+            nextStep(4);
+          "
+        >
+          Outro
+        </button>
+      </div>
+
+      <!-- Step 4: Objetivo -->
+      <div class="step" id="step-4">
+        <h3>Qual seu objetivo atual?</h3>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('objetivo', 'Sério');
+            nextStep(5);
+          "
+        >
+          💕 Algo Sério
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('objetivo', 'Casual');
+            nextStep(5);
+          "
+        >
+          🥂 Casual / Dates
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('objetivo', 'Diversão');
+            nextStep(5);
+          "
+        >
+          🎉 Só Diversão
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('objetivo', 'Pegação');
+            nextStep(5);
+          "
+        >
+          😈 Pegação Intensa
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('objetivo', 'Reconquistar');
+            nextStep(5);
+          "
+        >
+          💔 Reconquistar a ex
+        </button>
+      </div>
+
+      <!-- Step 5: Maior Dor -->
+      <div class="step" id="step-5">
+        <h3>Qual seu maior problema hoje?</h3>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('dor', 'travado');
+            nextStep(6);
+          "
+        >
+          Travo na primeira mensagem
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('dor', 'sumida');
+            nextStep(6);
+          "
+        >
+          Elas param de responder do nada
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('dor', 'encontro');
+            nextStep(6);
+          "
+        >
+          Não consigo chamar pro encontro
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('dor', 'semsal');
+            nextStep(6);
+          "
+        >
+          Minhas conversas são muito chatas
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('dor', 'print');
+            nextStep(6);
+          "
+        >
+          Não sei decifrar os sinais dela
+        </button>
+      </div>
+
+      <!-- Step 6: Matches -->
+      <div class="step" id="step-6">
+        <h3>Quantos matches viram encontro por semana?</h3>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('encontros', 0);
+            nextStep(7);
+          "
+        >
+          Nenhum (0)
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('encontros', 1);
+            nextStep(7);
+          "
+        >
+          1 encontro
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('encontros', 2);
+            nextStep(7);
+          "
+        >
+          2 a 3 encontros
+        </button>
+        <button
+          class="btn"
+          onclick="
+            saveAnswer('encontros', 4);
+            nextStep(7);
+          "
+        >
+          4+ encontros
+        </button>
+      </div>
+
+      <!-- Step 7: Lábia -->
+      <div class="step" id="step-7">
+        <h3>De 0 a 10, como você avalia sua lábia?</h3>
+        <div class="slider-container">
+          <input
+            type="range"
+            id="labia-slider"
+            min="0"
+            max="10"
+            value="5"
+            oninput="
+              document.getElementById('labia-val').innerText = this.value
+            "
+          />
+          <span class="slider-value" id="labia-val">5</span>
+        </div>
+        <button
+          class="btn btn-primary"
+          onclick="
+            saveAnswer('labia', document.getElementById('labia-slider').value);
+            finishQuiz();
+          "
+        >
+          Ver meu Diagnóstico ➔
+        </button>
+      </div>
+
+      <!-- Step 8: Loading -->
+      <div class="step" id="step-8">
+        <div class="spinner"></div>
+        <h3 style="color: var(--primary)">Analisando seu perfil...</h3>
+        <p>
+          Calculando algoritmo de sedução e calibrando a Inteligência Artificial
+          para o seu estilo.
+        </p>
+      </div>
+
+      <!-- Step 9: Diagnóstico -->
+      <div class="step" id="step-9">
+        <h2>Diagnóstico Concluído.</h2>
+        <p>A NaLábia foi calibrada EXATAMENTE para o seu jeito de conversar.</p>
+
+        <div class="result-card" id="resultado-card">
+          <!-- Preenchido via JS -->
+        </div>
+
+        <button
+          class="btn btn-primary"
+          onclick="nextStep(10)"
+          style="margin-top: 10px"
+        >
+          Testar IA Grátis Agora ➔
+        </button>
+      </div>
+
+      <!-- Step 10: Teste Grátis -->
+      <div class="step relative" id="step-10">
+        <div class="free-uses" id="free-uses-badge">Testes restantes: 3</div>
+
+        <h3 style="margin-top: 40px">🎁 Teste a NaLábia Agora</h3>
+        <p style="font-size: 14px">
+          Sem cadastro. Sem cartão. Veja o poder da IA.
+        </p>
+
+        <button class="btn feature-btn" onclick="useTrial('print')">
+          <span class="feature-icon">📸</span>
+          <span
+            ><b>Responder um print</b><br /><small style="color: #aaa"
+              >Decifre o que ela disse</small
+            ></span
+          >
+        </button>
+
+        <button class="btn feature-btn" onclick="useTrial('gelo')">
+          <span class="feature-icon">🧊</span>
+          <span
+            ><b>Quebra-gelo</b><br /><small style="color: #aaa"
+              >Abrir conversa do zero</small
+            ></span
+          >
+        </button>
+
+        <button class="btn feature-btn" onclick="useTrial('conselho')">
+          <span class="feature-icon">🤔</span>
+          <span
+            ><b>Conselheiro</b><br /><small style="color: #aaa"
+              >Estratégia para situação</small
+            ></span
+          >
+        </button>
+
+        <div class="chat-box" id="trial-chat">
+          <div class="chat-response" id="trial-response">
+            Gerando resposta milimetricamente calculada...
+          </div>
+          <button
+            class="btn btn-primary"
+            style="padding: 12px; font-size: 14px"
+            onclick="goToSignup()"
+          >
+            Criar conta grátis
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paywall Overlay -->
+    <div id="paywall-overlay">
+      <h2>Você gostou, né? 😏</h2>
+      <p>
+        Seus 3 testes grátis acabaram. Crie sua conta agora e tenha respostas
+        ILIMITADAS.
+      </p>
+
+      <div class="countdown" id="countdown">10:00</div>
+
+      <ul class="bonus-list">
+        <li>✅ Respostas infinitas da NaLábia</li>
+        <li>
+          ✅ Perfil de IA:
+          <span style="color: var(--primary)" id="paywall-perfil"
+            >Avançado</span
+          >
+        </li>
+        <li>✅ Ousadia ajustada automaticamente</li>
+      </ul>
+
+      <button
+        class="btn btn-primary"
+        style="width: 100%; max-width: 300px"
+        onclick="goToSignup()"
+      >
+        CRIAR MINHA CONTA 🔥
+      </button>
+      <a class="link-muted" onclick="goToSignup()">Já tenho conta — entrar</a>
+    </div>
+
+    <script>
+      let answers = {};
+      let profile = {};
+      let freeUses = 3;
+
+      function saveAnswer(key, val) {
+        answers[key] = val;
+      }
+
+      function updateProgress(stepNum) {
+        const totalSteps = 10;
+        const pct = (stepNum / totalSteps) * 100;
+        document.getElementById("progress").style.width = `${pct}%`;
+      }
+
+      function nextStep(stepId) {
+        document
+          .querySelectorAll(".step")
+          .forEach((el) => el.classList.remove("active"));
+        document.getElementById(`step-${stepId}`).classList.add("active");
+        updateProgress(stepId);
+      }
+
+      function finishQuiz() {
+        nextStep(8); // Loading
+        calculateProfile();
+        localStorage.setItem("nalabia_quiz", JSON.stringify(answers));
+        localStorage.setItem("nalabia_free_uses", freeUses);
+
+        setTimeout(() => {
+          renderDiagnosis();
+          nextStep(9);
+        }, 3000);
+      }
+
+      function calculateProfile() {
+        const labia = parseInt(answers.labia || 0);
+        const encontros = parseInt(answers.encontros || 0);
+        const obj = answers.objetivo || "";
+        const idade = answers.idade || "";
+        const dor = answers.dor || "";
+
+        // NIVEL
+        let nivel = "intermediario";
+        if (labia <= 3 || encontros === 0) nivel = "iniciante";
+        else if (labia >= 8 || encontros >= 4) nivel = "avancado";
+
+        // TOM
+        let tom = "direto";
+        if (obj === "Sério") tom = "romantico";
+        if (obj === "Diversão") tom = "leve";
+        if (obj === "Pegação") tom = "ousado";
+        if (obj === "Reconquistar") tom = "estrategico";
+
+        // OUSADIA
+        let ousadia = labia;
+        if (obj === "Pegação") ousadia += 2;
+        if (obj === "Casual") ousadia += 1;
+        if (obj === "Sério" || obj === "Reconquistar") ousadia -= 2;
+        if (ousadia < 1) ousadia = 1;
+        if (ousadia > 10) ousadia = 10;
+
+        // VOCABULARIO
+        let vocab = "moderno";
+        if (idade === "18-24") vocab = "casual";
+        if (idade === "31-40" || idade === "40+") vocab = "maduro";
+
+        // FOCO
+        let foco = "manter_chama";
+        if (dor === "travado") foco = "abertura";
+        if (dor === "sumida") foco = "manter_chama";
+        if (dor === "encontro") foco = "fechar_encontro";
+        if (dor === "semsal") foco = "humor";
+        if (obj === "Reconquistar") foco = "reconquista";
+        if (dor === "print") foco = "interpretar_print";
+
+        profile = {
+          nivel,
+          tom,
+          ousadia,
+          vocabulario: vocab,
+          foco_estrategico: foco,
+        };
+        localStorage.setItem("nalabia_profile", JSON.stringify(profile));
+      }
+
+      function renderDiagnosis() {
+        const nomes = {
+          travado: "O Travado 😶",
+          sumida: "O Sumido 👻",
+          encontro: "O Quase Lá 📅",
+          semsal: "O Sem Sal 😴",
+          print: "O Decifrador 🖼️",
+        };
+        const focos = {
+          abertura: "Primeiras mensagens matadoras",
+          manter_chama: "Manter a conversa quente",
+          fechar_encontro: "Marcar encontro com naturalidade",
+          humor: "Conversas mais divertidas",
+          reconquista: "Estratégia de reconquista nua e crua",
+          interpretar_print: "Decifrar o que ela quis dizer",
+        };
+
+        const html = `
+        <div class="result-item">
+          <div class="result-label">🎯 Seu perfil</div>
+          <div class="result-value">${nomes[answers.dor] || "O Estrategista 🧠"}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">📊 Nível Detectado</div>
+          <div class="result-value" style="text-transform: capitalize">${profile.nivel} (${answers.labia}/10)</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">🎯 Foco da sua IA</div>
+          <div class="result-value">${focos[profile.foco_estrategico] || focos["manter_chama"]}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">🎚️ Ousadia Calibrada</div>
+          <div class="result-value">${profile.ousadia}/10</div>
+        </div>
+      `;
+        document.getElementById("resultado-card").innerHTML = html;
+        document.getElementById("paywall-perfil").innerText = profile.nivel;
+      }
+
+      const mockResponses = {
+        print:
+          "🔥 A IA analisou: Ela está te testando pra ver sua confiança. Responda: 'Gostei da atitude. Mas na vida real você também tem toda essa marra ou é só por aqui? 😏'",
+        gelo: "🧊 Quebra-gelo gerado: 'Acabei de decidir que vamos pular a fase do oi tudo bem e ir direto pra parte que brigamos pra escolher o que assistir na Netflix🍿'",
+        conselho:
+          "🤔 Conselho Tático: Se ela deu vácuo, não mande '??'. Espere 48h e mande um meme situacional sem cobrar resposta. Tire a pressão e inverta o frame.",
+      };
+
+      function useTrial(type) {
+        if (freeUses <= 0) {
+          showPaywall();
+          return;
+        }
+
+        freeUses--;
+        localStorage.setItem("nalabia_free_uses", freeUses);
+        document.getElementById("free-uses-badge").innerText =
+          `Testes restantes: ${freeUses}`;
+
+        const chatBox = document.getElementById("trial-chat");
+        const responseEl = document.getElementById("trial-response");
+
+        chatBox.style.display = "block";
+        responseEl.innerHTML =
+          '<span style="color:#A1A1AA">Pensando de forma estratégica...</span>';
+
+        setTimeout(() => {
+          responseEl.innerText = mockResponses[type];
+          if (freeUses === 2) {
+            alert(
+              "🔥 Mais 1 teste grátis consumido. Cadastre-se para usos ilimitados.",
+            );
+          } else if (freeUses === 0) {
+            localStorage.setItem("nalabia_trial_done", "true");
+            setTimeout(showPaywall, 5000);
+          }
+        }, 1500);
+      }
+
+      function showPaywall() {
+        document.getElementById("paywall-overlay").style.display = "flex";
+        startCountdown();
+      }
+
+      function goToSignup() {
+        window.location.href = "/signup?from=quiz";
+      }
+
+      function startCountdown() {
+        let time = 600;
+        const el = document.getElementById("countdown");
+        setInterval(() => {
+          if (time <= 0) return;
+          time--;
+          const m = Math.floor(time / 60)
+            .toString()
+            .padStart(2, "0");
+          const s = (time % 60).toString().padStart(2, "0");
+          el.innerText = `${m}:${s}`;
+        }, 1000);
+      }
+
+      // Init
+      updateProgress(1);
+    </script>
+  </body>
+</html>

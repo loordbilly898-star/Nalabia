@@ -537,7 +537,7 @@ async function processSubscriptionUpdate(subscription: any) {
           const isCourse =
             reason.toLowerCase().includes("curso") ||
             reason.toLowerCase().includes("academia") ||
-            (amount === 19.9 && reason.toLowerCase().includes("curso"));
+            (amount === 39.9 && reason.toLowerCase().includes("curso"));
           const isDarkPack =
             reason.toLowerCase().includes("dark") ||
             reason.toLowerCase().includes("18") ||

@@ -29,6 +29,7 @@ import RedFlagDetectorView from "./components/RedFlagDetectorView";
 import PlansView from "./components/PlansView";
 import { LoginView } from "./components/LoginView";
 import { LandingView } from "./components/LandingView";
+import { QuizView } from "./components/QuizView";
 import HelpModal from "./components/HelpModal";
 import { HomeView } from "./components/HomeView";
 import { TutorialModal } from "./components/TutorialModal";
@@ -307,6 +308,10 @@ const App: React.FC = () => {
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isPlansDismissed, setIsPlansDismissed] = useState(false);
   const [showLanding, setShowLanding] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('from') !== 'quiz' && !localStorage.getItem('nalabia_trial_done') && !localStorage.getItem('nalabia_from_quiz');
+  });
   const [helpMode, setHelpMode] = useState<AnalysisMode | null>(null);
   const [showAssistedMode, setShowAssistedMode] = useState(false);
 
@@ -1174,8 +1179,27 @@ const App: React.FC = () => {
 
   // Check subscription access
   if (!user) {
+    if (showQuiz) {
+      return (
+        <QuizView 
+          onFinish={() => {
+            setShowQuiz(false);
+            setShowLanding(false);
+            const signupUrlParams = new URLSearchParams(window.location.search);
+            signupUrlParams.set('signup', 'true');
+            signupUrlParams.set('from', 'quiz');
+            window.history.replaceState({}, '', `${window.location.pathname}?${signupUrlParams}`);
+          }} 
+          onGoToLogin={() => {
+            setShowQuiz(false);
+            setShowLanding(false);
+          }} 
+        />
+      );
+    }
+
     if (showLanding) {
-      return <LandingView onGetStarted={() => setShowLanding(false)} />;
+      return <LandingView onGetStarted={() => setShowQuiz(true)} />;
     }
     return <LoginView />;
   }

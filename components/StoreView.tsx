@@ -58,7 +58,7 @@ const PRODUCTS = [
     icon: BookOpen,
     color: "from-gold to-yellow-600",
     oldPrice: "R$ 147,90",
-    price: "R$ 19,90",
+    price: "R$ 39,90",
     description:
       "A base teórica e prática sobre inteligência social, sedução e dominação de conversas.",
     features: [
@@ -78,12 +78,23 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
   const handlePurchase = async (productId: string) => {
     if (!user) return;
     setLoadingProduct(productId);
+    
+    // Mapping format for fallback so users don't get stuck
+    const links: Record<string, string> = {
+      "mensal": "https://pay.cakto.com.br/nnbqprt_825346",
+      "trimestral": "https://pay.cakto.com.br/379zopu_826386",
+      "anual": "https://pay.cakto.com.br/x4pha2o_826385",
+      "curso": "https://pay.cakto.com.br/exfk6pm_826428",
+      "dark": "https://pay.cakto.com.br/mnh4hcg_826434",
+      "mentoria": "https://pay.cakto.com.br/obgpnz3_874157"
+    };
+
     try {
       const response = await fetch("/api/cakto/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user.uid,
+          userId: user.id,
           planId: productId,
           email: user.email,
         }),
@@ -91,9 +102,16 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
       const data = await response.json();
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
+      } else {
+        throw new Error(data.error || "Missing checkout url");
       }
     } catch (e) {
-      console.error("Checkout error:", e);
+      console.error("Checkout error, using fallback:", e);
+      if (links[productId]) {
+        window.location.href = `${links[productId]}?src=${user.id}`;
+      } else {
+        alert("Erro ao redirecionar para pagamento. Tente novamente.");
+      }
     } finally {
       setLoadingProduct(null);
     }

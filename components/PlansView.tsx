@@ -92,41 +92,21 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
     setLoadingPlan(planId);
     setError(null);
 
+    const links: Record<string, string> = {
+      "mensal": "https://pay.cakto.com.br/nnbqprt_825346",
+      "trimestral": "https://pay.cakto.com.br/379zopu_826386",
+      "anual": "https://pay.cakto.com.br/x4pha2o_826385"
+    };
+
+    const checkoutUrl = links[planId];
+    if (!checkoutUrl) {
+       setError("Plano inválido.");
+       setLoadingPlan(null);
+       return;
+    }
+
     try {
-      // Create subscription via our backend using Cakto
-      const response = await fetch("/api/cakto/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          planId,
-          userId: user.id,
-          userEmail: user.email,
-          userName: userData?.name || user.displayName,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Cakto API Error:", errorText);
-        throw new Error(
-          `Falha ao criar sessão de pagamento: ${response.status} ${errorText}`,
-        );
-      }
-
-      const data = await response.json();
-
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      } else {
-        throw new Error("Link de pagamento não recebido.");
-      }
-
-      // Reset loading state after a short delay
-      setTimeout(() => {
-        setLoadingPlan(null);
-      }, 2000);
+      window.location.href = `${checkoutUrl}?src=${user.id}`;
     } catch (err: any) {
       console.error("Subscription error:", err);
       setError(

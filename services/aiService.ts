@@ -180,6 +180,27 @@ const normalizeMistralContent = (content: any): string => {
   return result.replace(/\*/g, "");
 };
 
+const getQuizProfilePrompt = () => {
+  try {
+    const pStr = localStorage.getItem("nalabia_profile");
+    if (!pStr) return "";
+    const p = JSON.parse(pStr);
+    
+    return `
+    ============================================================
+    🎯 PERFIL DE LÁBIA DO USUÁRIO (Obrigatório seguir):
+    - Nível de Experiência: ${p.nivel}
+    - Tom de Voz Preferido: ${p.tom}
+    - Nível de Ousadia Base Predisposta: ${p.ousadia}/10
+    - Estilo de Vocabulário: ${p.vocabulario}
+    - Foco Estratégico Atual: ${p.foco_estrategico}
+    ============================================================
+    `;
+  } catch (e) {
+    return "";
+  }
+};
+
 // Robust JSON extraction from AI response
 const extractJson = (text: string): string => {
   if (!text) return "{}";
@@ -349,7 +370,7 @@ export const generateAIResponse = async (
         messages: [
           {
             role: "system",
-            content: `${SYSTEM_PROMPT}\nIMPORTANTE: Gere sempre uma resposta COMPLETA. Nunca pare no meio de uma frase.`,
+            content: `${SYSTEM_PROMPT}\n${getQuizProfilePrompt()}\nIMPORTANTE: Gere sempre uma resposta COMPLETA. Nunca pare no meio de uma frase.`,
           },
           { role: "user", content: userMessage },
         ],
@@ -610,6 +631,8 @@ export const analyzeContent = async (
       const prompt = `
     ${SYSTEM_PROMPT}
 
+    ${getQuizProfilePrompt()}
+
     ⚙️ PARÂMETROS ATUAIS DE GERAÇÃO:
     - MODO ATIVO: ${mode}
     - INSTRUÇÃO TÁTICA DO MODO: ${getModeInstructions(mode)}
@@ -773,6 +796,8 @@ export const regenerateContent = async (
       const prompt = `
     ${SYSTEM_PROMPT}
     
+    ${getQuizProfilePrompt()}
+    
     ${REGENERATE_PROMPT}
     
     Analyze the following input and return ONLY a single JSON object. Do not repeat phrases. Do not loop.
@@ -885,6 +910,8 @@ export const runLaboratory = async (
 
       const prompt = `
     ${SYSTEM_PROMPT}
+    
+    ${getQuizProfilePrompt()}
     
     ${LAB_PROMPT}
 
@@ -1236,6 +1263,8 @@ export const analyzeProfile = async (
       const prompt = `
 ${SYSTEM_PROMPT}
 
+${getQuizProfilePrompt()}
+
 Você é um estrategista social focado em RESULTADOS PRÁTICOS. 
 Analise as imagens e a bio no MODO RAIO-X (Realista e Útil). 
 
@@ -1334,6 +1363,8 @@ export const detectRedFlags = async (
 
       const prompt = `
 ${SYSTEM_PROMPT}
+
+${getQuizProfilePrompt()}
 
 🚨 DOGMA VISUAL NAS IMAGENS (SE EXISTIREM):
 - O HOMEM (O USUÁRIO) ESTÁ SEMPRE NA DIREITA. ELE É O DONO DO CELULAR.

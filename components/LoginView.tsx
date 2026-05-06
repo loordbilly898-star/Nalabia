@@ -11,7 +11,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(() => {
+    return new URLSearchParams(window.location.search).get("signup") === "true";
+  });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
