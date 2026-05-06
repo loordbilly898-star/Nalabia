@@ -53,7 +53,7 @@ const ProfileAnalyzerView: React.FC<ProfileAnalyzerViewProps> = ({
   const handleSaveToProfile = () => {
     if (!analysisResult || !onAddProfile) return;
 
-    const name = `Alvo ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+    const name = `Análise ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
     const description = `Vibe: ${analysisResult.vibe}. Bio: ${analysisResult.bioAnalysis || "Análise de print"}`;
     onAddProfile(name, description, analysisResult.behavioralPattern || "");
     setIsSaved(true);

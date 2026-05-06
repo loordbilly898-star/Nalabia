@@ -141,15 +141,23 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
       - Ousadia: ${p.ousadia}/10
       - Foco Estratégico: ${p.foco_estrategico}
       
-      Diretriz: Você está em um 'Test Drive' gratuito. Dê 1 (uma) única resposta ou conselho magistral, rápido e de impacto. Mostre autoridade.\n\n`;
+      Diretriz: Você está em um 'Test Drive' gratuito. Dê 1 (uma) única resposta ou conselho magistral, rápido e de impacto. Mostre autoridade.
+
+      ⚠️ REGRAS DE LINGUAGEM E FORMATAÇÃO (RIGOROSO):
+      - NÃO use formatação Markdown. PROIBIDO usar asteriscos (* ou **), hashtags (#), sublinhados (_), ou itálicos (*).
+      - Use APENAS texto puro na resposta.
+      - NÃO use palavras em inglês (como briefing, target, mindset, insight, etc). Use apenas português simples, casual e 100% natural do Brasil.
+      - A resposta deve parecer uma mensagem normal. Não explique demais.
+
+`;
 
       if (activeTrialMode === 'print') {
-        prompt += `CONTEXTO (PRINT): Analise a imagem. A usuária (ela/alvo) está na esquerda e o homem (eu) na direita. Me diga EXATAMENTE qual a próxima mensagem eu devo enviar agora.`;
+        prompt += `CONTEXTO (PRINT): Analise a imagem. A usuária (mulher) está na esquerda e o usuário (eu) na direita. Me diga EXATAMENTE qual a próxima mensagem eu devo enviar agora. Sem aspas e sem markdown.`;
         if (trialText) prompt += `\nObservações minhas: ${trialText}`;
       } else if (activeTrialMode === 'gelo') {
         prompt += `CONTEXTO (QUEBRA GELO): Crie a melhor mensagem de abertura possível para essa situação.\nContexto: ${trialText}`;
       } else {
-        prompt += `CONTEXTO (CONSELHEIRO): Analise essa situação e me dê um conselho estratégico brutalmente honesto.\nSituação: ${trialText}`;
+        prompt += `CONTEXTO (CONSELHEIRO): Analise essa situação e me dê um conselho estratégico pratico e direto.\nSituação: ${trialText}`;
       }
 
       let content: any = [{ type: "text", text: prompt }];

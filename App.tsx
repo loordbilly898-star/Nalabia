@@ -310,6 +310,14 @@ const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(false);
   const [showQuiz, setShowQuiz] = useState(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('reset_quiz') === 'true') {
+      localStorage.removeItem('nalabia_trial_done');
+      localStorage.removeItem('nalabia_from_quiz');
+      localStorage.removeItem('nalabia_free_uses');
+      localStorage.removeItem('nalabia_profile');
+      window.history.replaceState({}, '', window.location.pathname);
+      return true;
+    }
     return params.get('from') !== 'quiz' && !localStorage.getItem('nalabia_trial_done') && !localStorage.getItem('nalabia_from_quiz');
   });
   const [helpMode, setHelpMode] = useState<AnalysisMode | null>(null);

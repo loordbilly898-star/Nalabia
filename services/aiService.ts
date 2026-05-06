@@ -176,8 +176,9 @@ const normalizeMistralContent = (content: any): string => {
   } else {
     result = String(content);
   }
-  // Remove markdown asterisks completely to avoid them bleeding into the UI
-  return result.replace(/\*/g, "");
+  
+  // Clean up markdown specifically asked by the user (asterisks, hashtags)
+  return result.replace(/[*#]/g, "");
 };
 
 const getQuizProfilePrompt = () => {
@@ -592,7 +593,7 @@ export const analyzeContent = async (
       let profileInstruction = "";
       if (profileContext && profileContext.name !== "Geral") {
         profileInstruction = `
-      👤 ALVO (PERFIL ATUAL): ${profileContext.name} (${profileContext.description})
+      👤 MULHER (PERFIL ATUAL): ${profileContext.name} (${profileContext.description})
       - Interesse: ${profileContext.metrics.interest}
       - Risco: ${profileContext.metrics.risk}
       - Padrão: ${profileContext.behavioralPattern || "Em análise"}
@@ -651,7 +652,7 @@ export const analyzeContent = async (
 
     🚨 DOGMA DE IDENTIDADE VISUAL E CHAT (PRIORIDADE ABSOLUTA - VOCÊ SERÁ PENALIZADO SE ERRAR ISSO):
     - POSIÇÃO DIREITA (RIGHT) ALINHADO À MARGEM DIREITA = É O HOMEM (USUÁRIO / VOCÊ DE QUEM É O CELULAR). MENSAGENS ENVIADAS.
-    - POSIÇÃO ESQUERDA (LEFT) ALINHADO À MARGEM ESQUERDA = É A MULHER (ALVO). MENSAGENS RECEBIDAS. DICA VISUAL: Geralmente vêm acompanhadas de uma pequena FOTO DE PERFIL no topo ou ao lado esquerdo do balão.
+    - POSIÇÃO ESQUERDA (LEFT) ALINHADO À MARGEM ESQUERDA = É A MULHER. MENSAGENS RECEBIDAS. DICA VISUAL: Geralmente vêm acompanhadas de uma pequena FOTO DE PERFIL no topo ou ao lado esquerdo do balão.
     - IGNORE TOTALMENTE AS CORES DOS BALÕES. No Instagram/WhatsApp, AMBAS as pessoas podem ter balões roxos/azuis se houver um tema aplicado.
     - O ÚNICO critério verdadeiro é o ALINHAMENTO GEOMÉTRICO (Esquerda/Direita) na imagem.
     - Antes de começar a sua análise JSON, certifique-se de preencher a transcrição passo a passo corretamente e NUNCA inverta quem mandou o que.
@@ -789,7 +790,7 @@ export const regenerateContent = async (
 
     🚨 DOGMA DE IDENTIDADE VISUAL (A MAIOR PRIORIDADE):
     - O HOMEM (USUÁRIO) escreve na DIREITA. Ele é dono do celular.
-    - A MULHER (ALVO) escreve na ESQUERDA.
+    - A MULHER escreve na ESQUERDA.
     - Ignore as cores! Leia o alinhamento geométrico. Leia a imagem ATENTAMENTE ANTES DE GERAR a resposta. Se o homem perguntou na direita, não diga que ela perguntou isso.
     `;
 
@@ -1035,7 +1036,7 @@ export const generateChatStream = async (
 
   🚨 DOGMA DE IDENTIDADE VISUAL (NÃO INTERPRETE TEXTOS, APENAS OBEDEÇA A POSIÇÃO DOS BALÕES):
   - POSIÇÃO DIREITA (CANTO DIREITO DA TELA >>): SEMPRE O HOMEM (USUÁRIO / ME). É A MENSAGEM QUE ELE DIGITOU E ENVIOU. Pronomes: ELE / DELE.
-  - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER (ELA / TARGET). É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
+  - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER. É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
   - REGRAS INQUEBRÁVEIS:
     1. IGNORE AS CORES! No Instagram e no WhatsApp, temas mudam as cores dos balões. A cor NÃO DEVE ser usada para identificar ninguém.
     2. CITAÇÕES: Se houver a frase "fulana respondeu a você", o balão de texto logo abaixo dela é O QUE A MULHER HAVIA DITO ANTES, e a resposta que O HOMEM ESCREVEU AGORA é o balão que fica LOGO EM SEGUIDA.

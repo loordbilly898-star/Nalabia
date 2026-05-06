@@ -29,7 +29,7 @@ const PRODUCTS = [
       "Seu braço direito nas sombras. Conselhos personalizados e leitura fria de cada mensagem.",
     features: [
       "Análise humana das suas conversas",
-      "Leitura Fria avançada do Alvo",
+      "Leitura Fria avançada",
       "Gatilhos Secretos de Resposta",
       "Acesso Imediato e Permanente",
     ],

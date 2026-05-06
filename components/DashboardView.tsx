@@ -398,7 +398,7 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
                 ANÁLISE DE DADOS
               </h2>
               <p className="text-xs text-gray-700 font-light">
-                Pergunte sobre seu desempenho e receba insights táticos.
+                Pergunte sobre seu desempenho e receba conselhos táticos.
               </p>
             </div>
           </div>
