@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from "react";
 import {
   X,
-  Flame,
-  Brain,
+  Bot,
   Loader2,
-  ShieldCheck,
   ExternalLink,
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
-interface DarkPackModalProps {
+interface MentoriaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const DarkPackModal: React.FC<DarkPackModalProps> = ({
+export const MentoriaModal: React.FC<MentoriaModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
@@ -27,12 +25,11 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Watch for userData changes to auto-close if payment is detected via webhook
   useEffect(() => {
-    if (isOpen && userData?.darkPackAccess) {
+    if (isOpen && userData?.mentoriaAccess) {
       onSuccess();
     }
-  }, [userData?.darkPackAccess, isOpen, onSuccess]);
+  }, [userData?.mentoriaAccess, isOpen, onSuccess]);
 
   if (!isOpen) return null;
 
@@ -48,7 +45,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          planId: "dark",
+          planId: "mentoria",
           userId: user.id,
           userEmail: user.email,
           userName: userData?.name || user.displayName,
@@ -86,7 +83,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
       const response = await fetch("/api/verify-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, type: "darkpack" }),
+        body: JSON.stringify({ userId: user.id, type: "mentoria" }),
       });
       const data = await response.json();
 
@@ -111,10 +108,10 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#0a0a0a] border border-red-500/30 rounded-2xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.15)] relative">
+      <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-2xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.15)] relative">
         {/* Header */}
         <div className="p-6 border-b border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-[50px] pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-[50px] pointer-events-none"></div>
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
@@ -123,57 +120,50 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
           </button>
 
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <Flame className="text-red-500" size={24} />
-            DARK PACK
+            <Bot className="text-cyan-500" size={24} />
+            CONSELHEIRO SÊNIOR
           </h2>
           <p className="text-gray-400 text-sm mt-2">
-            Desbloqueie o arsenal psicológico mais avançado e letal da NaLábia.
+            Acesso ilimitado ao bot de mentoria e conselhos sobre dinâmica
+            social e relacionamentos.
           </p>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Features */}
-          <div className="space-y-4">
-            <div className="flex gap-4 items-start p-4 bg-orange-500/5 border border-orange-500/10 rounded-xl">
-              <Flame className="text-orange-500 shrink-0 mt-1" size={20} />
-              <div>
-                <h3 className="text-white font-bold text-sm">
-                  Modo +18 (NSFW)
-                </h3>
-                <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                  Flerte agressivo, tensão sexual extrema e escalação íntima. A
-                  IA quebra os filtros para criar conversas viciantes.
-                </p>
+          <div className="space-y-3">
+            {[
+              "Aconselhamento personalizado",
+              "Visão imparcial das suas interações",
+              "Táticas de Frame Dominante",
+              "Leitura fria de comportamento",
+              "Estratégias para sair da Friendzone",
+            ].map((feature, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 text-sm text-gray-300"
+              >
+                <CheckCircle2 size={16} className="text-cyan-500 shrink-0" />
+                <span>{feature}</span>
               </div>
-            </div>
-
-            <div className="flex gap-4 items-start p-4 bg-purple-500/5 border border-purple-500/10 rounded-xl">
-              <Brain className="text-purple-500 shrink-0 mt-1" size={20} />
-              <div>
-                <h3 className="text-white font-bold text-sm">
-                  Modo Manipulação
-                </h3>
-                <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                  Controle psicológico absoluto. Reforço intermitente,
-                  gaslighting leve, triangulação e dependência emocional.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Pricing */}
-          <div className="text-center py-4 border-y border-white/5">
-            <div className="text-gray-400 text-xs uppercase tracking-wider font-bold mb-1">
-              Acesso Vitalício (Pagamento Único)
+          {/* Price */}
+          <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-xl p-4 border border-cyan-500/20 text-center">
+            <p className="text-gray-400 text-sm font-medium mb-1">
+              Pagamento Único
+            </p>
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-lg text-gray-400 font-bold">R$</span>
+              <span className="text-4xl font-black text-white tracking-tighter">
+                47,90
+              </span>
             </div>
-            <div className="text-4xl font-black text-white flex items-center justify-center gap-1">
-              <span className="text-lg text-gray-500">R$</span> 15
-              <span className="text-lg text-gray-500">,00</span>
-            </div>
-            <div className="flex items-center justify-center gap-1 text-green-400 text-xs mt-2 font-medium">
-              <ShieldCheck size={14} /> Liberação Automática Imediata
-            </div>
+            <p className="text-cyan-400 text-xs font-bold mt-2 uppercase tracking-wider">
+              Acesso Vitalício
+            </p>
           </div>
 
           {/* Payment Section */}
@@ -195,37 +185,38 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
             <button
               onClick={handlePayClick}
               disabled={isProcessing}
-              className="w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+              className={`w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${
+                isProcessing
+                  ? "bg-cyan-500/50 cursor-not-allowed"
+                  : "bg-cyan-600 hover:bg-cyan-500 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+              }`}
             >
               {isProcessing ? (
-                <Loader2 className="animate-spin" />
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  AGUARDE...
+                </>
               ) : (
                 <>
-                  Pagar com Cakto <ExternalLink size={20} />
+                  DESBLOQUEAR AGORA
+                  <ExternalLink size={18} />
                 </>
               )}
             </button>
-
-            <p className="text-[10px] text-gray-500 text-center px-4">
-              <strong className="text-gray-400">Importante:</strong> Para
-              liberação automática, certifique-se de usar o mesmo e-mail da sua
-              conta NaLábia (<span className="text-white">{user?.email}</span>)
-              na hora do pagamento.
-            </p>
 
             <button
               onClick={handleVerifyPayment}
               disabled={isProcessing}
-              className="w-full py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10"
+              className="w-full py-3 rounded-xl font-medium text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
             >
-              {isProcessing ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" /> Verificando...
-                </>
-              ) : (
-                "Já paguei, verificar agora"
-              )}
+              Já paguei, verificar acesso
             </button>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Você será redirecionado para a página de pagamento segura da
+              Cakto.
+              <br />
+              Volte aqui e clique em "Já paguei" após finalizar.
+            </p>
           </div>
         </div>
       </div>

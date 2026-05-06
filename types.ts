@@ -1,6 +1,6 @@
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content?: string;
   image?: string; // base64
   analysis?: NalabiaResponse;
@@ -12,17 +12,17 @@ export interface Message {
   wittyLevel?: number;
   dominanceLevel?: number;
   mysteryLevel?: number;
-  speed?: 'short' | 'normal' | 'fluid';
+  speed?: "short" | "normal" | "fluid";
 }
 
 export interface NalabiaResponse {
   transcription?: Array<{
-    side: 'RIGHT' | 'LEFT';
-    sender: 'USER/MAN' | 'HER/WOMAN';
+    side: "RIGHT" | "LEFT";
+    sender: "USER/MAN" | "HER/WOMAN";
     text: string;
   }>;
   momentReading: string;
-  interestLevel: 'Baixo' | 'Médio' | 'Alto' | 'Oscilante';
+  interestLevel: "Baixo" | "Médio" | "Alto" | "Oscilante";
   interestScore: number;
   investmentScore: number;
   riskScore: number;
@@ -35,7 +35,7 @@ export interface NalabiaResponse {
     text: string;
     explanation?: string;
   }>;
-  rhythm: 'Agora' | 'Esperar' | 'Mudar assunto' | 'Sumir' | 'Encerrar';
+  rhythm: "Agora" | "Esperar" | "Mudar assunto" | "Sumir" | "Encerrar";
   detectedMode: string;
   behavioralPattern?: string;
   suggestedTiming?: string;
@@ -46,12 +46,12 @@ export interface NalabiaResponse {
 
 export interface LaboratorySimulation {
   variations: {
-    style: 'Confiante' | 'Provocante' | 'Misteriosa';
+    style: "Confiante" | "Provocante" | "Misteriosa";
     text: string;
     impact: {
-      attraction: 'Baixa' | 'Média' | 'Alta';
-      curiosity: 'Baixa' | 'Média' | 'Alta';
-      risk: 'Baixo' | 'Médio' | 'Alto';
+      attraction: "Baixa" | "Média" | "Alta";
+      curiosity: "Baixa" | "Média" | "Alta";
+      risk: "Baixo" | "Médio" | "Alto";
     };
     bestScenario: string;
   }[];
@@ -80,7 +80,7 @@ export interface Profile {
   avatar?: string; // Emoji or Initials
   messages: Message[];
   metrics: {
-    interest: 'Baixo' | 'Médio' | 'Alto' | 'Oscilante';
+    interest: "Baixo" | "Médio" | "Alto" | "Oscilante";
     risk: string;
     lastInteraction: number;
   };
@@ -88,35 +88,36 @@ export interface Profile {
 }
 
 export enum ProcessingState {
-  IDLE = 'IDLE',
-  ANALYZING = 'ANALYZING',
-  PROCESSING = 'PROCESSING',
-  GENERATING_RESPONSE = 'GENERATING_RESPONSE',
-  CALCULATING = 'CALCULATING',
-  ERROR = 'ERROR',
-  REGENERATING = 'REGENERATING'
+  IDLE = "IDLE",
+  ANALYZING = "ANALYZING",
+  PROCESSING = "PROCESSING",
+  GENERATING_RESPONSE = "GENERATING_RESPONSE",
+  CALCULATING = "CALCULATING",
+  ERROR = "ERROR",
+  REGENERATING = "REGENERATING",
 }
 
-export type AnalysisMode = 
-  | 'HOME'
-  | 'STORY_REPLY' 
-  | 'FIRST_CONTACT' 
-  | 'FLOWING' 
-  | 'VALUE_TEST' 
-  | 'COLD_RESPONSE' 
-  | 'SILENCE' 
-  | 'REACTIVATION' 
-  | 'ONE_LINER'
-  | 'SIMULATOR'
-  | 'STATS'
-  | 'PROFILES'
-  | 'CHATBOT'
-  | 'PROFILE_ANALYZER'
-  | 'VAULT'
-  | 'RED_FLAG_DETECTOR'
-  | 'NSFW'
-  | 'MANIPULATION'
-  | 'COURSES';
+export type AnalysisMode =
+  | "HOME"
+  | "STORY_REPLY"
+  | "FIRST_CONTACT"
+  | "FLOWING"
+  | "VALUE_TEST"
+  | "COLD_RESPONSE"
+  | "SILENCE"
+  | "REACTIVATION"
+  | "ONE_LINER"
+  | "SIMULATOR"
+  | "STATS"
+  | "PROFILES"
+  | "CHATBOT"
+  | "PROFILE_ANALYZER"
+  | "VAULT"
+  | "RED_FLAG_DETECTOR"
+  | "NSFW"
+  | "MANIPULATION"
+  | "COURSES"
+  | "STORE";
 
 export interface SavedResponse {
   id: string;
@@ -126,11 +127,34 @@ export interface SavedResponse {
   createdAt: number;
 }
 
-export type ConversationSpeed = 'short' | 'normal' | 'fluid';
+export type ConversationSpeed = "short" | "normal" | "fluid";
 
 export interface AppSettings {
-  theme: 'dark' | 'ultra-dark' | 'light' | 'midnight' | 'dracula' | 'hacker' | 'cyberpunk';
-  accentColor: 'gold' | 'red' | 'blue' | 'emerald' | 'purple' | 'neon' | 'rose' | 'amber' | 'cyan' | 'fuchsia' | 'lime' | 'orange' | 'pink' | 'teal' | 'indigo' | 'violet';
+  theme:
+    | "dark"
+    | "ultra-dark"
+    | "light"
+    | "midnight"
+    | "dracula"
+    | "hacker"
+    | "cyberpunk";
+  accentColor:
+    | "gold"
+    | "red"
+    | "blue"
+    | "emerald"
+    | "purple"
+    | "neon"
+    | "rose"
+    | "amber"
+    | "cyan"
+    | "fuchsia"
+    | "lime"
+    | "orange"
+    | "pink"
+    | "teal"
+    | "indigo"
+    | "violet";
   animations: boolean;
   customApiKey?: string;
   ai: {
@@ -140,7 +164,7 @@ export interface AppSettings {
     autoAdjustFlirt: boolean;
     memoryEnabled?: boolean;
     fastResponses?: boolean;
-    defaultTone?: 'especialista' | 'casual' | 'empathetic' | 'direct';
+    defaultTone?: "especialista" | "casual" | "empathetic" | "direct";
   };
   safety: {
     antiNeedy: boolean;

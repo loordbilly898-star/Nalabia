@@ -1,54 +1,74 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../services/supabase';
-import { Message, ProcessingState, Profile, AppSettings } from '../types';
-import { Crown, Zap, MessageCircle, Camera, Target, Activity, Loader2, Send, Calendar, ShieldCheck } from 'lucide-react';
-import { generateCustomChatResponse } from '../services/aiService';
+import React, { useEffect, useState, useRef } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../services/supabase";
+import { Message, ProcessingState, Profile, AppSettings } from "../types";
+import {
+  Crown,
+  Zap,
+  MessageCircle,
+  Camera,
+  Target,
+  Activity,
+  Loader2,
+  Send,
+  Calendar,
+  ShieldCheck,
+} from "lucide-react";
+import { generateCustomChatResponse } from "../services/aiService";
 
 interface DashboardViewProps {
   activeProfile: Profile;
-  updateActiveProfileMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void;
+  updateActiveProfileMessages: (
+    messages: Message[] | ((prev: Message[]) => Message[]),
+  ) => void;
   settings: AppSettings;
   userAIProfile?: any;
 }
 
-const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActiveProfileMessages, settings, userAIProfile }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({
+  activeProfile,
+  updateActiveProfileMessages,
+  settings,
+  userAIProfile,
+}) => {
   const { userData } = useAuth();
   const [stats, setStats] = useState({
     conversations: 0,
     stories: 0,
     responses: 0,
-    loading: true
+    loading: true,
   });
 
-  const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'STATS');
-  const [input, setInput] = useState('');
+  const messages = (
+    Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+  ).filter((m) => m.mode === "STATS");
+  const [input, setInput] = useState("");
   const [status, setStatus] = useState<ProcessingState>(ProcessingState.IDLE);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
     const fetchStats = async () => {
       if (!userData) return;
-      
+
       try {
         const { data, error } = await supabase
-          .from('conversations')
-          .select('analysis, responses')
-          .eq('userID', userData.userID);
-          
+          .from("conversations")
+          .select("analysis, responses")
+          .eq("userID", userData.userID);
+
         if (error) throw error;
-        
+
         let stories = 0;
         let convos = 0;
         let responses = 0;
-        
+
         if (data) {
           data.forEach((doc: any) => {
-            if (doc.analysis?.detectedMode === 'STORY_REPLY') {
+            if (doc.analysis?.detectedMode === "STORY_REPLY") {
               stories++;
             } else {
               convos++;
@@ -58,16 +78,16 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
             }
           });
         }
-        
+
         setStats({
           conversations: convos,
           stories: stories,
           responses: responses,
-          loading: false
+          loading: false,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
-        setStats(prev => ({ ...prev, loading: false }));
+        setStats((prev) => ({ ...prev, loading: false }));
       }
     };
 
@@ -79,21 +99,27 @@ const DashboardView: React.FC<DashboardViewProps> = ({ activeProfile, updateActi
     if (!input.trim() || status !== ProcessingState.IDLE) return;
 
     const userMsg = input;
-    setInput('');
-    
+    setInput("");
+
     const newMessage: Message = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: userMsg,
       timestamp: Date.now(),
-      mode: 'STATS'
+      mode: "STATS",
     };
-    
-    updateActiveProfileMessages(prev => [...prev, newMessage]);
+
+    updateActiveProfileMessages((prev) => [...prev, newMessage]);
     setStatus(ProcessingState.ANALYZING);
 
-    const stateTimer1 = setTimeout(() => setStatus(ProcessingState.PROCESSING), 1000);
-    const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 2000);
+    const stateTimer1 = setTimeout(
+      () => setStatus(ProcessingState.PROCESSING),
+      1000,
+    );
+    const stateTimer2 = setTimeout(
+      () => setStatus(ProcessingState.GENERATING_RESPONSE),
+      2000,
+    );
 
     try {
       const mistralMessages: any[] = [];
@@ -126,26 +152,30 @@ ${userAIProfileInstruction}
 
 Analise friamente o desempenho dele. Dê conselhos baseados em números e probabilidade. Seja direto, calculista e focado em otimização de conversão social.`;
 
-      currentModeMessages.forEach(msg => {
+      currentModeMessages.forEach((msg) => {
         mistralMessages.push({
-          role: msg.role === 'assistant' ? 'assistant' : 'user',
-          content: msg.content || ""
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: msg.content || "",
         });
       });
 
-      const responseText = await generateCustomChatResponse(mistralMessages, systemPrompt, settings);
+      const responseText = await generateCustomChatResponse(
+        mistralMessages,
+        systemPrompt,
+        settings,
+      );
 
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: responseText || '...',
+        role: "assistant",
+        content: responseText || "...",
         timestamp: Date.now(),
-        mode: 'STATS'
+        mode: "STATS",
       };
-      updateActiveProfileMessages(prev => [...prev, assistantMessage]);
+      updateActiveProfileMessages((prev) => [...prev, assistantMessage]);
       setStatus(ProcessingState.IDLE);
     } catch (error: any) {
       clearTimeout(stateTimer1);
@@ -153,20 +183,20 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
       console.error("Chatbot Error:", error);
       setStatus(ProcessingState.ERROR);
       setTimeout(() => setStatus(ProcessingState.IDLE), 3000);
-      
+
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
-      if (typeof error?.message === 'string') {
+      if (typeof error?.message === "string") {
         errorMessage = `Erro: ${error.message}`;
       }
 
       const errMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: errorMessage,
         timestamp: Date.now(),
-        mode: 'STATS'
+        mode: "STATS",
       };
-      updateActiveProfileMessages(prev => [...prev, errMessage]);
+      updateActiveProfileMessages((prev) => [...prev, errMessage]);
     }
   };
 
@@ -177,27 +207,41 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
 
   const getThemeInputBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-obsidian text-gray-200';
-      case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
-      case 'midnight': return 'bg-[#1e293b] text-gray-200';
-      case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
-      case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
-      case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
-      case 'dark':
-      default: return 'bg-obsidian text-gray-200';
+      case "ultra-dark":
+        return "bg-obsidian text-gray-200";
+      case "light":
+        return "bg-[#ffffff] text-gray-900 border-gray-300";
+      case "midnight":
+        return "bg-[#1e293b] text-gray-200";
+      case "dracula":
+        return "bg-[#44475a] text-[#f8f8f2]";
+      case "hacker":
+        return "bg-[#000000] text-[#00ff00] border-green-900";
+      case "cyberpunk":
+        return "bg-[#000000] text-[#fcee0a] border-yellow-900";
+      case "dark":
+      default:
+        return "bg-obsidian text-gray-200";
     }
   };
 
   const getThemeHeaderBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-obsidian';
-      case 'light': return 'bg-[#ffffff]';
-      case 'midnight': return 'bg-[#1e293b]';
-      case 'dracula': return 'bg-[#44475a]';
-      case 'hacker': return 'bg-[#000000]';
-      case 'cyberpunk': return 'bg-[#000000]';
-      case 'dark':
-      default: return 'bg-obsidian';
+      case "ultra-dark":
+        return "bg-obsidian";
+      case "light":
+        return "bg-[#ffffff]";
+      case "midnight":
+        return "bg-[#1e293b]";
+      case "dracula":
+        return "bg-[#44475a]";
+      case "hacker":
+        return "bg-[#000000]";
+      case "cyberpunk":
+        return "bg-[#000000]";
+      case "dark":
+      default:
+        return "bg-obsidian";
     }
   };
 
@@ -209,23 +253,31 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
             <Crown size={28} className="text-gold-glow" />
           </div>
           <div>
-            <h2 className="text-xl font-mono text-white font-bold">{userData.name}</h2>
-            <p className="text-sm text-gold-glow font-mono">Nível {userData.level} • Apex</p>
+            <h2 className="text-xl font-mono text-white font-bold">
+              {userData.name}
+            </h2>
+            <p className="text-sm text-gold-glow font-mono">
+              Nível {userData.level} • Apex
+            </p>
           </div>
         </div>
 
         {/* Subscription Status Card */}
-        <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-4 flex items-center justify-between bg-gradient-to-r from-gold-dim/5 to-transparent`}>
+        <div
+          className={`${getThemeInputBg().split(" ")[0]} border border-gold-dim/10 rounded-2xl p-4 flex items-center justify-between bg-gradient-to-r from-gold-dim/5 to-transparent`}
+        >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-gold-glow/10 border border-gold-glow/20 flex items-center justify-center">
               <ShieldCheck size={20} className="text-gold-glow" />
             </div>
             <div>
               <h3 className="text-xs font-bold font-mono text-white tracking-wider uppercase">
-                {userData.plano || 'Plano Gratuito'}
+                {userData.plano || "Plano Gratuito"}
               </h3>
               <p className="text-[10px] text-gray-500 font-mono">
-                {userData.status === 'ativo' ? 'Status: ATIVO' : 'Status: PENDENTE'}
+                {userData.status === "ativo"
+                  ? "Status: ATIVO"
+                  : "Status: PENDENTE"}
               </p>
             </div>
           </div>
@@ -236,36 +288,48 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
                 <span className="text-[10px] font-mono">VALIDADE</span>
               </div>
               <p className="text-xs font-mono text-white">
-                {new Date(userData.expiraEm).toLocaleDateString('pt-BR')}
+                {new Date(userData.expiraEm).toLocaleDateString("pt-BR")}
               </p>
             </div>
           )}
         </div>
 
-        <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-6 space-y-4`}>
+        <div
+          className={`${getThemeInputBg().split(" ")[0]} border border-gold-dim/10 rounded-2xl p-6 space-y-4`}
+        >
           <div className="flex justify-between items-end">
-            <span className="text-xs font-mono text-gray-500 uppercase">Progresso de XP</span>
-            <span className="text-sm font-mono text-gold-glow">{userData.xp} / {nextLevelXp}</span>
+            <span className="text-xs font-mono text-gray-500 uppercase">
+              Progresso de XP
+            </span>
+            <span className="text-sm font-mono text-gold-glow">
+              {userData.xp} / {nextLevelXp}
+            </span>
           </div>
           <div className="h-2 bg-obsidian-light rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gold-glow transition-all duration-1000 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
-        <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-5 flex items-center justify-between`}>
+        <div
+          className={`${getThemeInputBg().split(" ")[0]} border border-gold-dim/10 rounded-2xl p-5 flex items-center justify-between`}
+        >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
               <MessageCircle size={20} className="text-green-500" />
             </div>
             <div>
-              <h3 className="text-sm font-bold font-mono text-white">NaLábia CLUB</h3>
-              <p className="text-[10px] text-gray-500 font-mono uppercase">Comunidade VIP</p>
+              <h3 className="text-sm font-bold font-mono text-white">
+                NaLábia CLUB
+              </h3>
+              <p className="text-[10px] text-gray-500 font-mono uppercase">
+                Comunidade VIP
+              </p>
             </div>
           </div>
-          {userData.status === 'ativo' || userData.nalabiaPrimeAcess ? (
+          {userData.status === "ativo" || userData.nalabiaPrimeAcess ? (
             <a
               href="https://chat.whatsapp.com/BXLIzZGreSOCqYT3l6g65l"
               target="_blank"
@@ -276,7 +340,11 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
             </a>
           ) : (
             <button
-              onClick={() => alert('Assine o NaLábia CLUB para acessar a comunidade VIP no WhatsApp!')}
+              onClick={() =>
+                alert(
+                  "Assine o NaLábia CLUB para acessar a comunidade VIP no WhatsApp!",
+                )
+              }
               className="px-4 py-2 rounded-full text-xs font-bold font-mono transition-colors bg-gray-800/50 border border-gray-700 text-gray-500 cursor-not-allowed"
             >
               BLOQUEADO
@@ -290,15 +358,31 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
-            <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
+            <div
+              className={`${getThemeInputBg().split(" ")[0]} border border-gold-dim/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}
+            >
               <MessageCircle size={24} className="text-gray-400" />
-              <span className="text-2xl font-mono text-white">{stats.conversations}</span>
-              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">Conversas<br/>Analisadas</span>
+              <span className="text-2xl font-mono text-white">
+                {stats.conversations}
+              </span>
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">
+                Conversas
+                <br />
+                Analisadas
+              </span>
             </div>
-            <div className={`${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}>
+            <div
+              className={`${getThemeInputBg().split(" ")[0]} border border-gold-dim/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2`}
+            >
               <Camera size={24} className="text-gray-400" />
-              <span className="text-2xl font-mono text-white">{stats.stories}</span>
-              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">Stories<br/>Analisados</span>
+              <span className="text-2xl font-mono text-white">
+                {stats.stories}
+              </span>
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center">
+                Stories
+                <br />
+                Analisados
+              </span>
             </div>
           </div>
         )}
@@ -310,7 +394,9 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
           <div className="h-full flex flex-col items-center justify-center opacity-30 pointer-events-none p-8">
             <Activity size={48} className="mb-6 text-gray-800" />
             <div className="text-center space-y-2">
-              <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">ANÁLISE DE DADOS</h2>
+              <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">
+                ANÁLISE DE DADOS
+              </h2>
               <p className="text-xs text-gray-700 font-light">
                 Pergunte sobre seu desempenho e receba insights táticos.
               </p>
@@ -318,31 +404,47 @@ Analise friamente o desempenho dele. Dê conselhos baseados em números e probab
           </div>
         )}
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className={`max-w-[85%] ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-              <div className={`px-4 py-2 rounded-2xl inline-block ${
-                msg.role === 'user' 
-                  ? `${getThemeInputBg().split(' ')[0]} border border-gold-dim/10 text-gray-300 rounded-tr-sm` 
-                  : 'bg-obsidian-light border border-gold-glow/30 text-gold-glow rounded-tl-sm'
-              }`}>
-                <p className="text-xs font-mono whitespace-pre-wrap">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
+          <div
+            key={msg.id}
+            className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+          >
+            <div
+              className={`max-w-[85%] ${msg.role === "user" ? "text-right" : "text-left"}`}
+            >
+              <div
+                className={`px-4 py-2 rounded-2xl inline-block ${
+                  msg.role === "user"
+                    ? `${getThemeInputBg().split(" ")[0]} border border-gold-dim/10 text-gray-300 rounded-tr-sm`
+                    : "bg-obsidian-light border border-gold-glow/30 text-gold-glow rounded-tl-sm"
+                }`}
+              >
+                <p className="text-xs font-mono whitespace-pre-wrap">
+                  {typeof msg.content === "string"
+                    ? msg.content
+                    : JSON.stringify(msg.content)}
+                </p>
               </div>
             </div>
           </div>
         ))}
-        {status !== ProcessingState.IDLE && status !== ProcessingState.ERROR && (
-          <div className="flex justify-start">
-            <div className="bg-obsidian-light border border-gold-glow/30 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center space-x-3">
-              <Loader2 size={14} className="animate-spin text-gold-glow" />
-              <span className="text-xs font-mono text-gold-glow">Analisando métricas...</span>
+        {status !== ProcessingState.IDLE &&
+          status !== ProcessingState.ERROR && (
+            <div className="flex justify-start">
+              <div className="bg-obsidian-light border border-gold-glow/30 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center space-x-3">
+                <Loader2 size={14} className="animate-spin text-gold-glow" />
+                <span className="text-xs font-mono text-gold-glow">
+                  Analisando métricas...
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         <div ref={chatEndRef} />
       </div>
 
       {/* Input Area */}
-      <div className={`flex-none p-4 border-t border-gold-dim/10 ${getThemeHeaderBg()}`}>
+      <div
+        className={`flex-none p-4 border-t border-gold-dim/10 ${getThemeHeaderBg()}`}
+      >
         <form onSubmit={handleSend} className="flex items-center space-x-2">
           <input
             type="text"

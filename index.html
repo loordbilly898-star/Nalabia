@@ -1,13 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="https://upload.wikimedia.org/wikipedia/commons/e/e4/Inf_sign.svg"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#D4AF37" />
     <title>NaLábia</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       body {
         background-color: #000000;
@@ -26,7 +33,7 @@
         border-radius: 2px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #D4AF37;
+        background: #d4af37;
       }
       /* Only hide scrollbar when explicitly requested, but for this update we want them visible or subtle */
       .hide-scrollbar::-webkit-scrollbar {
@@ -37,19 +44,22 @@
         scrollbar-width: none;
       }
     </style>
-    <link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/index.css" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('SW registered: ', registration);
-          }).catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log("SW registered: ", registration);
+            })
+            .catch((registrationError) => {
+              console.log("SW registration failed: ", registrationError);
+            });
         });
       }
     </script>

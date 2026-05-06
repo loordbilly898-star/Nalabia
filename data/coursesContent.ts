@@ -1,5 +1,5 @@
 export const courseContents: Record<string, string[]> = {
-  'rei-da-cama': [
+  "rei-da-cama": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo ao curso "O Rei da Cama: Mestre dos Orgasmos". Este material foi desenvolvido para transformar completamente sua compreensão sobre o prazer feminino e como proporcioná-lo de forma consistente e avassaladora.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -26,7 +26,7 @@ export const courseContents: Record<string, string[]> = {
     <p>Seu corpo funciona como um carro ou qualquer outra máquina. Mesmo o menor bloqueio afetará o desempenho geral. Da mesma forma, mesmo o menor nó ou espasmo no corpo de uma mulher pode bloquear o fluxo de energia. Isso significa que o fluxo de prazer também é afetado.</p>
     <blockquote>"Quanto mais nós, espasmos e bloqueios ela tiver, mais difícil será para ela atingir o orgasmo, ou ter um tão poderoso quanto ela realmente é capaz."</blockquote>
     <p>A boa notícia é que, a menos que o estresse e a tensão sejam causados por problemas psicológicos profundos, é reversível! A maneira de fazer isso é deixá-la o mais relaxada e confortável possível. Faça-a rir, compartilhe uma atividade física juntos. Leve-a através de um relaxamento guiado, se necessário.</p>`,
-    
+
     `<h3>O Toque Mágico e as Técnicas Físicas</h3>
     <p>A maioria dos homens simplesmente não tem ideia de quão maravilhosa e agradecida uma mulher ficará depois que você lhe der uma boa massagem. Nos dias de hoje, estamos todos com tanta pressa para chegar ao 'sexo'. Uma massagem pode começar a despertar o corpo de uma mulher, removendo nós e espasmos para que a energia (e sangue) possa fluir livremente pelo corpo dela.</p>
     <h4>Massagem Externa</h4>
@@ -43,7 +43,7 @@ export const courseContents: Record<string, string[]> = {
     <h4>O Toque Mágico</h4>
     <p>Este é outro segredo bem guardado. A energia flui para onde vai a intenção (ou atenção). Simplificando, isso significa que tudo o que você pretende e coloca seu foco começará a se manifestar em seu corpo. Se você começar a ter pensamentos sensuais, seu corpo responderá.</p>
     <p>Quando você faz com que a energia flua em uma determinada direção, outras pessoas ao seu redor (especialmente mulheres) também sentirão o efeito disso. As mulheres são muito intuitivas e responsivas à energia. Ao tocar a mulher com os dedos e as mãos, imagine-se preenchido com a energia mais sensual e requintada.</p>`,
-    
+
     `<h3>Orgasmo no Comando e Âncoras</h3>
     <p>Quando você está excitando uma mulher, especialmente por telefone, certifique-se de 'instalar' sua voz na experiência dela. A primeira é simplesmente dizer certas palavras, como "Yeaaah...," ou "Parece muuuuito bom..." etc. A chave aqui é usar uma voz suave e erótica.</p>
     <h4>Criando Âncoras de Excitação</h4>
@@ -59,9 +59,9 @@ export const courseContents: Record<string, string[]> = {
       <li><strong>Vaginal:</strong> Muito poucas mulheres são capazes de ter um orgasmo apenas através da penetração. O movimento de entrar e sair começa a envelhecer para a mulher. Use seus dedos, língua e boca sobre ela até que ela tenha um orgasmo ou comece a implorar por seu pênis.</li>
       <li><strong>Ponto G:</strong> É um círculo esponjoso de tecido, localizado cerca de 5 centímetros dentro dela, na parede superior de sua vagina. A melhor maneira de encontrá-lo é inserir dois dedos, com as palmas para cima, e usar as pontas dos dedos para encontrar o tecido esponjoso.</li>
       <li><strong>Ejaculação Feminina:</strong> O tipo mais poderoso de orgasmo que uma mulher pode ter. Um orgasmo esguichando é um orgasmo de 'corpo inteiro'. Seu corpo inteiro vai sacudir e espasmar vigorosamente.</li>
-    </ul>`
+    </ul>`,
   ],
-  '16-frases': [
+  "16-frases": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo ao guia prático "16 Frases para Esquentar o Papo". Este material é um arsenal tático projetado para resolver um dos maiores problemas masculinos: a transição da conversa amigável para a tensão sexual.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -87,7 +87,7 @@ export const courseContents: Record<string, string[]> = {
     <h4>4. O Teste do Beijo</h4>
     <p><strong>"Se você tivesse que fazer uma prova beijando, que nota você ganharia?"</strong></p>
     <p><em>Por que funciona:</em> Uma pergunta muito brega, mas ainda eficaz se você disser no caminho certo. Ela traz o foco diretamente para os lábios e para o ato de beijar. Se ela der uma nota alta, você pode desafiá-la: "Vamos ter que testar isso para ver se é verdade."</p>`,
-    
+
     `<h3>Perguntas Sexuais Indiretas e Tensão</h3>
     <p>Uma vez que a conexão inicial e o flerte leve foram estabelecidos, é hora de aumentar a temperatura. Estas frases são mais diretas, mas ainda mantêm um ar de mistério e desafio.</p>
     <h4>5. A Investigação do Desejo</h4>
@@ -103,7 +103,7 @@ export const courseContents: Record<string, string[]> = {
     <h4>8. A Desculpa da Dança</h4>
     <p><strong>"Vamos voltar para minha casa e ouvir música. Talvez você possa me ensinar um movimento de arrocha ou dois..."</strong></p>
     <p><em>Por que funciona:</em> Fornece uma desculpa plausível (ouvir música, dançar) para irem para um ambiente privado. A menção à dança (arrocha) já implica contato físico próximo e movimento de quadril, preparando o terreno perfeitamente.</p>`,
-    
+
     `<h3>Convites Irrecusáveis e Fechamento</h3>
     <p>O momento final. A tensão está no ar, os indicadores de interesse estão claros. Agora você precisa liderar e fazer o convite para o ambiente privado de forma natural e confiante.</p>
     <h4>9. A Desculpa do Vídeo</h4>
@@ -132,9 +132,9 @@ export const courseContents: Record<string, string[]> = {
     <p><em>Por que funciona:</em> Você se posiciona como o protetor, tirando-a do caos e levando-a para o conforto. É um movimento de liderança masculina clássico.</p>
     <h4>16. A Recusa em Terminar</h4>
     <p><strong>"Penso que a noite não poderia acabar agora..."</strong></p>
-    <p><em>Por que funciona:</em> Expressa desejo de continuar a companhia dela de forma romântica e assertiva. É o gancho perfeito para sugerir a ida para a sua casa ou para um motel logo em seguida.</p>`
+    <p><em>Por que funciona:</em> Expressa desejo de continuar a companhia dela de forma romântica e assertiva. É o gancho perfeito para sugerir a ida para a sua casa ou para um motel logo em seguida.</p>`,
   ],
-  'mapa-seducao': [
+  "mapa-seducao": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo ao "O Mapa da Sedução: Como Manipular uma Mulher". Este curso não é sobre truques baratos, mas sobre a compreensão profunda da psicologia feminina e como usar esse conhecimento para criar atração genuína e duradoura.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -199,9 +199,9 @@ export const courseContents: Record<string, string[]> = {
     <p>A Resistência de Última Hora (Last Minute Resistance - LMR) ocorre quando a lógica dela subitamente entra em ação pouco antes do sexo. Ela pensa: "Isso está indo muito rápido", "O que ele vai pensar de mim?", "Eu não sou esse tipo de garota".</p>
     <p><strong>Como lidar:</strong> Nunca discuta, nunca force, nunca use a lógica. A pior coisa a dizer é "Mas a gente já chegou até aqui". Em vez disso, concorde com a resistência e retire a pressão. Diga: "Você tem razão, estamos indo muito rápido. Vamos só relaxar." Afaste-se fisicamente. Comece a falar sobre algo mundano. Mostre que você não está desesperado. Em 90% das vezes, a remoção da pressão fará com que a própria tensão sexual acumulada a faça reiniciar a escalação.</p>
     
-    <blockquote>"A sedução não é sobre convencer o corpo dela a ceder. É sobre dar à mente dela as desculpas lógicas perfeitas para que ela possa fazer o que o corpo dela já quer fazer."</blockquote>`
+    <blockquote>"A sedução não é sobre convencer o corpo dela a ceder. É sobre dar à mente dela as desculpas lógicas perfeitas para que ela possa fazer o que o corpo dela já quer fazer."</blockquote>`,
   ],
-  'psicologia-sombria-3000': [
+  "psicologia-sombria-3000": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo ao "Psicologia Sombria: 3000 Técnicas". Este material é denso, poderoso e, se mal utilizado, perigoso. Ele desvenda os mecanismos ocultos da influência humana, persuasão subliminar e defesa contra manipulação.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -263,9 +263,9 @@ export const courseContents: Record<string, string[]> = {
     <p>Se ela tentar usar o Tratamento de Silêncio, não mande mensagens perguntando o que aconteceu. Espelhe o comportamento dela e amplifique. Se ela sumir por 2 dias, suma por 4. Quando ela reaparecer, aja como se nem tivesse notado a ausência dela. "Ah, oi. Estava super ocupado com uns projetos, nem vi o tempo passar." Isso destrói o Frame dela de que ela é o centro do seu universo.</p>
     <p>Se ela tentar Triangulação ("Meu ex me mandou mensagem hoje"), não demonstre ciúmes. Re-enquadre mostrando que você não a vê como um prêmio pelo qual vale a pena competir: "Sério? Que legal. Vocês deviam voltar a se falar, parecem ter muito em comum." A indiferença absoluta é a arma mais letal contra a manipulação narcisista.</p>
     
-    <blockquote>"O verdadeiro poder não é a capacidade de controlar os outros, mas a capacidade de impedir que os outros controlem você. Aquele que não pode ser provocado, não pode ser manipulado."</blockquote>`
+    <blockquote>"O verdadeiro poder não é a capacidade de controlar os outros, mas a capacidade de impedir que os outros controlem você. Aquele que não pode ser provocado, não pode ser manipulado."</blockquote>`,
   ],
-  'manual-proibido': [
+  "manual-proibido": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Aviso: O conteúdo de "O Manual Proibido" lida com dinâmicas de poder avançadas e manipulação psicológica profunda. Este material não é para iniciantes e exige maturidade emocional para ser compreendido e aplicado sem causar danos desnecessários.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -323,7 +323,7 @@ export const courseContents: Record<string, string[]> = {
     <p>Associe a sua presença aos picos mais altos de prazer (sexo alucinante, aventuras incríveis) e a sua ausência (ou a desaprovação dela) à dor emocional (frieza, distanciamento). Quando ela agir de acordo com o seu Frame, recompense-a intensamente. Quando ela desrespeitar o seu Frame, puna-a com a retirada absoluta da sua atenção e afeto.</p>
     <p>O contraste extremo entre a luz (sua validação) e a escuridão (sua indiferença) criará um vínculo traumático (Trauma Bonding) que é quase impossível de ser quebrado por meios lógicos. Ela fará qualquer coisa para evitar a escuridão e permanecer na luz.</p>`,
   ],
-  'segredos-seducao': [
+  "segredos-seducao": [
     `<h3>A Biologia da Atração: O Que Elas Realmente Querem</h3>
     <p>A sedução não é um jogo de sorte, magia ou aparência física perfeita. É um processo biológico e psicológico previsível. Para dominar os segredos da sedução feminina, você precisa entender o que o cérebro feminino foi programado evolutivamente para buscar em um parceiro.</p>
     
@@ -381,9 +381,9 @@ export const courseContents: Record<string, string[]> = {
     <h4>O Fechamento (Logística e o Beijo)</h4>
     <p>O beijo não deve ser um evento monumental ou uma pergunta ("Posso te beijar?"). Deve ser a progressão natural da tensão sexual que você construiu. Se você escalou o contato físico corretamente, o beijo será inevitável.</p>
     <p><strong>A Técnica do Triângulo:</strong> Olhe para o olho esquerdo dela, depois para o olho direito, e depois para os lábios dela. Repita isso lentamente enquanto a conversa faz uma pausa. Se ela mantiver o contato visual e olhar para os seus lábios também, aproxime-se lentamente. Vá 90% do caminho e deixe que ela percorra os 10% finais.</p>
-    <p><strong>Logística:</strong> A sedução moderna é um jogo de logística. Você precisa movê-la de um ambiente público para um ambiente privado (sua casa). Use desculpas plausíveis (Bouncing): "Vamos lá em casa, vou te mostrar meu cachorro/fazer o melhor drink da sua vida/ouvir aquele vinil que te falei." Facilite o "sim" dela, removendo a pressão do sexo.</p>`
+    <p><strong>Logística:</strong> A sedução moderna é um jogo de logística. Você precisa movê-la de um ambiente público para um ambiente privado (sua casa). Use desculpas plausíveis (Bouncing): "Vamos lá em casa, vou te mostrar meu cachorro/fazer o melhor drink da sua vida/ouvir aquele vinil que te falei." Facilite o "sim" dela, removendo a pressão do sexo.</p>`,
   ],
-  'manipulacao-teste-infinito': [
+  "manipulacao-teste-infinito": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo ao "Manipulação Feminina: O Teste Infinito 2". Este curso aborda uma das verdades mais desconfortáveis e cruciais das dinâmicas intersexuais: o teste contínuo. Compreender isso é a diferença entre um relacionamento onde você é respeitado e um onde você é subjugado.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -456,9 +456,9 @@ export const courseContents: Record<string, string[]> = {
       <li><strong>Continue Sendo Imprevisível:</strong> Não deixe o relacionamento cair na rotina monótona. Planeje encontros surpresa, tome a iniciativa no quarto, mantenha um leve ar de mistério. A chama do desejo precisa de oxigênio (espaço) e faíscas (novidade) para continuar queimando.</li>
     </ul>
     
-    <blockquote>"A mulher não quer um escravo que obedeça a todas as suas ordens. Ela quer um rei que seja forte o suficiente para dizer 'não' a ela quando necessário, para que ela possa se sentir segura o suficiente para se render a ele."</blockquote>`
+    <blockquote>"A mulher não quer um escravo que obedeça a todas as suas ordens. Ela quer um rei que seja forte o suficiente para dizer 'não' a ela quando necessário, para que ela possa se sentir segura o suficiente para se render a ele."</blockquote>`,
   ],
-  'teoria-manipulacao': [
+  "teoria-manipulacao": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo a "A Teoria da Manipulação Feminina". Este curso é uma pílula vermelha (Red Pill) sobre as dinâmicas de poder ocultas que governam as relações intersexuais. Ele expõe as estratégias que as mulheres usam (muitas vezes inconscientemente) para extrair recursos e atenção.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -516,9 +516,9 @@ export const courseContents: Record<string, string[]> = {
     <p>O homem manipulável é aquele que perdoa tudo em nome do "amor". O homem de alto valor tem limites claros e consequências reais para a violação desses limites.</p>
     <p>Se ela gritar com você, você não grita de volta; você diz: "Eu não tolero desrespeito. Quando você se acalmar, nós conversamos." E você sai do ambiente. A consistência na aplicação dos seus limites é o que treina as pessoas sobre como elas devem tratá-lo.</p>
     
-    <blockquote>"A manipulação só funciona no escuro. Quando você acende a luz da consciência e entende as táticas, o feitiço é quebrado. O homem que domina a si mesmo não pode ser dominado por ninguém."</blockquote>`
+    <blockquote>"A manipulação só funciona no escuro. Quando você acende a luz da consciência e entende as táticas, o feitiço é quebrado. O homem que domina a si mesmo não pode ser dominado por ninguém."</blockquote>`,
   ],
-  'psicologia-sombria-linguagem': [
+  "psicologia-sombria-linguagem": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo a "Psicologia Sombria e Linguagem Corporal". Este curso é o seu guia para decodificar a comunicação não-verbal, a linguagem silenciosa que revela as verdadeiras intenções, medos e desejos das pessoas ao seu redor.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -588,9 +588,9 @@ export const courseContents: Record<string, string[]> = {
       <li><strong>O Aperto de Mão Dominante:</strong> Ao apertar a mão, gire levemente o seu pulso para que a sua mão fique por cima da mão do alvo. Isso força o alvo a uma posição de submissão física (palma para cima). Para combater isso, você deve dar um passo à frente com o pé esquerdo e invadir o espaço do dominador, forçando-o a endireitar o aperto.</li>
     </ul>
     
-    <blockquote>"O corpo nunca mente, mesmo quando as palavras o fazem. O mestre da Psicologia Sombria escuta com os olhos e fala com a presença. O domínio do espaço físico é o prelúdio para o domínio da mente."</blockquote>`
+    <blockquote>"O corpo nunca mente, mesmo quando as palavras o fazem. O mestre da Psicologia Sombria escuta com os olhos e fala com a presença. O domínio do espaço físico é o prelúdio para o domínio da mente."</blockquote>`,
   ],
-  'manipular-linda': [
+  "manipular-linda": [
     `<h3>Descrição e Instalação do Conhecimento</h3>
     <p>Bem-vindo a "Como Manipular uma Mulher Linda". Este curso destrói o mito de que mulheres excepcionalmente atraentes estão fora do seu alcance ou exigem táticas de submissão. Na verdade, a beleza delas é a maior vulnerabilidade que você pode explorar.</p>
     <p><strong>Como consumir este conteúdo:</strong></p>
@@ -648,6 +648,6 @@ export const courseContents: Record<string, string[]> = {
     <p>O maior erro que os homens cometem após dormir com uma mulher linda é reverter ao comportamento de "cara bonzinho" e começar a bajulá-la, achando que ganharam na loteria. Se você fizer isso, ela perderá o respeito por você instantaneamente e o descartará.</p>
     <p><strong>A Regra de Ouro do Pós-Sexo:</strong> Trate-a exatamente da mesma forma que você a tratava antes do sexo. Mantenha o desafio, continue provocando-a, não mande mensagens carentes no dia seguinte. Faça com que ela sinta que o sexo foi ótimo, mas que não mudou o fato de que você é o prêmio e ela ainda precisa se esforçar para mantê-lo na vida dela.</p>
     
-    <blockquote>"A beleza é apenas uma armadura. Por baixo dela, existe uma mente humana desesperada por emoção, desafio e um homem forte o suficiente para não se curvar perante a casca externa. Destrua a armadura, e a mulher será sua."</blockquote>`
-  ]
+    <blockquote>"A beleza é apenas uma armadura. Por baixo dela, existe uma mente humana desesperada por emoção, desafio e um homem forte o suficiente para não se curvar perante a casca externa. Destrua a armadura, e a mulher será sua."</blockquote>`,
+  ],
 };

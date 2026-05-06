@@ -1,4 +1,8 @@
-export const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
+export const resizeImage = (
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -6,7 +10,7 @@ export const resizeImage = (file: File, maxWidth: number, maxHeight: number): Pr
       const img = new Image();
       img.src = event.target?.result as string;
       img.onload = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         let width = img.width;
         let height = img.height;
 
@@ -24,13 +28,13 @@ export const resizeImage = (file: File, maxWidth: number, maxHeight: number): Pr
 
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
+          reject(new Error("Failed to get canvas context"));
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8)); // Compress to 80% quality JPEG
+        resolve(canvas.toDataURL("image/jpeg", 0.8)); // Compress to 80% quality JPEG
       };
       img.onerror = (error) => reject(error);
     };

@@ -1,48 +1,74 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2, Sparkles } from 'lucide-react';
-import { generateCustomChatResponse } from '../services/aiService';
-import { ProcessingState, Profile, Message, AppSettings } from '../types';
-import { checkDeviceUsage, incrementDeviceUsage } from '../services/antiFraud';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useRef, useEffect } from "react";
+import { Send, User, Bot, Loader2, Sparkles } from "lucide-react";
+import { generateCustomChatResponse } from "../services/aiService";
+import { ProcessingState, Profile, Message, AppSettings } from "../types";
+import { checkDeviceUsage, incrementDeviceUsage } from "../services/antiFraud";
+import { useAuth } from "../contexts/AuthContext";
 
 interface SimulatorViewProps {
   activeProfile: Profile;
-  updateActiveProfileMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void;
+  updateActiveProfileMessages: (
+    messages: Message[] | ((prev: Message[]) => Message[]),
+  ) => void;
   settings: AppSettings;
   userAIProfile?: any;
 }
 
 const SCENARIOS = [
-  { id: 'interested', label: 'Interessada', desc: 'Responde rápido, investe na conversa.' },
-  { id: 'cold', label: 'Fria', desc: 'Respostas curtas, demora para responder.' },
-  { id: 'tease', label: 'Provocadora', desc: 'Testa você, faz joguinhos.' },
-  { id: 'confused', label: 'Confusa', desc: 'Não sabe o que quer, dá sinais mistos.' },
+  {
+    id: "interested",
+    label: "Interessada",
+    desc: "Responde rápido, investe na conversa.",
+  },
+  {
+    id: "cold",
+    label: "Fria",
+    desc: "Respostas curtas, demora para responder.",
+  },
+  { id: "tease", label: "Provocadora", desc: "Testa você, faz joguinhos." },
+  {
+    id: "confused",
+    label: "Confusa",
+    desc: "Não sabe o que quer, dá sinais mistos.",
+  },
 ];
 
-const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActiveProfileMessages, settings, userAIProfile }) => {
+const SimulatorView: React.FC<SimulatorViewProps> = ({
+  activeProfile,
+  updateActiveProfileMessages,
+  settings,
+  userAIProfile,
+}) => {
   const { user, userData, incrementUsage } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
+  const needsSubscription =
+    user &&
+    userData &&
+    userData.status === "pendente" &&
+    !userData.nalabiaPrimeAcess;
 
   const [scenario, setScenario] = useState(SCENARIOS[0].id);
-  const messages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === 'SIMULATOR');
-  const [input, setInput] = useState('');
+  const messages = (
+    Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+  ).filter((m) => m.mode === "SIMULATOR");
+  const [input, setInput] = useState("");
   const [status, setStatus] = useState<ProcessingState>(ProcessingState.IDLE);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleStart = () => {
     const startMessage: Message = {
       id: Date.now().toString(),
-      role: 'assistant',
-      content: 'Simulação iniciada. Você mandou a primeira mensagem. O que você disse?',
+      role: "assistant",
+      content:
+        "Simulação iniciada. Você mandou a primeira mensagem. O que você disse?",
       timestamp: Date.now(),
-      mode: 'SIMULATOR'
+      mode: "SIMULATOR",
     };
-    updateActiveProfileMessages(prev => {
-      const filtered = prev.filter(m => m.mode !== 'SIMULATOR');
+    updateActiveProfileMessages((prev) => {
+      const filtered = prev.filter((m) => m.mode !== "SIMULATOR");
       return [...filtered, startMessage];
     });
   };
@@ -50,34 +76,39 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    const isDeveloper = userData?.plano === 'Desenvolvedor';
+    const isDeveloper = userData?.plano === "Desenvolvedor";
 
     if (needsSubscription) {
       const userFreeMessages = userData?.freeMessagesUsed || 0;
       const deviceAllowed = await checkDeviceUsage();
-      
+
       if (userFreeMessages >= 2 || !deviceAllowed) {
         const errMessage: Message = {
           id: Date.now().toString(),
-          role: 'assistant',
-          content: "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando a NaLábia.",
+          role: "assistant",
+          content:
+            "Seu limite de 2 mensagens gratuitas foi atingido. Assine um plano para continuar usando a NaLábia.",
           timestamp: Date.now(),
-          mode: 'SIMULATOR'
+          mode: "SIMULATOR",
         };
-        updateActiveProfileMessages(prev => [...prev, errMessage]);
+        updateActiveProfileMessages((prev) => [...prev, errMessage]);
         return;
       }
     } else if (!isDeveloper) {
-      const today = new Date().toISOString().split('T')[0];
-      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 1000) {
+      const today = new Date().toISOString().split("T")[0];
+      if (
+        userData?.lastRequestDate === today &&
+        (userData?.dailyRequests || 0) >= 1000
+      ) {
         const errMessage: Message = {
           id: Date.now().toString(),
-          role: 'assistant',
-          content: "Você atingiu o limite de segurança da plataforma (1000 requisições). Volte amanhã para continuar usando a IA!",
+          role: "assistant",
+          content:
+            "Você atingiu o limite de segurança da plataforma (1000 requisições). Volte amanhã para continuar usando a IA!",
           timestamp: Date.now(),
-          mode: 'SIMULATOR'
+          mode: "SIMULATOR",
         };
-        updateActiveProfileMessages(prev => [...prev, errMessage]);
+        updateActiveProfileMessages((prev) => [...prev, errMessage]);
         return;
       }
     }
@@ -85,26 +116,32 @@ const SimulatorView: React.FC<SimulatorViewProps> = ({ activeProfile, updateActi
     if (!input.trim() || status !== ProcessingState.IDLE) return;
 
     const userMsg = input;
-    setInput('');
-    
+    setInput("");
+
     const newMessage: Message = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: userMsg,
       timestamp: Date.now(),
-      mode: 'SIMULATOR'
+      mode: "SIMULATOR",
     };
-    
-    updateActiveProfileMessages(prev => [...prev, newMessage]);
+
+    updateActiveProfileMessages((prev) => [...prev, newMessage]);
     setStatus(ProcessingState.ANALYZING);
 
-    const stateTimer1 = setTimeout(() => setStatus(ProcessingState.PROCESSING), 1500);
-    const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 3500);
+    const stateTimer1 = setTimeout(
+      () => setStatus(ProcessingState.PROCESSING),
+      1500,
+    );
+    const stateTimer2 = setTimeout(
+      () => setStatus(ProcessingState.GENERATING_RESPONSE),
+      3500,
+    );
 
     try {
-      const scenarioObj = SCENARIOS.find(s => s.id === scenario);
+      const scenarioObj = SCENARIOS.find((s) => s.id === scenario);
       const currentModeMessages = [...messages, newMessage];
-      
+
       let userAIProfileInstruction = "";
       if (userAIProfile) {
         userAIProfileInstruction = `
@@ -121,22 +158,26 @@ Responda de forma natural, curta e realista, como uma garota no Instagram.
 Não seja uma IA prestativa, seja a personagem.
 ${userAIProfileInstruction}
 Histórico da conversa:
-${currentModeMessages.map(m => `${m.role === 'user' ? 'Ele' : 'Você'}: ${m.content}`).join('\n')}
+${currentModeMessages.map((m) => `${m.role === "user" ? "Ele" : "Você"}: ${m.content}`).join("\n")}
 Responda apenas com a sua próxima mensagem.`;
 
-      const responseText = await generateCustomChatResponse([], systemPrompt, settings);
+      const responseText = await generateCustomChatResponse(
+        [],
+        systemPrompt,
+        settings,
+      );
 
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: responseText || '...',
+        role: "assistant",
+        content: responseText || "...",
         timestamp: Date.now(),
-        mode: 'SIMULATOR'
+        mode: "SIMULATOR",
       };
-      updateActiveProfileMessages(prev => [...prev, assistantMessage]);
+      updateActiveProfileMessages((prev) => [...prev, assistantMessage]);
 
       await incrementUsage();
       if (needsSubscription) {
@@ -146,11 +187,17 @@ Responda apenas com a sua próxima mensagem.`;
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
       console.error("Simulator Error:", error);
-      
+
       let errorMessage = "Erro na IA. Tente novamente em alguns segundos.";
-      if (typeof error?.message === 'string') {
-        if (error.message.includes("429") || error.message.includes("Rate limit") || error.message.includes("capacity exceeded") || error.message.includes("quota")) {
-          errorMessage = "A IA está sobrecarregada ou atingiu o limite de uso. Aguarde um momento.";
+      if (typeof error?.message === "string") {
+        if (
+          error.message.includes("429") ||
+          error.message.includes("Rate limit") ||
+          error.message.includes("capacity exceeded") ||
+          error.message.includes("quota")
+        ) {
+          errorMessage =
+            "A IA está sobrecarregada ou atingiu o limite de uso. Aguarde um momento.";
         } else {
           errorMessage = `Erro: ${error.message.substring(0, 100)}`;
         }
@@ -158,12 +205,12 @@ Responda apenas com a sua próxima mensagem.`;
 
       const errMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: errorMessage,
         timestamp: Date.now(),
-        mode: 'SIMULATOR'
+        mode: "SIMULATOR",
       };
-      updateActiveProfileMessages(prev => [...prev, errMessage]);
+      updateActiveProfileMessages((prev) => [...prev, errMessage]);
     } finally {
       setStatus(ProcessingState.IDLE);
     }
@@ -171,14 +218,21 @@ Responda apenas com a sua próxima mensagem.`;
 
   const getThemeHeaderBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-obsidian';
-      case 'light': return 'bg-[#ffffff]';
-      case 'midnight': return 'bg-[#1e293b]';
-      case 'dracula': return 'bg-[#44475a]';
-      case 'hacker': return 'bg-[#000000]';
-      case 'cyberpunk': return 'bg-[#000000]';
-      case 'dark':
-      default: return 'bg-obsidian';
+      case "ultra-dark":
+        return "bg-obsidian";
+      case "light":
+        return "bg-[#ffffff]";
+      case "midnight":
+        return "bg-[#1e293b]";
+      case "dracula":
+        return "bg-[#44475a]";
+      case "hacker":
+        return "bg-[#000000]";
+      case "cyberpunk":
+        return "bg-[#000000]";
+      case "dark":
+      default:
+        return "bg-obsidian";
     }
   };
 
@@ -190,18 +244,22 @@ Responda apenas com a sua próxima mensagem.`;
           Simulador de Conversa
         </h2>
         <div className="flex flex-wrap gap-2">
-          {SCENARIOS.map(s => (
+          {SCENARIOS.map((s) => (
             <button
               key={s.id}
-              onClick={() => { 
-                setScenario(s.id); 
-                const filtered = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode !== 'SIMULATOR');
+              onClick={() => {
+                setScenario(s.id);
+                const filtered = (
+                  Array.isArray(activeProfile?.messages)
+                    ? activeProfile.messages
+                    : []
+                ).filter((m) => m.mode !== "SIMULATOR");
                 updateActiveProfileMessages(filtered);
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-mono transition-colors ${
-                scenario === s.id 
-                  ? 'bg-gold-glow text-black' 
-                  : 'bg-obsidian-light text-gray-400 hover:text-gold-glow border border-gold-dim/10'
+                scenario === s.id
+                  ? "bg-gold-glow text-black"
+                  : "bg-obsidian-light text-gray-400 hover:text-gold-glow border border-gold-dim/10"
               }`}
             >
               {s.label}
@@ -217,10 +275,14 @@ Responda apenas com a sua próxima mensagem.`;
               <Bot size={24} className="text-gold-glow" />
             </div>
             <div>
-              <p className="text-gray-400 font-mono text-sm">Pronto para treinar?</p>
-              <p className="text-xs text-gray-600 mt-1">Selecione um cenário e inicie a simulação.</p>
+              <p className="text-gray-400 font-mono text-sm">
+                Pronto para treinar?
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                Selecione um cenário e inicie a simulação.
+              </p>
             </div>
-            <button 
+            <button
               onClick={handleStart}
               className="px-6 py-2 bg-gold-glow text-black rounded-full font-medium hover:bg-gold-glow/80 transition-colors"
             >
@@ -229,13 +291,22 @@ Responda apenas com a sua próxima mensagem.`;
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                msg.role === 'user' 
-                  ? 'bg-gold-glow text-black rounded-tr-sm' 
-                  : 'bg-obsidian-light border border-gold-dim/10 text-gray-200 rounded-tl-sm'
-              }`}>
-                <p className="text-sm">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
+            <div
+              key={idx}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                  msg.role === "user"
+                    ? "bg-gold-glow text-black rounded-tr-sm"
+                    : "bg-obsidian-light border border-gold-dim/10 text-gray-200 rounded-tl-sm"
+                }`}
+              >
+                <p className="text-sm">
+                  {typeof msg.content === "string"
+                    ? msg.content
+                    : JSON.stringify(msg.content)}
+                </p>
               </div>
             </div>
           ))
@@ -245,9 +316,10 @@ Responda apenas com a sua próxima mensagem.`;
             <div className="bg-obsidian-light border border-gold-dim/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center space-x-2">
               <Loader2 size={16} className="animate-spin text-gold-glow" />
               <span className="text-xs text-gray-400">
-                {status === ProcessingState.ANALYZING && 'Analisando...'}
-                {status === ProcessingState.PROCESSING && 'Processando...'}
-                {status === ProcessingState.GENERATING_RESPONSE && 'Gerando resposta...'}
+                {status === ProcessingState.ANALYZING && "Analisando..."}
+                {status === ProcessingState.PROCESSING && "Processando..."}
+                {status === ProcessingState.GENERATING_RESPONSE &&
+                  "Gerando resposta..."}
               </span>
             </div>
           </div>
@@ -256,7 +328,9 @@ Responda apenas com a sua próxima mensagem.`;
       </div>
 
       {messages.length > 0 && (
-        <div className={`p-4 border-t border-gold-dim/10 ${getThemeHeaderBg()}`}>
+        <div
+          className={`p-4 border-t border-gold-dim/10 ${getThemeHeaderBg()}`}
+        >
           <form onSubmit={handleSend} className="flex gap-2 relative">
             <input
               type="text"

@@ -4,13 +4,15 @@ async function testMistralJson() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: "mistral-large-latest",
-      messages: [{ role: "user", content: "Return a JSON object with a 'message' key." }],
-      response_format: { type: "json_object" }
-    })
+      messages: [
+        { role: "user", content: "Return a JSON object with a 'message' key." },
+      ],
+      response_format: { type: "json_object" },
+    }),
   });
   console.log(response.status, await response.text());
 }

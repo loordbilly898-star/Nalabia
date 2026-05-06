@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
-import { BookOpen, ChevronRight, FileText, Lock, CheckCircle2, ArrowLeft, BookText } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'motion/react';
-import { courseContents } from '../data/coursesContent';
+import React, { useState } from "react";
+import {
+  BookOpen,
+  ChevronRight,
+  FileText,
+  Lock,
+  CheckCircle2,
+  ArrowLeft,
+  BookText,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { motion } from "motion/react";
+import { courseContents } from "../data/coursesContent";
 
 interface Course {
   id: string;
@@ -15,127 +23,170 @@ interface Course {
 
 const COURSES: Course[] = [
   {
-    id: 'mapa-seducao',
-    title: 'O Mapa da Sedução: Como Manipular uma Mulher',
-    author: 'Rafael Souza Ramos',
-    description: 'Aprenda os caminhos ocultos da mente feminina e como guiar suas emoções para criar uma atração irresistível.',
+    id: "mapa-seducao",
+    title: "O Mapa da Sedução: Como Manipular uma Mulher",
+    author: "Rafael Souza Ramos",
+    description:
+      "Aprenda os caminhos ocultos da mente feminina e como guiar suas emoções para criar uma atração irresistível.",
     isNew: true,
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Fundamentos da Psicologia Feminina', duration: '15 min de leitura' },
-      { title: 'Gatilhos de Atração', duration: '22 min de leitura' },
-      { title: 'O Jogo do Desejo', duration: '18 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      {
+        title: "Fundamentos da Psicologia Feminina",
+        duration: "15 min de leitura",
+      },
+      { title: "Gatilhos de Atração", duration: "22 min de leitura" },
+      { title: "O Jogo do Desejo", duration: "18 min de leitura" },
+    ],
   },
   {
-    id: 'psicologia-sombria-3000',
-    title: 'Psicologia Sombria: 3000 Técnicas',
-    author: 'Flav O. L',
-    description: 'Um arsenal completo para analisar, compreender e influenciar o comportamento humano em qualquer situação.',
+    id: "psicologia-sombria-3000",
+    title: "Psicologia Sombria: 3000 Técnicas",
+    author: "Flav O. L",
+    description:
+      "Um arsenal completo para analisar, compreender e influenciar o comportamento humano em qualquer situação.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Leitura Fria e Quente', duration: '25 min de leitura' },
-      { title: 'Persuasão Subliminar', duration: '30 min de leitura' },
-      { title: 'Defesa contra Manipulação', duration: '20 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Leitura Fria e Quente", duration: "25 min de leitura" },
+      { title: "Persuasão Subliminar", duration: "30 min de leitura" },
+      { title: "Defesa contra Manipulação", duration: "20 min de leitura" },
+    ],
   },
   {
-    id: 'manual-proibido',
-    title: 'O Manual Proibido',
-    author: 'NaLábia Exclusivo',
-    description: 'Técnicas avançadas para controlar, seduzir e manipular. Conteúdo restrito para quem busca domínio absoluto.',
+    id: "manual-proibido",
+    title: "O Manual Proibido",
+    author: "NaLábia Exclusivo",
+    description:
+      "Técnicas avançadas para controlar, seduzir e manipular. Conteúdo restrito para quem busca domínio absoluto.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Controle de Frame', duration: '18 min de leitura' },
-      { title: 'Sedução Acelerada', duration: '24 min de leitura' },
-      { title: 'Ancoragem Emocional', duration: '21 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Controle de Frame", duration: "18 min de leitura" },
+      { title: "Sedução Acelerada", duration: "24 min de leitura" },
+      { title: "Ancoragem Emocional", duration: "21 min de leitura" },
+    ],
   },
   {
-    id: 'segredos-seducao',
-    title: 'Segredos da Sedução Feminina',
-    author: 'Flav O. L',
-    description: 'Como conquistar uma mulher da maneira correta, entendendo seus desejos mais profundos e ocultos.',
+    id: "segredos-seducao",
+    title: "Segredos da Sedução Feminina",
+    author: "Flav O. L",
+    description:
+      "Como conquistar uma mulher da maneira correta, entendendo seus desejos mais profundos e ocultos.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'O que elas realmente querem', duration: '16 min de leitura' },
-      { title: 'Comunicação Não-Verbal', duration: '19 min de leitura' },
-      { title: 'Escalação Física', duration: '22 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "O que elas realmente querem", duration: "16 min de leitura" },
+      { title: "Comunicação Não-Verbal", duration: "19 min de leitura" },
+      { title: "Escalação Física", duration: "22 min de leitura" },
+    ],
   },
   {
-    id: 'manipulacao-teste-infinito',
-    title: 'Manipulação Feminina: O Teste Infinito 2',
-    author: 'NaLábia Exclusivo',
-    description: 'Como identificar, neutralizar e reverter os testes que as mulheres fazem constantemente.',
+    id: "manipulacao-teste-infinito",
+    title: "Manipulação Feminina: O Teste Infinito 2",
+    author: "NaLábia Exclusivo",
+    description:
+      "Como identificar, neutralizar e reverter os testes que as mulheres fazem constantemente.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Anatomia do Shit Test', duration: '20 min de leitura' },
-      { title: 'Técnicas de Reversão', duration: '25 min de leitura' },
-      { title: 'Mantendo o Poder', duration: '15 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Anatomia do Shit Test", duration: "20 min de leitura" },
+      { title: "Técnicas de Reversão", duration: "25 min de leitura" },
+      { title: "Mantendo o Poder", duration: "15 min de leitura" },
+    ],
   },
   {
-    id: 'teoria-manipulacao',
-    title: 'A Teoria da Manipulação Feminina',
-    author: 'Alexandre Rezende Vieira',
-    description: 'Uma abordagem teórica e prática sobre como as dinâmicas de poder funcionam nos relacionamentos.',
+    id: "teoria-manipulacao",
+    title: "A Teoria da Manipulação Feminina",
+    author: "Alexandre Rezende Vieira",
+    description:
+      "Uma abordagem teórica e prática sobre como as dinâmicas de poder funcionam nos relacionamentos.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Dinâmicas de Poder', duration: '22 min de leitura' },
-      { title: 'O Jogo de Valor', duration: '18 min de leitura' },
-      { title: 'Estratégias de Longo Prazo', duration: '26 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Dinâmicas de Poder", duration: "22 min de leitura" },
+      { title: "O Jogo de Valor", duration: "18 min de leitura" },
+      { title: "Estratégias de Longo Prazo", duration: "26 min de leitura" },
+    ],
   },
   {
-    id: 'psicologia-sombria-linguagem',
-    title: 'Psicologia Sombria e Linguagem Corporal',
-    author: 'Amanda Grapes',
-    description: 'Compreenda a manipulação, traços de psicopatia e como ler a linguagem corporal como um livro aberto.',
+    id: "psicologia-sombria-linguagem",
+    title: "Psicologia Sombria e Linguagem Corporal",
+    author: "Amanda Grapes",
+    description:
+      "Compreenda a manipulação, traços de psicopatia e como ler a linguagem corporal como um livro aberto.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Microexpressões Faciais', duration: '24 min de leitura' },
-      { title: 'Identificando Mentiras', duration: '28 min de leitura' },
-      { title: 'Postura de Dominância', duration: '19 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Microexpressões Faciais", duration: "24 min de leitura" },
+      { title: "Identificando Mentiras", duration: "28 min de leitura" },
+      { title: "Postura de Dominância", duration: "19 min de leitura" },
+    ],
   },
   {
-    id: 'manipular-linda',
-    title: 'Como Manipular uma Mulher Linda',
-    author: 'NaLábia Exclusivo',
-    description: 'Estratégias específicas para lidar com mulheres de alto valor, criando uma relação benéfica para ambos.',
+    id: "manipular-linda",
+    title: "Como Manipular uma Mulher Linda",
+    author: "NaLábia Exclusivo",
+    description:
+      "Estratégias específicas para lidar com mulheres de alto valor, criando uma relação benéfica para ambos.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Quebrando o Pedestal', duration: '21 min de leitura' },
-      { title: 'Criando Conexão Real', duration: '23 min de leitura' },
-      { title: 'O Bem de Ambos', duration: '17 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Quebrando o Pedestal", duration: "21 min de leitura" },
+      { title: "Criando Conexão Real", duration: "23 min de leitura" },
+      { title: "O Bem de Ambos", duration: "17 min de leitura" },
+    ],
   },
   {
-    id: 'rei-da-cama',
-    title: 'O Rei da Cama: Mestre dos Orgasmos',
-    author: 'NaLábia Exclusivo',
-    description: 'O segredo para levar qualquer mulher ao orgasmo. Técnicas físicas e mentais para prazer extremo.',
+    id: "rei-da-cama",
+    title: "O Rei da Cama: Mestre dos Orgasmos",
+    author: "NaLábia Exclusivo",
+    description:
+      "O segredo para levar qualquer mulher ao orgasmo. Técnicas físicas e mentais para prazer extremo.",
     isNew: true,
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'A Dança da Mente', duration: '25 min de leitura' },
-      { title: 'O Toque Mágico', duration: '30 min de leitura' },
-      { title: 'Orgasmo no Comando', duration: '20 min de leitura' }
-    ]
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "A Dança da Mente", duration: "25 min de leitura" },
+      { title: "O Toque Mágico", duration: "30 min de leitura" },
+      { title: "Orgasmo no Comando", duration: "20 min de leitura" },
+    ],
   },
   {
-    id: '16-frases',
-    title: '16 Frases para Esquentar o Papo',
-    author: 'NaLábia Exclusivo',
-    description: 'Frases prontas e testadas para transicionar a conversa para o sexo de forma natural e irresistível.',
+    id: "16-frases",
+    title: "16 Frases para Esquentar o Papo",
+    author: "NaLábia Exclusivo",
+    description:
+      "Frases prontas e testadas para transicionar a conversa para o sexo de forma natural e irresistível.",
     modules: [
-      { title: 'Descrição e Instalação do Conhecimento', duration: '12 min de leitura' },
-      { title: 'Frases de Qualificação', duration: '10 min de leitura' },
-      { title: 'Perguntas Sexuais Indiretas', duration: '12 min de leitura' },
-      { title: 'Convites Irrecusáveis', duration: '15 min de leitura' }
-    ]
-  }
+      {
+        title: "Descrição e Instalação do Conhecimento",
+        duration: "12 min de leitura",
+      },
+      { title: "Frases de Qualificação", duration: "10 min de leitura" },
+      { title: "Perguntas Sexuais Indiretas", duration: "12 min de leitura" },
+      { title: "Convites Irrecusáveis", duration: "15 min de leitura" },
+    ],
+  },
 ];
 
 interface CoursesViewProps {
@@ -146,19 +197,22 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
   const { userData } = useAuth();
   const hasAccess = userData?.coursesAccess;
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [activeModule, setActiveModule] = useState<{course: Course, moduleIndex: number} | null>(null);
+  const [activeModule, setActiveModule] = useState<{
+    course: Course;
+    moduleIndex: number;
+  } | null>(null);
 
   if (activeModule) {
     const moduleData = activeModule.course.modules[activeModule.moduleIndex];
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         className="fixed inset-0 z-[100] bg-[#050505] flex flex-col"
       >
         <div className="p-4 flex items-center justify-between border-b border-white/10 bg-black/50 backdrop-blur-md">
-          <button 
+          <button
             onClick={() => setActiveModule(null)}
             className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
           >
@@ -169,7 +223,7 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
           </h3>
           <div className="w-10" /> {/* Spacer */}
         </div>
-        
+
         <div className="flex-1 overflow-y-auto pb-20 bg-white text-black">
           {/* Content Info */}
           <div className="p-6 md:p-12 max-w-4xl mx-auto space-y-8 mt-4">
@@ -181,24 +235,38 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
                 {moduleData.title}
               </h2>
               <div className="flex items-center gap-4 text-gray-500 text-sm md:text-base font-medium">
-                <p>Livro: <span className="text-gray-800">{activeModule.course.title}</span></p>
+                <p>
+                  Livro:{" "}
+                  <span className="text-gray-800">
+                    {activeModule.course.title}
+                  </span>
+                </p>
                 <span>•</span>
-                <p className="flex items-center gap-1"><BookText size={16}/> {moduleData.duration}</p>
+                <p className="flex items-center gap-1">
+                  <BookText size={16} /> {moduleData.duration}
+                </p>
               </div>
             </div>
-            
-            <div 
+
+            <div
               className="prose prose-lg md:prose-xl max-w-none text-gray-800 leading-relaxed font-serif course-content-html"
-              dangerouslySetInnerHTML={{ __html: courseContents[activeModule.course.id]?.[activeModule.moduleIndex] || '<p>Conteúdo em desenvolvimento...</p>' }}
+              dangerouslySetInnerHTML={{
+                __html:
+                  courseContents[activeModule.course.id]?.[
+                    activeModule.moduleIndex
+                  ] || "<p>Conteúdo em desenvolvimento...</p>",
+              }}
             />
-            
+
             <div className="mt-12 p-6 bg-blue-50 border border-blue-100 rounded-2xl">
               <h4 className="text-lg font-bold text-blue-900 mb-2 flex items-center gap-2">
                 <BookOpen className="text-blue-600" size={20} />
                 Nota do Autor ({activeModule.course.author})
               </h4>
               <p className="text-blue-800 leading-relaxed text-sm md:text-base">
-                Revise este conteúdo pelo menos duas vezes antes de tentar aplicar na prática. O domínio vem da repetição e internalização dos conceitos. O conhecimento sem ação é apenas entretenimento.
+                Revise este conteúdo pelo menos duas vezes antes de tentar
+                aplicar na prática. O domínio vem da repetição e internalização
+                dos conceitos. O conhecimento sem ação é apenas entretenimento.
               </p>
             </div>
           </div>
@@ -211,7 +279,7 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
     return (
       <div className="h-full flex flex-col bg-[#0a0a0a] text-white overflow-y-auto">
         <div className="p-4 border-b border-white/10 flex items-center gap-3 sticky top-0 bg-[#0a0a0a]/90 backdrop-blur-md z-10">
-          <button 
+          <button
             onClick={() => setSelectedCourse(null)}
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
@@ -237,12 +305,17 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
               <FileText className="text-blue-400" size={20} />
               Capítulos do Livro
             </h3>
-            
+
             <div className="space-y-3">
               {selectedCourse.modules.map((mod, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => setActiveModule({ course: selectedCourse, moduleIndex: idx })}
+                <div
+                  key={idx}
+                  onClick={() =>
+                    setActiveModule({
+                      course: selectedCourse,
+                      moduleIndex: idx,
+                    })
+                  }
                   className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
@@ -251,10 +324,15 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
                     </div>
                     <div>
                       <h4 className="font-medium text-sm">{mod.title}</h4>
-                      <p className="text-xs text-gray-500 mt-1">{mod.duration}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {mod.duration}
+                      </p>
                     </div>
                   </div>
-                  <FileText size={20} className="text-gray-600 group-hover:text-blue-400 transition-colors" />
+                  <FileText
+                    size={20}
+                    className="text-gray-600 group-hover:text-blue-400 transition-colors"
+                  />
                 </div>
               ))}
             </div>
@@ -272,22 +350,25 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
           Academia NaLábia
         </h1>
         <p className="text-gray-400 text-sm">
-          Domine a psicologia sombria, sedução e manipulação com os melhores materiais do mercado.
+          Domine a psicologia sombria, sedução e manipulação com os melhores
+          materiais do mercado.
         </p>
       </div>
 
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {COURSES.map(course => (
-          <div 
+        {COURSES.map((course) => (
+          <div
             key={course.id}
             onClick={() => hasAccess && setSelectedCourse(course)}
-            className={`relative bg-white/5 border border-white/10 rounded-2xl p-5 overflow-hidden transition-all duration-300 ${hasAccess ? 'hover:bg-white/10 hover:border-blue-500/30 cursor-pointer group' : 'opacity-75 grayscale-[0.5]'}`}
+            className={`relative bg-white/5 border border-white/10 rounded-2xl p-5 overflow-hidden transition-all duration-300 ${hasAccess ? "hover:bg-white/10 hover:border-blue-500/30 cursor-pointer group" : "opacity-75 grayscale-[0.5]"}`}
           >
             {!hasAccess && (
               <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10">
                 <div className="bg-black/80 px-4 py-2 rounded-full flex items-center gap-2 border border-white/10">
                   <Lock size={16} className="text-gray-400" />
-                  <span className="text-xs font-bold text-gray-300">Bloqueado</span>
+                  <span className="text-xs font-bold text-gray-300">
+                    Bloqueado
+                  </span>
                 </div>
               </div>
             )}
@@ -302,10 +383,14 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center">
                 <BookOpen size={20} className="text-blue-400" />
               </div>
-              
+
               <div>
-                <h3 className="font-bold text-lg leading-tight group-hover:text-blue-400 transition-colors">{course.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">Por {course.author}</p>
+                <h3 className="font-bold text-lg leading-tight group-hover:text-blue-400 transition-colors">
+                  {course.title}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Por {course.author}
+                </p>
               </div>
 
               <p className="text-sm text-gray-400 line-clamp-2">
@@ -317,7 +402,10 @@ const CoursesView: React.FC<CoursesViewProps> = ({ onBack }) => {
                   <FileText size={14} />
                   {course.modules.length} Capítulos
                 </span>
-                <ChevronRight size={16} className="text-gray-600 group-hover:text-white transition-colors" />
+                <ChevronRight
+                  size={16}
+                  className="text-gray-600 group-hover:text-white transition-colors"
+                />
               </div>
             </div>
           </div>

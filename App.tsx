@@ -1,67 +1,213 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { analyzeContent, runLaboratory, regenerateContent } from './services/aiService';
-import { logEvent } from './services/logger';
-import { Message, ProcessingState, AnalysisMode, ConversationSpeed, AppSettings, Profile, Memory } from './types';
-import { sendNotification } from './services/notificationService';
-import AnalysisView from './components/AnalysisView';
-import ResponseOptions from './components/ResponseOptions';
-import SettingsView from './components/SettingsView';
-import ProfilesView from './components/ProfilesView';
-import LaboratoryView from './components/LaboratoryView';
-import SimulatorView from './components/SimulatorView';
-import DashboardView from './components/DashboardView';
-import ChatbotView from './components/ChatbotView';
-import VaultView from './components/VaultView';
-import ProfileAnalyzerView from './components/ProfileAnalyzerView';
-import RedFlagDetectorView from './components/RedFlagDetectorView';
-import PlansView from './components/PlansView';
-import { LoginView } from './components/LoginView';
-import { LandingView } from './components/LandingView';
-import HelpModal from './components/HelpModal';
-import { HomeView } from './components/HomeView';
-import { TutorialModal } from './components/TutorialModal';
-import { DarkPackModal } from './components/DarkPackModal';
-import CoursesView from './components/CoursesView';
-import { CoursesModal } from './components/CoursesModal';
-import AssistedModeModal from './components/AssistedModeModal';
-import { Send, ImageIcon, X, Trash2, Infinity as InfinityIcon, Camera, MessageCircle, Zap, ShieldAlert, ThermometerSnowflake, Ghost, Repeat2, Bolt, User, Crown, Feather, Settings, Users, HelpCircle, FlaskConical, AlertTriangle, LogIn, LogOut, Bot, Lock, ScanFace, Home, ArrowLeft, Flame, Brain, BookOpen, Compass, ChevronRight, BrainCircuit } from 'lucide-react';
-import { useAuth } from './contexts/AuthContext';
-import { checkDeviceUsage, incrementDeviceUsage } from './services/antiFraud';
-import { supabase } from './services/supabase';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  analyzeContent,
+  runLaboratory,
+  regenerateContent,
+} from "./services/aiService";
+import { logEvent } from "./services/logger";
+import {
+  Message,
+  ProcessingState,
+  AnalysisMode,
+  ConversationSpeed,
+  AppSettings,
+  Profile,
+  Memory,
+} from "./types";
+import { sendNotification } from "./services/notificationService";
+import AnalysisView from "./components/AnalysisView";
+import ResponseOptions from "./components/ResponseOptions";
+import SettingsView from "./components/SettingsView";
+import ProfilesView from "./components/ProfilesView";
+import LaboratoryView from "./components/LaboratoryView";
+import SimulatorView from "./components/SimulatorView";
+import DashboardView from "./components/DashboardView";
+import ChatbotView from "./components/ChatbotView";
+import VaultView from "./components/VaultView";
+import ProfileAnalyzerView from "./components/ProfileAnalyzerView";
+import RedFlagDetectorView from "./components/RedFlagDetectorView";
+import PlansView from "./components/PlansView";
+import { LoginView } from "./components/LoginView";
+import { LandingView } from "./components/LandingView";
+import HelpModal from "./components/HelpModal";
+import { HomeView } from "./components/HomeView";
+import { TutorialModal } from "./components/TutorialModal";
+import { DarkPackModal } from "./components/DarkPackModal";
+import CoursesView from "./components/CoursesView";
+import { CoursesModal } from "./components/CoursesModal";
+import { MentoriaModal } from "./components/MentoriaModal";
+import StoreView from "./components/StoreView";
+import AssistedModeModal from "./components/AssistedModeModal";
+import {
+  Send,
+  ImageIcon,
+  X,
+  Trash2,
+  Infinity as InfinityIcon,
+  Camera,
+  MessageCircle,
+  Zap,
+  ShieldAlert,
+  ThermometerSnowflake,
+  Ghost,
+  Repeat2,
+  Bolt,
+  User,
+  Crown,
+  Feather,
+  Settings,
+  Users,
+  HelpCircle,
+  FlaskConical,
+  AlertTriangle,
+  LogIn,
+  LogOut,
+  Bot,
+  Lock,
+  ScanFace,
+  Home,
+  ArrowLeft,
+  Flame,
+  Brain,
+  BookOpen,
+  Compass,
+  ChevronRight,
+  BrainCircuit,
+} from "lucide-react";
+import { useAuth } from "./contexts/AuthContext";
+import { checkDeviceUsage, incrementDeviceUsage } from "./services/antiFraud";
+import { supabase } from "./services/supabase";
 
 // --- CONSTANTS ---
 
-const TABS: { id: AnalysisMode; label: string; icon: React.FC<any>; desc: string }[] = [
-  { id: 'HOME', label: 'Início', icon: Home, desc: 'Painel Principal' },
-  { id: 'STORY_REPLY', label: 'Story', icon: Camera, desc: 'Reação a Stories' },
-  { id: 'FIRST_CONTACT', label: 'Abrir', icon: MessageCircle, desc: 'Primeiro Contato' },
-  { id: 'PROFILE_ANALYZER', label: 'Raio-X', icon: ScanFace, desc: 'Análise de Perfil' },
-  { id: 'RED_FLAG_DETECTOR', label: 'Red Flags', icon: AlertTriangle, desc: 'Detector de Riscos' },
-  { id: 'FLOWING', label: 'Flow', icon: Zap, desc: 'Manter Conversa' },
-  { id: 'VALUE_TEST', label: 'Teste', icon: ShieldAlert, desc: 'Teste de Valor' },
-  { id: 'COLD_RESPONSE', label: 'Fria', icon: ThermometerSnowflake, desc: 'Recuperar Poder' },
-  { id: 'SILENCE', label: 'Vácuo', icon: Ghost, desc: 'Estratégia de Silêncio' },
-  { id: 'REACTIVATION', label: 'Reviver', icon: Repeat2, desc: 'Reativação' },
-  { id: 'ONE_LINER', label: '1 Linha', icon: Bolt, desc: 'Impacto Extremo' },
-  { id: 'NSFW', label: 'Modo +18', icon: Flame, desc: 'Tensão Sexual e Flerte Agressivo' },
-  { id: 'MANIPULATION', label: 'Manipulação', icon: Brain, desc: 'Controle Psicológico Absoluto' },
-  { id: 'COURSES', label: 'Cursos', icon: BookOpen, desc: 'Academia NaLábia' },
-  { id: 'SIMULATOR', label: 'Simulador', icon: Users, desc: 'Treino com IA' },
-  { id: 'VAULT', label: 'Cofre', icon: Lock, desc: 'Respostas Salvas' },
-  { id: 'STATS', label: 'Estatísticas', icon: Crown, desc: 'Dashboard do Usuário' },
-  { id: 'CHATBOT', label: 'Mentoria', icon: Bot, desc: 'Braço Direito Estratégico' },
+const TABS: {
+  id: AnalysisMode;
+  label: string;
+  icon: React.FC<any>;
+  desc: string;
+}[] = [
+  { id: "HOME", label: "Início", icon: Home, desc: "Painel Principal" },
+  { id: "STORY_REPLY", label: "Story", icon: Camera, desc: "Reação a Stories" },
+  {
+    id: "FIRST_CONTACT",
+    label: "Abrir",
+    icon: MessageCircle,
+    desc: "Primeiro Contato",
+  },
+  {
+    id: "PROFILE_ANALYZER",
+    label: "Raio-X",
+    icon: ScanFace,
+    desc: "Análise de Perfil",
+  },
+  {
+    id: "RED_FLAG_DETECTOR",
+    label: "Red Flags",
+    icon: AlertTriangle,
+    desc: "Detector de Riscos",
+  },
+  { id: "FLOWING", label: "Flow", icon: Zap, desc: "Manter Conversa" },
+  {
+    id: "VALUE_TEST",
+    label: "Teste",
+    icon: ShieldAlert,
+    desc: "Teste de Valor",
+  },
+  {
+    id: "COLD_RESPONSE",
+    label: "Fria",
+    icon: ThermometerSnowflake,
+    desc: "Recuperar Poder",
+  },
+  {
+    id: "SILENCE",
+    label: "Vácuo",
+    icon: Ghost,
+    desc: "Estratégia de Silêncio",
+  },
+  { id: "REACTIVATION", label: "Reviver", icon: Repeat2, desc: "Reativação" },
+  { id: "ONE_LINER", label: "1 Linha", icon: Bolt, desc: "Impacto Extremo" },
+  {
+    id: "NSFW",
+    label: "Modo +18",
+    icon: Flame,
+    desc: "Tensão Sexual e Flerte Agressivo",
+  },
+  {
+    id: "MANIPULATION",
+    label: "Manipulação",
+    icon: Brain,
+    desc: "Controle Psicológico Absoluto",
+  },
+  { id: "COURSES", label: "Cursos", icon: BookOpen, desc: "Academia NaLábia" },
+  { id: "SIMULATOR", label: "Simulador", icon: Users, desc: "Treino com IA" },
+  { id: "VAULT", label: "Cofre", icon: Lock, desc: "Respostas Salvas" },
+  {
+    id: "STATS",
+    label: "Estatísticas",
+    icon: Crown,
+    desc: "Dashboard do Usuário",
+  },
+  {
+    id: "CHATBOT",
+    label: "Mentoria",
+    icon: Bot,
+    desc: "Braço Direito Estratégico",
+  },
+  {
+    id: "STORE",
+    label: "Loja VIP",
+    icon: Flame,
+    desc: "Arsenal e Extensões Pagas",
+  },
 ];
 
 const PROFILES_STYLES = [
-  { id: 'CALM', label: 'Calmo', dominance: 5, mystery: 4, flirt: 3, witty: 4, speed: 'normal' as ConversationSpeed, icon: Feather },
-  { id: 'IRONIC', label: 'Irônico', dominance: 6, mystery: 5, flirt: 6, witty: 8, speed: 'fluid' as ConversationSpeed, icon: Zap },
-  { id: 'DOMINANT', label: 'Líder', dominance: 9, mystery: 6, flirt: 7, witty: 6, speed: 'short' as ConversationSpeed, icon: Crown },
-  { id: 'BOLD', label: 'Ousado', dominance: 7, mystery: 8, flirt: 9, witty: 7, speed: 'normal' as ConversationSpeed, icon: Bolt },
+  {
+    id: "CALM",
+    label: "Calmo",
+    dominance: 5,
+    mystery: 4,
+    flirt: 3,
+    witty: 4,
+    speed: "normal" as ConversationSpeed,
+    icon: Feather,
+  },
+  {
+    id: "IRONIC",
+    label: "Irônico",
+    dominance: 6,
+    mystery: 5,
+    flirt: 6,
+    witty: 8,
+    speed: "fluid" as ConversationSpeed,
+    icon: Zap,
+  },
+  {
+    id: "DOMINANT",
+    label: "Líder",
+    dominance: 9,
+    mystery: 6,
+    flirt: 7,
+    witty: 6,
+    speed: "short" as ConversationSpeed,
+    icon: Crown,
+  },
+  {
+    id: "BOLD",
+    label: "Ousado",
+    dominance: 7,
+    mystery: 8,
+    flirt: 9,
+    witty: 7,
+    speed: "normal" as ConversationSpeed,
+    icon: Bolt,
+  },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'dark',
-  accentColor: 'gold',
+  theme: "dark",
+  accentColor: "gold",
   animations: true,
   ai: {
     shortResponses: false,
@@ -70,7 +216,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     autoAdjustFlirt: true,
     memoryEnabled: true,
     fastResponses: false,
-    defaultTone: 'casual'
+    defaultTone: "casual",
   },
   safety: {
     antiNeedy: true,
@@ -78,44 +224,84 @@ const DEFAULT_SETTINGS: AppSettings = {
     antiRobot: true,
     antiOverflirt: true,
     nsfwFilter: true,
-    toxicityFilter: true
+    toxicityFilter: true,
   },
   notifications: {
     push: true,
     email: false,
-    sound: true
-  }
+    sound: true,
+  },
 };
 
 const App: React.FC = () => {
-  const { user, userData, userAIProfile, logout, addXp, updateUserSettings, updateUserProfiles, updateUserMemories, incrementUsage, loading } = useAuth();
-  const needsSubscription = user && userData && userData.status === 'pendente' && !userData.nalabiaPrimeAcess;
-  
+  const {
+    user,
+    userData,
+    userAIProfile,
+    logout,
+    addXp,
+    updateUserSettings,
+    updateUserProfiles,
+    updateUserMemories,
+    incrementUsage,
+    loading,
+  } = useAuth();
+  const needsSubscription =
+    user &&
+    userData &&
+    userData.status === "pendente" &&
+    !userData.nalabiaPrimeAcess;
+
   // Global State
   const [profiles, setProfiles] = useState<Profile[]>(() => {
     try {
-      const saved = localStorage.getItem('nalabia_profiles_v1_guest');
+      const saved = localStorage.getItem("nalabia_profiles_v1_guest");
       if (saved) {
         return JSON.parse(saved);
       }
     } catch (e) {}
-    return [{ id: 'general', name: 'NaLábia', description: 'NaLábia v5.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
+    return [
+      {
+        id: "general",
+        name: "NaLábia",
+        description: "NaLábia v5.0",
+        messages: [],
+        metrics: {
+          interest: "Oscilante",
+          risk: "Baixo",
+          lastInteraction: Date.now(),
+        },
+        behavioralPattern: "",
+      },
+    ];
   });
-  const [activeProfileId, setActiveProfileId] = useState<string>('general');
-  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || { id: 'general', name: 'NaLábia', description: 'NaLábia v5.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' };
+  const [activeProfileId, setActiveProfileId] = useState<string>("general");
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) ||
+    profiles[0] || {
+      id: "general",
+      name: "NaLábia",
+      description: "NaLábia v5.0",
+      messages: [],
+      metrics: {
+        interest: "Oscilante",
+        risk: "Baixo",
+        lastInteraction: Date.now(),
+      },
+      behavioralPattern: "",
+    };
 
   const [memories, setMemories] = useState<Memory[]>(() => {
     try {
-      const saved = localStorage.getItem('nalabia_memories_v1_guest');
+      const saved = localStorage.getItem("nalabia_memories_v1_guest");
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return [];
   });
 
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [status, setStatus] = useState<ProcessingState>(ProcessingState.IDLE);
-  
+
   // View States
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
@@ -123,11 +309,11 @@ const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(false);
   const [helpMode, setHelpMode] = useState<AnalysisMode | null>(null);
   const [showAssistedMode, setShowAssistedMode] = useState(false);
-  
+
   // Settings State with Persistence
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
-      const saved = localStorage.getItem('nalabia_settings_v1_guest');
+      const saved = localStorage.getItem("nalabia_settings_v1_guest");
       if (saved) {
         return JSON.parse(saved);
       }
@@ -139,39 +325,58 @@ const App: React.FC = () => {
   useEffect(() => {
     if (user && userData && !hasLoadedUserData.current) {
       const keySuffix = `_${user.id}`;
-      
+
       // Try to load from Firestore first, then localStorage
       if (userData.settings) {
         setSettings(userData.settings);
       } else {
         try {
-          const localSettings = localStorage.getItem(`nalabia_settings_v1${keySuffix}`);
+          const localSettings = localStorage.getItem(
+            `nalabia_settings_v1${keySuffix}`,
+          );
           if (localSettings) {
             setSettings(JSON.parse(localSettings));
           }
         } catch (e) {}
       }
-      
+
       if (Array.isArray(userData.profiles) && userData.profiles.length > 0) {
         // Merge with localStorage to prevent losing offline profiles
         let mergedProfiles = userData.profiles;
         try {
-          const localProfilesRaw = localStorage.getItem(`nalabia_profiles_v1${keySuffix}`);
+          const localProfilesRaw = localStorage.getItem(
+            `nalabia_profiles_v1${keySuffix}`,
+          );
           if (localProfilesRaw) {
             const localProfiles = JSON.parse(localProfilesRaw);
             if (Array.isArray(localProfiles)) {
               // Merge messages for existing profiles if local has more messages
-              mergedProfiles = userData.profiles.map(fp => {
-                const lp = localProfiles.find(p => p.id === fp.id);
-                if (lp && Array.isArray(lp.messages) && Array.isArray(fp.messages) && lp.messages.length > fp.messages.length) {
-                  return { ...fp, messages: lp.messages, metrics: lp.metrics || fp.metrics, behavioralPattern: lp.behavioralPattern || fp.behavioralPattern };
+              mergedProfiles = userData.profiles.map((fp) => {
+                const lp = localProfiles.find((p) => p.id === fp.id);
+                if (
+                  lp &&
+                  Array.isArray(lp.messages) &&
+                  Array.isArray(fp.messages) &&
+                  lp.messages.length > fp.messages.length
+                ) {
+                  return {
+                    ...fp,
+                    messages: lp.messages,
+                    metrics: lp.metrics || fp.metrics,
+                    behavioralPattern:
+                      lp.behavioralPattern || fp.behavioralPattern,
+                  };
                 }
                 return fp;
               });
 
               // Add any profiles from localStorage that are NOT in userData.profiles
-              const cloudProfileIds = new Set(userData.profiles.map(p => p.id));
-              const offlineProfiles = localProfiles.filter(p => !cloudProfileIds.has(p.id));
+              const cloudProfileIds = new Set(
+                userData.profiles.map((p) => p.id),
+              );
+              const offlineProfiles = localProfiles.filter(
+                (p) => !cloudProfileIds.has(p.id),
+              );
               if (offlineProfiles.length > 0) {
                 mergedProfiles = [...mergedProfiles, ...offlineProfiles];
               }
@@ -181,7 +386,9 @@ const App: React.FC = () => {
         setProfiles(mergedProfiles);
       } else {
         try {
-          const localProfiles = localStorage.getItem(`nalabia_profiles_v1${keySuffix}`);
+          const localProfiles = localStorage.getItem(
+            `nalabia_profiles_v1${keySuffix}`,
+          );
           if (localProfiles) {
             const parsed = JSON.parse(localProfiles);
             if (Array.isArray(parsed)) setProfiles(parsed);
@@ -193,7 +400,9 @@ const App: React.FC = () => {
         setMemories(userData.memories);
       } else {
         try {
-          const localMemories = localStorage.getItem(`nalabia_memories_v1${keySuffix}`);
+          const localMemories = localStorage.getItem(
+            `nalabia_memories_v1${keySuffix}`,
+          );
           if (localMemories) {
             const parsed = JSON.parse(localMemories);
             if (Array.isArray(parsed)) setMemories(parsed);
@@ -205,144 +414,163 @@ const App: React.FC = () => {
       // User logged out, reset to defaults to prevent data leaks
       setSettings(DEFAULT_SETTINGS);
       setProfiles([
-        { id: 'general', name: 'NaLábia', description: 'NaLábia v5.0', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }
+        {
+          id: "general",
+          name: "NaLábia",
+          description: "NaLábia v5.0",
+          messages: [],
+          metrics: {
+            interest: "Oscilante",
+            risk: "Baixo",
+            lastInteraction: Date.now(),
+          },
+          behavioralPattern: "",
+        },
       ]);
       setMemories([]);
-      setActiveProfileId('general');
+      setActiveProfileId("general");
       hasLoadedUserData.current = false;
     }
   }, [user, userData]);
 
   // Persist to localStorage for offline access (scoped by user)
   useEffect(() => {
-    const keySuffix = user ? `_${user.id}` : '_guest';
+    const keySuffix = user ? `_${user.id}` : "_guest";
     try {
-      localStorage.setItem(`nalabia_settings_v1${keySuffix}`, JSON.stringify(settings));
+      localStorage.setItem(
+        `nalabia_settings_v1${keySuffix}`,
+        JSON.stringify(settings),
+      );
     } catch (e) {}
-    
+
     // Update CSS variables for accent color
     const root = document.documentElement;
     switch (settings.accentColor) {
-      case 'red':
-        root.style.setProperty('--accent-color', '#ef4444');
-        root.style.setProperty('--accent-color-dim', '#991b1b');
-        root.style.setProperty('--accent-color-glow', '#f87171');
+      case "red":
+        root.style.setProperty("--accent-color", "#ef4444");
+        root.style.setProperty("--accent-color-dim", "#991b1b");
+        root.style.setProperty("--accent-color-glow", "#f87171");
         break;
-      case 'blue':
-        root.style.setProperty('--accent-color', '#3b82f6');
-        root.style.setProperty('--accent-color-dim', '#1e3a8a');
-        root.style.setProperty('--accent-color-glow', '#60a5fa');
+      case "blue":
+        root.style.setProperty("--accent-color", "#3b82f6");
+        root.style.setProperty("--accent-color-dim", "#1e3a8a");
+        root.style.setProperty("--accent-color-glow", "#60a5fa");
         break;
-      case 'emerald':
-        root.style.setProperty('--accent-color', '#10b981');
-        root.style.setProperty('--accent-color-dim', '#065f46');
-        root.style.setProperty('--accent-color-glow', '#34d399');
+      case "emerald":
+        root.style.setProperty("--accent-color", "#10b981");
+        root.style.setProperty("--accent-color-dim", "#065f46");
+        root.style.setProperty("--accent-color-glow", "#34d399");
         break;
-      case 'purple':
-        root.style.setProperty('--accent-color', '#a855f7');
-        root.style.setProperty('--accent-color-dim', '#581c87');
-        root.style.setProperty('--accent-color-glow', '#c084fc');
+      case "purple":
+        root.style.setProperty("--accent-color", "#a855f7");
+        root.style.setProperty("--accent-color-dim", "#581c87");
+        root.style.setProperty("--accent-color-glow", "#c084fc");
         break;
-      case 'neon':
-        root.style.setProperty('--accent-color', '#22d3ee');
-        root.style.setProperty('--accent-color-dim', '#164e63');
-        root.style.setProperty('--accent-color-glow', '#67e8f9');
+      case "neon":
+        root.style.setProperty("--accent-color", "#22d3ee");
+        root.style.setProperty("--accent-color-dim", "#164e63");
+        root.style.setProperty("--accent-color-glow", "#67e8f9");
         break;
-      case 'rose':
-        root.style.setProperty('--accent-color', '#f43f5e');
-        root.style.setProperty('--accent-color-dim', '#881337');
-        root.style.setProperty('--accent-color-glow', '#fb7185');
+      case "rose":
+        root.style.setProperty("--accent-color", "#f43f5e");
+        root.style.setProperty("--accent-color-dim", "#881337");
+        root.style.setProperty("--accent-color-glow", "#fb7185");
         break;
-      case 'amber':
-        root.style.setProperty('--accent-color', '#f59e0b');
-        root.style.setProperty('--accent-color-dim', '#78350f');
-        root.style.setProperty('--accent-color-glow', '#fbbf24');
+      case "amber":
+        root.style.setProperty("--accent-color", "#f59e0b");
+        root.style.setProperty("--accent-color-dim", "#78350f");
+        root.style.setProperty("--accent-color-glow", "#fbbf24");
         break;
-      case 'cyan':
-        root.style.setProperty('--accent-color', '#06b6d4');
-        root.style.setProperty('--accent-color-dim', '#164e63');
-        root.style.setProperty('--accent-color-glow', '#67e8f9');
+      case "cyan":
+        root.style.setProperty("--accent-color", "#06b6d4");
+        root.style.setProperty("--accent-color-dim", "#164e63");
+        root.style.setProperty("--accent-color-glow", "#67e8f9");
         break;
-      case 'fuchsia':
-        root.style.setProperty('--accent-color', '#d946ef');
-        root.style.setProperty('--accent-color-dim', '#701a75');
-        root.style.setProperty('--accent-color-glow', '#f0abfc');
+      case "fuchsia":
+        root.style.setProperty("--accent-color", "#d946ef");
+        root.style.setProperty("--accent-color-dim", "#701a75");
+        root.style.setProperty("--accent-color-glow", "#f0abfc");
         break;
-      case 'lime':
-        root.style.setProperty('--accent-color', '#84cc16');
-        root.style.setProperty('--accent-color-dim', '#3f6212');
-        root.style.setProperty('--accent-color-glow', '#bef264');
+      case "lime":
+        root.style.setProperty("--accent-color", "#84cc16");
+        root.style.setProperty("--accent-color-dim", "#3f6212");
+        root.style.setProperty("--accent-color-glow", "#bef264");
         break;
-      case 'orange':
-        root.style.setProperty('--accent-color', '#f97316');
-        root.style.setProperty('--accent-color-dim', '#7c2d12');
-        root.style.setProperty('--accent-color-glow', '#fdba74');
+      case "orange":
+        root.style.setProperty("--accent-color", "#f97316");
+        root.style.setProperty("--accent-color-dim", "#7c2d12");
+        root.style.setProperty("--accent-color-glow", "#fdba74");
         break;
-      case 'pink':
-        root.style.setProperty('--accent-color', '#ec4899');
-        root.style.setProperty('--accent-color-dim', '#831843');
-        root.style.setProperty('--accent-color-glow', '#f9a8d4');
+      case "pink":
+        root.style.setProperty("--accent-color", "#ec4899");
+        root.style.setProperty("--accent-color-dim", "#831843");
+        root.style.setProperty("--accent-color-glow", "#f9a8d4");
         break;
-      case 'teal':
-        root.style.setProperty('--accent-color', '#14b8a6');
-        root.style.setProperty('--accent-color-dim', '#134e4a');
-        root.style.setProperty('--accent-color-glow', '#5eead4');
+      case "teal":
+        root.style.setProperty("--accent-color", "#14b8a6");
+        root.style.setProperty("--accent-color-dim", "#134e4a");
+        root.style.setProperty("--accent-color-glow", "#5eead4");
         break;
-      case 'indigo':
-        root.style.setProperty('--accent-color', '#6366f1');
-        root.style.setProperty('--accent-color-dim', '#312e81');
-        root.style.setProperty('--accent-color-glow', '#a5b4fc');
+      case "indigo":
+        root.style.setProperty("--accent-color", "#6366f1");
+        root.style.setProperty("--accent-color-dim", "#312e81");
+        root.style.setProperty("--accent-color-glow", "#a5b4fc");
         break;
-      case 'violet':
-        root.style.setProperty('--accent-color', '#8b5cf6');
-        root.style.setProperty('--accent-color-dim', '#4c1d95');
-        root.style.setProperty('--accent-color-glow', '#c4b5fd');
+      case "violet":
+        root.style.setProperty("--accent-color", "#8b5cf6");
+        root.style.setProperty("--accent-color-dim", "#4c1d95");
+        root.style.setProperty("--accent-color-glow", "#c4b5fd");
         break;
-      case 'gold':
+      case "gold":
       default:
-        root.style.setProperty('--accent-color', '#D4AF37');
-        root.style.setProperty('--accent-color-dim', '#8a701e');
-        root.style.setProperty('--accent-color-glow', '#F4C430');
+        root.style.setProperty("--accent-color", "#D4AF37");
+        root.style.setProperty("--accent-color-dim", "#8a701e");
+        root.style.setProperty("--accent-color-glow", "#F4C430");
         break;
     }
   }, [settings, user]);
 
   useEffect(() => {
-    const keySuffix = user ? `_${user.id}` : '_guest';
+    const keySuffix = user ? `_${user.id}` : "_guest";
     try {
-      localStorage.setItem(`nalabia_profiles_v1${keySuffix}`, JSON.stringify(profiles));
+      localStorage.setItem(
+        `nalabia_profiles_v1${keySuffix}`,
+        JSON.stringify(profiles),
+      );
     } catch (e) {}
-    
+
     // Save to cloud if user is logged in
     if (user && userData) {
-       // Strip images for comparison to prevent infinite loops since they are stripped before saving
-       // Also limit messages to last 20 to prevent Firestore 1MB document limit errors
-       const strippedProfiles = profiles.map(p => ({
-         ...p,
-         messages: p.messages ? p.messages.slice(-20).map(m => {
-           const { image, ...rest } = m;
-           return rest;
-         }) : []
-       }));
-       const profilesString = JSON.stringify(strippedProfiles);
-       const userDataProfilesString = JSON.stringify(userData.profiles || []);
-       
-       if (profilesString !== userDataProfilesString) {
-         // Immediate trigger without cancel to prevent data loss 
-         // when user closes the app or switches contexts quickly.
-         updateUserProfiles(strippedProfiles).catch(e => {
-           console.error("Failed to save profiles to cloud", e);
-         });
-       }
+      // Strip images for comparison to prevent infinite loops since they are stripped before saving
+      // Also limit messages to last 20 to prevent Firestore 1MB document limit errors
+      const strippedProfiles = profiles.map((p) => ({
+        ...p,
+        messages: p.messages
+          ? p.messages.slice(-20).map((m) => {
+              const { image, ...rest } = m;
+              return rest;
+            })
+          : [],
+      }));
+      const profilesString = JSON.stringify(strippedProfiles);
+      const userDataProfilesString = JSON.stringify(userData.profiles || []);
 
-       const memoriesString = JSON.stringify(memories);
-       const userDataMemoriesString = JSON.stringify(userData.memories || []);
-       
-       if (memoriesString !== userDataMemoriesString) {
-         updateUserMemories(memories).catch(e => {
-           console.error("Failed to save memories to cloud", e);
-         });
-       }
+      if (profilesString !== userDataProfilesString) {
+        // Immediate trigger without cancel to prevent data loss
+        // when user closes the app or switches contexts quickly.
+        updateUserProfiles(strippedProfiles).catch((e) => {
+          console.error("Failed to save profiles to cloud", e);
+        });
+      }
+
+      const memoriesString = JSON.stringify(memories);
+      const userDataMemoriesString = JSON.stringify(userData.memories || []);
+
+      if (memoriesString !== userDataMemoriesString) {
+        updateUserMemories(memories).catch((e) => {
+          console.error("Failed to save memories to cloud", e);
+        });
+      }
     }
   }, [profiles, memories, user, userData]);
 
@@ -356,66 +584,94 @@ const App: React.FC = () => {
       }
     }
   };
-  
+
   // Tab & Sliders State
-  const [activeTab, setActiveTab] = useState<AnalysisMode>('HOME');
+  const [activeTab, setActiveTab] = useState<AnalysisMode>("HOME");
   const [showTutorial, setShowTutorial] = useState(false);
   const [showDarkPackModal, setShowDarkPackModal] = useState(false);
   const [showCoursesModal, setShowCoursesModal] = useState(false);
-  const [pendingDarkTab, setPendingDarkTab] = useState<AnalysisMode | null>(null);
-  const [pendingCoursesTab, setPendingCoursesTab] = useState<AnalysisMode | null>(null);
+  const [showMentoriaModal, setShowMentoriaModal] = useState(false);
+  const [pendingDarkTab, setPendingDarkTab] = useState<AnalysisMode | null>(
+    null,
+  );
+  const [pendingCoursesTab, setPendingCoursesTab] =
+    useState<AnalysisMode | null>(null);
+  const [pendingMentoriaTab, setPendingMentoriaTab] =
+    useState<AnalysisMode | null>(null);
 
   useEffect(() => {
-    const tutorialDone = localStorage.getItem('nalabia_tutorial_completed');
+    const tutorialDone = localStorage.getItem("nalabia_tutorial_completed");
     if (!tutorialDone) {
       setShowTutorial(true);
     }
   }, []);
 
   const handleTabChange = (tabId: AnalysisMode) => {
-    logEvent('ui', 'module_opened', { module: tabId });
-    if ((tabId === 'NSFW' || tabId === 'MANIPULATION') && !userData?.darkPackAccess) {
-      setPendingDarkTab(tabId);
-      setShowDarkPackModal(true);
+    logEvent("ui", "module_opened", { module: tabId });
+    if (
+      (tabId === "NSFW" || tabId === "MANIPULATION") &&
+      !userData?.darkPackAccess
+    ) {
+      setActiveTab("STORE");
       return;
     }
-    if (tabId === 'COURSES' && !userData?.coursesAccess) {
-      setPendingCoursesTab(tabId);
-      setShowCoursesModal(true);
+    if (tabId === "COURSES" && !userData?.coursesAccess) {
+      setActiveTab("STORE");
+      return;
+    }
+    if (tabId === "CHATBOT" && !userData?.mentoriaAccess) {
+      setActiveTab("STORE");
       return;
     }
     setActiveTab(tabId);
   };
 
   const completeTutorial = () => {
-    localStorage.setItem('nalabia_tutorial_completed', 'true');
+    localStorage.setItem("nalabia_tutorial_completed", "true");
     setShowTutorial(false);
   };
-  const [activeProfileStyle, setActiveProfileStyle] = useState<string>('CALM');
+  const [activeProfileStyle, setActiveProfileStyle] = useState<string>("CALM");
   const [flirtLevel, setFlirtLevel] = useState<number>(3);
   const [wittyLevel, setWittyLevel] = useState<number>(4);
   const [dominanceLevel, setDominanceLevel] = useState<number>(5);
   const [mysteryLevel, setMysteryLevel] = useState<number>(4);
-  const [speed, setSpeed] = useState<ConversationSpeed>('normal');
+  const [speed, setSpeed] = useState<ConversationSpeed>("normal");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const activeTabData = TABS.find(t => t.id === activeTab)!;
+  const activeTabData = TABS.find((t) => t.id === activeTab)!;
 
   // --- HELPERS ---
 
-  const updateActiveProfileMessages = (newMessages: Message[] | ((prev: Message[]) => Message[])) => {
-    setProfiles(prevProfiles => {
-      const profileExists = prevProfiles.some(p => p.id === activeProfile.id);
+  const updateActiveProfileMessages = (
+    newMessages: Message[] | ((prev: Message[]) => Message[]),
+  ) => {
+    setProfiles((prevProfiles) => {
+      const profileExists = prevProfiles.some((p) => p.id === activeProfile.id);
       if (!profileExists) {
-        const updatedMessages = typeof newMessages === 'function' ? newMessages([]) : newMessages;
-        return [...prevProfiles, { ...activeProfile, messages: updatedMessages, metrics: { ...activeProfile.metrics, lastInteraction: Date.now() } }];
+        const updatedMessages =
+          typeof newMessages === "function" ? newMessages([]) : newMessages;
+        return [
+          ...prevProfiles,
+          {
+            ...activeProfile,
+            messages: updatedMessages,
+            metrics: { ...activeProfile.metrics, lastInteraction: Date.now() },
+          },
+        ];
       }
-      return prevProfiles.map(p => {
+      return prevProfiles.map((p) => {
         if (p.id === activeProfile.id) {
-          const updatedMessages = typeof newMessages === 'function' ? newMessages(p.messages) : newMessages;
-          return { ...p, messages: updatedMessages, metrics: { ...p.metrics, lastInteraction: Date.now() } };
+          const updatedMessages =
+            typeof newMessages === "function"
+              ? newMessages(p.messages)
+              : newMessages;
+          return {
+            ...p,
+            messages: updatedMessages,
+            metrics: { ...p.metrics, lastInteraction: Date.now() },
+          };
         }
         return p;
       });
@@ -423,7 +679,7 @@ const App: React.FC = () => {
   };
 
   const handleProfileStyleChange = (styleId: string) => {
-    const p = PROFILES_STYLES.find(pr => pr.id === styleId);
+    const p = PROFILES_STYLES.find((pr) => pr.id === styleId);
     if (p) {
       setActiveProfileStyle(styleId);
       setFlirtLevel(p.flirt);
@@ -436,7 +692,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [activeProfile?.messages, status]);
 
@@ -447,7 +704,7 @@ const App: React.FC = () => {
       reader.onloadend = () => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           const MAX_WIDTH = 800;
           const MAX_HEIGHT = 800;
           let width = img.width;
@@ -467,10 +724,10 @@ const App: React.FC = () => {
 
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext("2d");
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress to 70% quality JPEG
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.7); // Compress to 70% quality JPEG
             setSelectedImage(dataUrl);
           } else {
             setSelectedImage(reader.result as string); // Fallback
@@ -484,41 +741,52 @@ const App: React.FC = () => {
 
   const handleReset = () => {
     updateActiveProfileMessages([]);
-    setInputText('');
+    setInputText("");
     setSelectedImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setStatus(ProcessingState.IDLE);
-    handleProfileStyleChange('CALM');
+    handleProfileStyleChange("CALM");
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    const isDeveloper = userData?.plano === 'Desenvolvedor';
+    const isDeveloper = userData?.plano === "Desenvolvedor";
 
     if (needsSubscription) {
       // Check for free messages
       const userFreeMessages = userData?.freeMessagesUsed || 0;
       const deviceAllowed = await checkDeviceUsage();
-      
+
       if (userFreeMessages >= 2 || !deviceAllowed) {
         setIsPlansDismissed(false);
         return;
       }
     } else if (!isDeveloper) {
       // Check daily limit for paid users (50 requests/day)
-      const today = new Date().toISOString().split('T')[0];
-      if (userData?.lastRequestDate === today && (userData?.dailyRequests || 0) >= 50) {
-        alert("Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!");
+      const today = new Date().toISOString().split("T")[0];
+      if (
+        userData?.lastRequestDate === today &&
+        (userData?.dailyRequests || 0) >= 50
+      ) {
+        alert(
+          "Você atingiu o limite diário de 50 requisições. Volte amanhã para continuar usando a IA!",
+        );
         return;
       }
     }
 
-    if ((!inputText.trim() && !selectedImage) || (status !== ProcessingState.IDLE && status !== ProcessingState.REGENERATING && status !== ProcessingState.ERROR)) return;
+    if (
+      (!inputText.trim() && !selectedImage) ||
+      (status !== ProcessingState.IDLE &&
+        status !== ProcessingState.REGENERATING &&
+        status !== ProcessingState.ERROR)
+    )
+      return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: inputText,
       image: selectedImage || undefined,
       timestamp: Date.now(),
@@ -527,24 +795,35 @@ const App: React.FC = () => {
       wittyLevel,
       dominanceLevel,
       mysteryLevel,
-      speed
+      speed,
     };
 
-    const updatedMessages = [...(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []), newMessage];
+    const updatedMessages = [
+      ...(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []),
+      newMessage,
+    ];
     updateActiveProfileMessages(updatedMessages);
-    setInputText('');
+    setInputText("");
     setSelectedImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setStatus(ProcessingState.ANALYZING);
 
-    const stateTimer1 = setTimeout(() => setStatus(ProcessingState.PROCESSING), 1500);
-    const stateTimer2 = setTimeout(() => setStatus(ProcessingState.GENERATING_RESPONSE), 3500);
+    const stateTimer1 = setTimeout(
+      () => setStatus(ProcessingState.PROCESSING),
+      1500,
+    );
+    const stateTimer2 = setTimeout(
+      () => setStatus(ProcessingState.GENERATING_RESPONSE),
+      3500,
+    );
 
-    const currentModeMessages = updatedMessages.filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY'));
+    const currentModeMessages = updatedMessages.filter(
+      (m) => m.mode === activeTab || (!m.mode && activeTab === "STORY_REPLY"),
+    );
 
     try {
       const analysis = await analyzeContent(
-        newMessage.content || '', 
+        newMessage.content || "",
         newMessage.image,
         activeTab,
         flirtLevel,
@@ -556,86 +835,104 @@ const App: React.FC = () => {
         activeProfile,
         userAIProfile,
         currentModeMessages,
-        memories
+        memories,
       );
-      
+
       clearTimeout(stateTimer1);
       clearTimeout(stateTimer2);
 
       // Process extracted memories
       if (analysis.extractedMemories && analysis.extractedMemories.length > 0) {
-        setMemories(prev => {
-          const profileMemoryIndex = prev.findIndex(m => m.id === activeProfile.id);
+        setMemories((prev) => {
+          const profileMemoryIndex = prev.findIndex(
+            (m) => m.id === activeProfile.id,
+          );
           if (profileMemoryIndex !== -1) {
-            const existingObservations = prev[profileMemoryIndex].observations || [];
+            const existingObservations =
+              prev[profileMemoryIndex].observations || [];
             // Merge unique elements
-            const newObservations = Array.from(new Set([...existingObservations, ...analysis.extractedMemories!]));
-            
+            const newObservations = Array.from(
+              new Set([
+                ...existingObservations,
+                ...analysis.extractedMemories!,
+              ]),
+            );
+
             const newMemories = [...prev];
             newMemories[profileMemoryIndex] = {
               ...newMemories[profileMemoryIndex],
               observations: newObservations,
-              lastUpdated: Date.now()
+              lastUpdated: Date.now(),
             };
             return newMemories;
           } else {
-            return [...prev, {
-              id: activeProfile.id,
-              observations: analysis.extractedMemories,
-              lastUpdated: Date.now()
-            }];
+            return [
+              ...prev,
+              {
+                id: activeProfile.id,
+                observations: analysis.extractedMemories,
+                lastUpdated: Date.now(),
+              },
+            ];
           }
         });
 
         // Add a "system" notification in chat
         updatedMessages.push({
-          id: 'system-' + Date.now(),
-          role: 'system',
+          id: "system-" + Date.now(),
+          role: "system",
           content: `🧠 CONSCIÊNCIA ATUALIZADA: Aprendi ${analysis.extractedMemories.length} novos fatos sobre ${activeProfile.name}.`,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
-      
+
       const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         analysis: analysis,
         timestamp: Date.now(),
         mode: activeTab,
       };
 
       if (settings.notifications?.push) {
-        sendNotification('Análise Concluída', {
-          body: 'O NaLábia gerou novas respostas para você.',
+        sendNotification("Análise Concluída", {
+          body: "O NaLábia gerou novas respostas para você.",
         });
       }
 
       // Update metrics based on analysis
-      setProfiles(prev => {
-        const profileExists = prev.some(p => p.id === activeProfile.id);
+      setProfiles((prev) => {
+        const profileExists = prev.some((p) => p.id === activeProfile.id);
         if (!profileExists) {
-          return [...prev, {
-            ...activeProfile,
-            messages: [...updatedMessages, responseMessage],
-            metrics: {
-              interest: analysis.interestLevel,
-              risk: analysis.risk,
-              lastInteraction: Date.now()
+          return [
+            ...prev,
+            {
+              ...activeProfile,
+              messages: [...updatedMessages, responseMessage],
+              metrics: {
+                interest: analysis.interestLevel,
+                risk: analysis.risk,
+                lastInteraction: Date.now(),
+              },
+              behavioralPattern:
+                analysis.behavioralPattern || activeProfile.behavioralPattern,
             },
-            behavioralPattern: analysis.behavioralPattern || activeProfile.behavioralPattern
-          }];
+          ];
         }
-        return prev.map(p => 
-          p.id === activeProfile.id ? { 
-            ...p, 
-            messages: [...updatedMessages, responseMessage], 
-            metrics: { 
-              interest: analysis.interestLevel, 
-              risk: analysis.risk, 
-              lastInteraction: Date.now() 
-            },
-            behavioralPattern: analysis.behavioralPattern || p.behavioralPattern
-          } : p
+        return prev.map((p) =>
+          p.id === activeProfile.id
+            ? {
+                ...p,
+                messages: [...updatedMessages, responseMessage],
+                metrics: {
+                  interest: analysis.interestLevel,
+                  risk: analysis.risk,
+                  lastInteraction: Date.now(),
+                },
+                behavioralPattern:
+                  analysis.behavioralPattern || p.behavioralPattern,
+              }
+            : p,
         );
       });
 
@@ -643,15 +940,15 @@ const App: React.FC = () => {
         try {
           const conversationData = {
             userID: user.id,
-            imageURL: newMessage.image ? 'image_attached' : null,
-            contextText: newMessage.content || '',
+            imageURL: newMessage.image ? "image_attached" : null,
+            contextText: newMessage.content || "",
             analysis: analysis,
             responses: analysis.responses,
-            createdAt: Date.now()
+            createdAt: Date.now(),
           };
           console.log("conversationData to be saved:", conversationData);
-          await supabase.from('conversations').insert(conversationData);
-          
+          await supabase.from("conversations").insert(conversationData);
+
           // Add XP for analyzing a conversation
           await addXp(50);
 
@@ -660,7 +957,10 @@ const App: React.FC = () => {
             await incrementDeviceUsage();
           }
         } catch (dbError) {
-          console.error("Firestore error during save, but response was already shown:", dbError);
+          console.error(
+            "Firestore error during save, but response was already shown:",
+            dbError,
+          );
         }
       }
 
@@ -670,25 +970,36 @@ const App: React.FC = () => {
       clearTimeout(stateTimer2);
       console.error(error);
       setStatus(ProcessingState.ERROR);
-      
+
       let errorMessage = "Erro ao conectar com a IA. Tente novamente.";
-      if (typeof error?.message === 'string') {
-        if (error.message.includes("429") || error.message.includes("Rate limit")) {
-          errorMessage = "Limite de requisições da API excedido. Por favor, aguarde alguns instantes e tente novamente.";
-        } else if (error.message.includes("API Key") || error.message.includes("cota") || error.message.includes("janela") || error.message.includes("modelo")) {
+      if (typeof error?.message === "string") {
+        if (
+          error.message.includes("429") ||
+          error.message.includes("Rate limit")
+        ) {
+          errorMessage =
+            "Limite de requisições da API excedido. Por favor, aguarde alguns instantes e tente novamente.";
+        } else if (
+          error.message.includes("API Key") ||
+          error.message.includes("cota") ||
+          error.message.includes("janela") ||
+          error.message.includes("modelo")
+        ) {
           errorMessage = error.message;
         } else {
           errorMessage = `Erro: ${error.message}`;
         }
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         errorMessage = `Erro: ${error}`;
       } else {
-        try { errorMessage = `Erro: ${JSON.stringify(error)}`; } catch (e) {}
+        try {
+          errorMessage = `Erro: ${JSON.stringify(error)}`;
+        } catch (e) {}
       }
-      
+
       const errMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: errorMessage,
         timestamp: Date.now(),
       };
@@ -698,36 +1009,59 @@ const App: React.FC = () => {
   };
 
   const handleRunLab = async (messageId: string) => {
-    const msgIndex = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).findIndex(m => m.id === messageId);
+    const msgIndex = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    ).findIndex((m) => m.id === messageId);
     if (msgIndex === -1) return;
-    
-    const targetMsg = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : [])[msgIndex];
+
+    const targetMsg = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    )[msgIndex];
     if (!targetMsg.analysis || targetMsg.labResult) return; // Already has result or no analysis
 
     // Find context (user input that triggered this) in the current mode
-    const currentModeMessages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY'));
-    const msgIndexInMode = currentModeMessages.findIndex(m => m.id === messageId);
+    const currentModeMessages = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    ).filter(
+      (m) => m.mode === activeTab || (!m.mode && activeTab === "STORY_REPLY"),
+    );
+    const msgIndexInMode = currentModeMessages.findIndex(
+      (m) => m.id === messageId,
+    );
     const contextMsg = currentModeMessages[msgIndexInMode - 1];
-    const contextText = contextMsg?.content || (contextMsg?.image ? "Image Analysis" : "Unknown Context");
+    const contextText =
+      contextMsg?.content ||
+      (contextMsg?.image ? "Image Analysis" : "Unknown Context");
     const imageBase64 = contextMsg?.image;
 
     setStatus(ProcessingState.CALCULATING);
     try {
-      const labResult = await runLaboratory(contextText, targetMsg.analysis, activeProfile, settings, userAIProfile, imageBase64);
-      
-      const newMessages = [...(Array.isArray(activeProfile?.messages) ? activeProfile.messages : [])];
+      const labResult = await runLaboratory(
+        contextText,
+        targetMsg.analysis,
+        activeProfile,
+        settings,
+        userAIProfile,
+        imageBase64,
+      );
+
+      const newMessages = [
+        ...(Array.isArray(activeProfile?.messages)
+          ? activeProfile.messages
+          : []),
+      ];
       newMessages[msgIndex] = { ...targetMsg, labResult: labResult };
       updateActiveProfileMessages(newMessages);
 
       if (settings.notifications?.push) {
-        sendNotification('Laboratório Concluído', {
-          body: 'A simulação de cenário foi finalizada.',
+        sendNotification("Laboratório Concluído", {
+          body: "A simulação de cenário foi finalizada.",
         });
       }
     } catch (error: any) {
       console.error(error);
       let errorMessage = "Erro no Laboratório. Tente novamente.";
-      if (typeof error?.message === 'string') {
+      if (typeof error?.message === "string") {
         errorMessage = error.message;
       }
       alert(errorMessage);
@@ -742,19 +1076,29 @@ const App: React.FC = () => {
       return;
     }
 
-    const msgIndex = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).findIndex(m => m.id === messageId);
+    const msgIndex = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    ).findIndex((m) => m.id === messageId);
     if (msgIndex === -1) return;
 
-    const targetMsg = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : [])[msgIndex];
+    const targetMsg = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    )[msgIndex];
     if (!targetMsg.analysis) return;
 
     // Find original context message in the current mode
-    const currentModeMessages = (Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY'));
-    const msgIndexInMode = currentModeMessages.findIndex(m => m.id === messageId);
+    const currentModeMessages = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    ).filter(
+      (m) => m.mode === activeTab || (!m.mode && activeTab === "STORY_REPLY"),
+    );
+    const msgIndexInMode = currentModeMessages.findIndex(
+      (m) => m.id === messageId,
+    );
     const contextMsg = currentModeMessages[msgIndexInMode - 1];
     if (!contextMsg) return;
 
-    const contextText = contextMsg.content || '';
+    const contextText = contextMsg.content || "";
     const contextImage = contextMsg.image;
 
     setStatus(ProcessingState.REGENERATING);
@@ -763,34 +1107,42 @@ const App: React.FC = () => {
         contextText,
         contextImage,
         (contextMsg.mode as AnalysisMode) || activeTab,
-        { flirt: flirtLevel, witty: wittyLevel, dominance: dominanceLevel, mystery: mysteryLevel },
+        {
+          flirt: flirtLevel,
+          witty: wittyLevel,
+          dominance: dominanceLevel,
+          mystery: mysteryLevel,
+        },
         speed,
         settings,
         activeProfile,
-        userAIProfile
+        userAIProfile,
       );
 
       // Update the message with new responses
-      const newMessages = [...(Array.isArray(activeProfile?.messages) ? activeProfile.messages : [])];
+      const newMessages = [
+        ...(Array.isArray(activeProfile?.messages)
+          ? activeProfile.messages
+          : []),
+      ];
       newMessages[msgIndex] = {
         ...targetMsg,
         analysis: {
           ...targetMsg.analysis,
-          responses: result.responses
-        }
+          responses: result.responses,
+        },
       };
       updateActiveProfileMessages(newMessages);
 
       if (settings.notifications?.push) {
-        sendNotification('Regeneração Concluída', {
-          body: 'Novas respostas foram geradas.',
+        sendNotification("Regeneração Concluída", {
+          body: "Novas respostas foram geradas.",
         });
       }
-
     } catch (error: any) {
       console.error("Regeneration failed", error);
       let errorMessage = "Erro na regeneração. Tente novamente.";
-      if (typeof error?.message === 'string') {
+      if (typeof error?.message === "string") {
         errorMessage = error.message;
       }
       alert(errorMessage);
@@ -801,15 +1153,15 @@ const App: React.FC = () => {
 
   // --- THEMING ---
   const getAccentColor = () => {
-    return 'text-gold border-gold bg-gold/10';
+    return "text-gold border-gold bg-gold/10";
   };
-  
+
   const getAccentText = () => {
-    return 'text-gold';
+    return "text-gold";
   };
-  
+
   const getAccentBg = () => {
-    return 'bg-gold';
+    return "bg-gold";
   };
 
   if (loading) {
@@ -842,10 +1194,10 @@ const App: React.FC = () => {
 
   if (isSettingsOpen) {
     return (
-      <SettingsView 
-        settings={settings} 
-        updateSettings={handleUpdateSettings} 
-        onClose={() => setIsSettingsOpen(false)} 
+      <SettingsView
+        settings={settings}
+        updateSettings={handleUpdateSettings}
+        onClose={() => setIsSettingsOpen(false)}
         accentColor={settings.accentColor}
         profiles={profiles}
         setProfiles={setProfiles}
@@ -859,19 +1211,52 @@ const App: React.FC = () => {
         profiles={profiles}
         memories={memories}
         activeProfileId={activeProfileId}
-        onSelectProfile={(id) => { setActiveProfileId(id); setIsProfilesOpen(false); }}
+        onSelectProfile={(id) => {
+          setActiveProfileId(id);
+          setIsProfilesOpen(false);
+        }}
         onAddProfile={(name, desc) => {
           const newId = Date.now().toString();
-          setProfiles(prev => [...prev, { id: newId, name, description: desc, messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }]);
+          setProfiles((prev) => [
+            ...prev,
+            {
+              id: newId,
+              name,
+              description: desc,
+              messages: [],
+              metrics: {
+                interest: "Oscilante",
+                risk: "Baixo",
+                lastInteraction: Date.now(),
+              },
+              behavioralPattern: "",
+            },
+          ]);
           setActiveProfileId(newId);
           setIsProfilesOpen(false);
         }}
         onDeleteProfile={(id) => {
-          setProfiles(prev => {
-            const newProfiles = prev.filter(p => p.id !== id);
-            return newProfiles.length > 0 ? newProfiles : [{ id: 'general', name: 'NaLábia', description: 'NaLábia v5.0 - Inteligência de Dinâmica Social', messages: [], metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, behavioralPattern: '' }];
+          setProfiles((prev) => {
+            const newProfiles = prev.filter((p) => p.id !== id);
+            return newProfiles.length > 0
+              ? newProfiles
+              : [
+                  {
+                    id: "general",
+                    name: "NaLábia",
+                    description:
+                      "NaLábia v5.0 - Inteligência de Dinâmica Social",
+                    messages: [],
+                    metrics: {
+                      interest: "Oscilante",
+                      risk: "Baixo",
+                      lastInteraction: Date.now(),
+                    },
+                    behavioralPattern: "",
+                  },
+                ];
           });
-          if (activeProfileId === id) setActiveProfileId('general');
+          if (activeProfileId === id) setActiveProfileId("general");
         }}
         settings={settings}
       />
@@ -880,62 +1265,99 @@ const App: React.FC = () => {
 
   const getThemeBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#000000] text-gray-200';
-      case 'light': return 'bg-[#f8fafc] text-gray-900';
-      case 'midnight': return 'bg-[#0f172a] text-gray-200';
-      case 'dracula': return 'bg-[#282a36] text-[#f8f8f2]';
-      case 'hacker': return 'bg-[#0d1117] text-[#00ff00]';
-      case 'cyberpunk': return 'bg-[#fcee0a] text-black';
-      case 'dark':
-      default: return 'bg-[#050505] text-gray-200';
+      case "ultra-dark":
+        return "bg-[#000000] text-gray-200";
+      case "light":
+        return "bg-[#f8fafc] text-gray-900";
+      case "midnight":
+        return "bg-[#0f172a] text-gray-200";
+      case "dracula":
+        return "bg-[#282a36] text-[#f8f8f2]";
+      case "hacker":
+        return "bg-[#0d1117] text-[#00ff00]";
+      case "cyberpunk":
+        return "bg-[#fcee0a] text-black";
+      case "dark":
+      default:
+        return "bg-[#050505] text-gray-200";
     }
   };
 
   const getThemeHeaderBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#050505]';
-      case 'light': return 'bg-[#ffffff]';
-      case 'midnight': return 'bg-[#1e293b]';
-      case 'dracula': return 'bg-[#44475a]';
-      case 'hacker': return 'bg-[#000000]';
-      case 'cyberpunk': return 'bg-[#000000]';
-      case 'dark':
-      default: return 'bg-[#0a0a0a]';
+      case "ultra-dark":
+        return "bg-[#050505]";
+      case "light":
+        return "bg-[#ffffff]";
+      case "midnight":
+        return "bg-[#1e293b]";
+      case "dracula":
+        return "bg-[#44475a]";
+      case "hacker":
+        return "bg-[#000000]";
+      case "cyberpunk":
+        return "bg-[#000000]";
+      case "dark":
+      default:
+        return "bg-[#0a0a0a]";
     }
   };
 
   const getThemeTabBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#050505]';
-      case 'light': return 'bg-[#f1f5f9]';
-      case 'midnight': return 'bg-[#0f172a]';
-      case 'dracula': return 'bg-[#282a36]';
-      case 'hacker': return 'bg-[#000000]';
-      case 'cyberpunk': return 'bg-[#fcee0a]';
-      case 'dark':
-      default: return 'bg-[#080808]';
+      case "ultra-dark":
+        return "bg-[#050505]";
+      case "light":
+        return "bg-[#f1f5f9]";
+      case "midnight":
+        return "bg-[#0f172a]";
+      case "dracula":
+        return "bg-[#282a36]";
+      case "hacker":
+        return "bg-[#000000]";
+      case "cyberpunk":
+        return "bg-[#fcee0a]";
+      case "dark":
+      default:
+        return "bg-[#080808]";
     }
   };
 
   const getThemeInputBg = () => {
     switch (settings.theme) {
-      case 'ultra-dark': return 'bg-[#0a0a0a] text-gray-200';
-      case 'light': return 'bg-[#ffffff] text-gray-900 border-gray-300';
-      case 'midnight': return 'bg-[#1e293b] text-gray-200';
-      case 'dracula': return 'bg-[#44475a] text-[#f8f8f2]';
-      case 'hacker': return 'bg-[#000000] text-[#00ff00] border-green-900';
-      case 'cyberpunk': return 'bg-[#000000] text-[#fcee0a] border-yellow-900';
-      case 'dark':
-      default: return 'bg-[#0a0a0a] text-gray-200';
+      case "ultra-dark":
+        return "bg-[#0a0a0a] text-gray-200";
+      case "light":
+        return "bg-[#ffffff] text-gray-900 border-gray-300";
+      case "midnight":
+        return "bg-[#1e293b] text-gray-200";
+      case "dracula":
+        return "bg-[#44475a] text-[#f8f8f2]";
+      case "hacker":
+        return "bg-[#000000] text-[#00ff00] border-green-900";
+      case "cyberpunk":
+        return "bg-[#000000] text-[#fcee0a] border-yellow-900";
+      case "dark":
+      default:
+        return "bg-[#0a0a0a] text-gray-200";
     }
   };
 
   return (
-    <div className={`flex flex-col h-screen ${getThemeBg()} font-sans overflow-hidden transition-colors duration-500 relative`}>
-      
-      {showTutorial && <TutorialModal onComplete={completeTutorial} settings={settings} />}
-      {helpMode && <HelpModal mode={helpMode} onClose={() => setHelpMode(null)} settings={settings} />}
-      
+    <div
+      className={`flex flex-col h-screen ${getThemeBg()} font-sans overflow-hidden transition-colors duration-500 relative`}
+    >
+      {showTutorial && (
+        <TutorialModal onComplete={completeTutorial} settings={settings} />
+      )}
+      {helpMode && (
+        <HelpModal
+          mode={helpMode}
+          onClose={() => setHelpMode(null)}
+          settings={settings}
+        />
+      )}
+
       <DarkPackModal
         isOpen={showDarkPackModal}
         onClose={() => {
@@ -966,6 +1388,21 @@ const App: React.FC = () => {
         }}
       />
 
+      <MentoriaModal
+        isOpen={showMentoriaModal}
+        onClose={() => {
+          setShowMentoriaModal(false);
+          setPendingMentoriaTab(null);
+        }}
+        onSuccess={() => {
+          setShowMentoriaModal(false);
+          if (pendingMentoriaTab) {
+            setActiveTab(pendingMentoriaTab);
+            setPendingMentoriaTab(null);
+          }
+        }}
+      />
+
       {showAssistedMode && (
         <AssistedModeModal
           settings={settings}
@@ -975,24 +1412,29 @@ const App: React.FC = () => {
       )}
 
       {/* HEADER */}
-      <header className={`flex-none ${getThemeHeaderBg()} z-20 pt-4 pb-2 px-4 flex justify-between items-center border-b border-nalabia-800`}>
+      <header
+        className={`flex-none ${getThemeHeaderBg()} z-20 pt-4 pb-2 px-4 flex justify-between items-center border-b border-nalabia-800`}
+      >
         <div className="flex flex-col">
           <div className="flex items-center space-x-3 mb-1">
-            {activeTab !== 'HOME' && (
-              <button 
-                onClick={() => handleTabChange('HOME')}
+            {activeTab !== "HOME" && (
+              <button
+                onClick={() => handleTabChange("HOME")}
                 className="p-1 px-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
                 title="Voltar ao Início"
               >
                 <ArrowLeft size={16} />
               </button>
             )}
-            <div className="flex items-center cursor-pointer px-1" onClick={() => setIsProfilesOpen(true)}>
+            <div
+              className="flex items-center cursor-pointer px-1"
+              onClick={() => setIsProfilesOpen(true)}
+            >
               <InfinityIcon className={getAccentText()} size={22} />
             </div>
-            
+
             {/* Context Indicator */}
-            {activeTab !== 'HOME' && activeTabData && (
+            {activeTab !== "HOME" && activeTabData && (
               <div className="hidden sm:flex items-center space-x-1.5 text-[10px] font-mono text-gray-400 uppercase tracking-wider">
                 <span>Início</span>
                 <ChevronRight size={10} className="opacity-50" />
@@ -1001,10 +1443,10 @@ const App: React.FC = () => {
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
-          {activeTab === 'HOME' && (
-            <button 
+          {activeTab === "HOME" && (
+            <button
               onClick={() => setShowAssistedMode(true)}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gold-glow/10 border border-gold-glow/20 rounded-full text-[10px] font-mono text-gold-glow hover:bg-gold-glow/20 transition-all uppercase"
             >
@@ -1015,8 +1457,12 @@ const App: React.FC = () => {
 
           {userData && (
             <div className="flex flex-col items-end mr-2">
-              <span className="text-[10px] font-mono text-gold">NÍVEL {userData.level}</span>
-              <span className="text-[10px] font-mono text-gray-500">{userData.xp} XP</span>
+              <span className="text-[10px] font-mono text-gold">
+                NÍVEL {userData.level}
+              </span>
+              <span className="text-[10px] font-mono text-gray-500">
+                {userData.xp} XP
+              </span>
               {userData.plano && (
                 <span className="text-[8px] font-mono text-emerald-400 mt-0.5 uppercase">
                   {userData.plano}
@@ -1025,8 +1471,17 @@ const App: React.FC = () => {
             </div>
           )}
           <div className="flex items-center space-x-1">
-            {activeTab === 'HOME' && (
-              <button 
+            <button
+              onClick={() => handleTabChange("STORE")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 border border-purple-400/50 rounded-full text-xs font-black text-white shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:shadow-[0_0_30px_rgba(236,72,153,0.8)] hover:scale-105 transition-all uppercase animate-pulse"
+              title="Área VIP"
+            >
+              <Crown size={16} className="text-yellow-300 drop-shadow-md" />
+              <span className="hidden sm:inline tracking-wider">Área VIP</span>
+            </button>
+
+            {activeTab === "HOME" && (
+              <button
                 onClick={() => setShowAssistedMode(true)}
                 className="flex sm:hidden text-gold-glow hover:text-white transition-colors p-2"
                 title="Assistente de Escolha"
@@ -1034,10 +1489,16 @@ const App: React.FC = () => {
                 <Compass size={18} />
               </button>
             )}
-            <button onClick={() => setHelpMode(activeTab)} className="text-gray-600 hover:text-white transition-colors p-2">
+            <button
+              onClick={() => setHelpMode(activeTab)}
+              className="text-gray-600 hover:text-white transition-colors p-2"
+            >
               <HelpCircle size={18} />
             </button>
-            <button onClick={() => setIsSettingsOpen(true)} className={`text-gray-600 hover:text-gray-300 transition-colors p-2`}>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className={`text-gray-600 hover:text-gray-300 transition-colors p-2`}
+            >
               <Settings size={18} />
             </button>
           </div>
@@ -1045,442 +1506,665 @@ const App: React.FC = () => {
       </header>
 
       {/* MAIN CONTENT */}
-      {activeTab === 'HOME' ? (
+      {activeTab === "HOME" ? (
         <div className="flex-1 overflow-hidden relative z-10">
-          <HomeView setActiveTab={handleTabChange} accentColorText={getAccentText()} settings={settings} />
+          <HomeView
+            setActiveTab={handleTabChange}
+            accentColorText={getAccentText()}
+            settings={settings}
+          />
         </div>
-      ) : activeTab === 'COURSES' ? (
+      ) : activeTab === "COURSES" ? (
         <div className="flex-1 overflow-hidden relative z-10">
-          <CoursesView onBack={() => setActiveTab('HOME')} />
+          <CoursesView onBack={() => setActiveTab("HOME")} />
         </div>
-      ) : activeTab === 'SIMULATOR' ? (
+      ) : activeTab === "SIMULATOR" ? (
         <div className="flex-1 overflow-hidden">
-          <SimulatorView 
-            activeProfile={activeProfile} 
-            updateActiveProfileMessages={updateActiveProfileMessages} 
+          <SimulatorView
+            activeProfile={activeProfile}
+            updateActiveProfileMessages={updateActiveProfileMessages}
             settings={settings}
             userAIProfile={userAIProfile}
           />
         </div>
-      ) : activeTab === 'STATS' ? (
+      ) : activeTab === "STATS" ? (
         <div className="flex-1 overflow-hidden">
-          <DashboardView activeProfile={activeProfile} updateActiveProfileMessages={updateActiveProfileMessages} settings={settings} userAIProfile={userAIProfile} />
+          <DashboardView
+            activeProfile={activeProfile}
+            updateActiveProfileMessages={updateActiveProfileMessages}
+            settings={settings}
+            userAIProfile={userAIProfile}
+          />
         </div>
-      ) : activeTab === 'CHATBOT' ? (
+      ) : activeTab === "CHATBOT" ? (
         <div className="flex-1 overflow-hidden">
-          <ChatbotView 
-            settings={settings} 
-            activeProfile={activeProfile} 
-            userAIProfile={userAIProfile} 
+          <ChatbotView
+            settings={settings}
+            activeProfile={activeProfile}
+            userAIProfile={userAIProfile}
             updateActiveProfileMessages={updateActiveProfileMessages}
           />
         </div>
-      ) : activeTab === 'VAULT' ? (
+      ) : activeTab === "STORE" ? (
+        <div className="flex-1 overflow-hidden">
+          <StoreView onBack={() => setActiveTab("HOME")} settings={settings} />
+        </div>
+      ) : activeTab === "VAULT" ? (
         <div className="flex-1 overflow-hidden">
           <VaultView settings={settings} />
         </div>
-      ) : activeTab === 'PROFILE_ANALYZER' ? (
+      ) : activeTab === "PROFILE_ANALYZER" ? (
         <div className="flex-1 overflow-hidden">
-          <ProfileAnalyzerView 
-            settings={settings} 
+          <ProfileAnalyzerView
+            settings={settings}
             onAddProfile={(name, desc, pattern) => {
               const newId = Date.now().toString();
-              setProfiles(prev => [...prev, { 
-                id: newId, 
-                name, 
-                description: desc, 
-                messages: [], 
-                metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, 
-                behavioralPattern: pattern || '' 
-              }]);
+              setProfiles((prev) => [
+                ...prev,
+                {
+                  id: newId,
+                  name,
+                  description: desc,
+                  messages: [],
+                  metrics: {
+                    interest: "Oscilante",
+                    risk: "Baixo",
+                    lastInteraction: Date.now(),
+                  },
+                  behavioralPattern: pattern || "",
+                },
+              ]);
               setActiveProfileId(newId);
               // Save to Auth/Firestore if logged in
               if (user && updateUserProfiles) {
-                updateUserProfiles([...profiles, { 
-                  id: newId, 
-                  name, 
-                  description: desc, 
-                  messages: [], 
-                  metrics: { interest: 'Oscilante', risk: 'Baixo', lastInteraction: Date.now() }, 
-                  behavioralPattern: pattern || '' 
-                }]);
+                updateUserProfiles([
+                  ...profiles,
+                  {
+                    id: newId,
+                    name,
+                    description: desc,
+                    messages: [],
+                    metrics: {
+                      interest: "Oscilante",
+                      risk: "Baixo",
+                      lastInteraction: Date.now(),
+                    },
+                    behavioralPattern: pattern || "",
+                  },
+                ]);
               }
             }}
           />
         </div>
-      ) : activeTab === 'RED_FLAG_DETECTOR' ? (
+      ) : activeTab === "RED_FLAG_DETECTOR" ? (
         <div className="flex-1 overflow-hidden">
           <RedFlagDetectorView settings={settings} />
         </div>
       ) : (
         <>
           {/* CHAT AREA */}
-          <main ref={chatContainerRef} className={`flex-1 overflow-y-auto p-4 space-y-8 scroll-smooth ${getThemeBg().split(' ')[0]}`}>
-            {(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY')).length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center p-8">
-            <activeTabData.icon size={48} className="mb-6 text-gray-500/30" />
-            <div className="text-center space-y-2 opacity-50">
-              <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">{activeTabData?.desc?.toUpperCase()}</h2>
-              <p className="text-xs text-gray-700 font-light mb-4">
-                 {activeProfile?.id === 'general' ? 'Aguardando Input Social...' : `Histórico de ${typeof activeProfile?.name === 'string' ? activeProfile?.name : 'Alvo'} iniciado neste modo.`}
-              </p>
-            </div>
+          <main
+            ref={chatContainerRef}
+            className={`flex-1 overflow-y-auto p-4 space-y-8 scroll-smooth ${getThemeBg().split(" ")[0]}`}
+          >
+            {(Array.isArray(activeProfile?.messages)
+              ? activeProfile.messages
+              : []
+            ).filter(
+              (m) =>
+                m.mode === activeTab ||
+                (!m.mode && activeTab === "STORY_REPLY"),
+            ).length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center p-8">
+                <activeTabData.icon
+                  size={48}
+                  className="mb-6 text-gray-500/30"
+                />
+                <div className="text-center space-y-2 opacity-50">
+                  <h2 className="text-base font-mono font-bold text-gray-600 tracking-[0.2em]">
+                    {activeTabData?.desc?.toUpperCase()}
+                  </h2>
+                  <p className="text-xs text-gray-700 font-light mb-4">
+                    {activeProfile?.id === "general"
+                      ? "Aguardando Input Social..."
+                      : `Histórico de ${typeof activeProfile?.name === "string" ? activeProfile?.name : "Alvo"} iniciado neste modo.`}
+                  </p>
+                </div>
 
-            <div className="mt-8 bg-obsidian-light/50 border border-gold-dim/20 rounded-xl p-4 max-w-sm pointer-events-auto shadow-[0_0_20px_rgba(212,175,55,0.05)] opacity-100">
-              <h3 className="text-sm font-medium text-gold-glow mb-2 flex items-center gap-2">
-                <HelpCircle size={16} /> Quando usar isso:
-              </h3>
-              <ul className="text-xs text-gray-400 space-y-1.5 text-left list-disc list-inside px-2">
-                {activeTab === 'FIRST_CONTACT' && (
-                  <>
-                    <li>Deu match no Tinder/Bumble</li>
-                    <li>Quer reagir ao Story puxando papo de forma diferente</li>
-                    <li>Quer mandar a primeira mensagem no WhatsApp</li>
-                  </>
-                )}
-                {activeTab === 'STORY_REPLY' && (
-                  <>
-                    <li>Ela postou uma foto de si mesma</li>
-                    <li>Ela postou algo num lugar que você conhece</li>
-                    <li>Você quer gerar engajamento instantâneo</li>
-                  </>
-                )}
-                {activeTab === 'FLOWING' && (
-                  <>
-                    <li>A conversa está fluindo mas você quer tensionar mais</li>
-                    <li>A mulher está investindo (manda textos longos)</li>
-                    <li>Você quer evoluir pro encontro naturalmente</li>
-                  </>
-                )}
-                {activeTab === 'VALUE_TEST' && (
-                  <>
-                    <li>Ela foi levemente agressiva ou desafiadora</li>
-                    <li>Ela mandou o clássico: "você joga seu papo em todas"</li>
-                    <li>Testou sua confiança e o seu "Frame"</li>
-                  </>
-                )}
-                {activeTab === 'COLD_RESPONSE' && (
-                  <>
-                    <li>Ela mandou apenas "haha", "kkk" ou emojis vazios</li>
-                    <li>A resposta dela não te dá nada para continuar</li>
-                    <li>Ela está focada em outra coisa</li>
-                  </>
-                )}
-                {activeTab === 'REACTIVATION' && (
-                  <>
-                    <li>Faz semanas ou meses que vocês não se falam</li>
-                    <li>Aquela menina que deixou a conversa morrer no meio</li>
-                    <li>Usar "Gatilhos de Curiosidade" pra fisgá-la novamente</li>
-                  </>
-                )}
-                {activeTab === 'ONE_LINER' && (
-                  <>
-                    <li>Quiser demonstrar máximo desapego</li>
-                    <li>Quiser responder rápido e continuar misterioso</li>
-                    <li>Ela mandou "textão" reclamando e você quer quebrar a emoção</li>
-                  </>
-                )}
-                {activeTab === 'SILENCE' && (
-                  <>
-                    <li>Sofrimento de Ghosting iminente</li>
-                    <li>Ela te deixou no "visualizado"</li>
-                    <li>Ensinar a ela que o vácuo tem consequências (retirada de validação)</li>
-                  </>
-                )}
-                {activeTab === 'NSFW' && (
-                  <>
-                    <li>Quando o flerte casual mudar para tensão sexual</li>
-                    <li>Após um encontro onde o clima já está preparado</li>
-                    <li>Quando ela enviar "armadilhas" (indiretas sensuais)</li>
-                  </>
-                )}
-                {activeTab === 'MANIPULATION' && (
-                  <>
-                    <li>Ela se comportar como se fosse o "prêmio" na conversa</li>
-                    <li>Precisar instalar um "mind-virus" (fazer ela não parar de pensar)</li>
-                    <li>Quiser desestabilizar ou inverter o quadro (gaslighting leve)</li>
-                  </>
-                )}
-              </ul>
-            </div>
-            
-             <div className={`mt-12 text-[10px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}>
-              NaLábia • Inteligência Social
-            </div>
-          </div>
-        )}
+                <div className="mt-8 bg-obsidian-light/50 border border-gold-dim/20 rounded-xl p-4 max-w-sm pointer-events-auto shadow-[0_0_20px_rgba(212,175,55,0.05)] opacity-100">
+                  <h3 className="text-sm font-medium text-gold-glow mb-2 flex items-center gap-2">
+                    <HelpCircle size={16} /> Quando usar isso:
+                  </h3>
+                  <ul className="text-xs text-gray-400 space-y-1.5 text-left list-disc list-inside px-2">
+                    {activeTab === "FIRST_CONTACT" && (
+                      <>
+                        <li>Deu match no Tinder/Bumble</li>
+                        <li>
+                          Quer reagir ao Story puxando papo de forma diferente
+                        </li>
+                        <li>Quer mandar a primeira mensagem no WhatsApp</li>
+                      </>
+                    )}
+                    {activeTab === "STORY_REPLY" && (
+                      <>
+                        <li>Ela postou uma foto de si mesma</li>
+                        <li>Ela postou algo num lugar que você conhece</li>
+                        <li>Você quer gerar engajamento instantâneo</li>
+                      </>
+                    )}
+                    {activeTab === "FLOWING" && (
+                      <>
+                        <li>
+                          A conversa está fluindo mas você quer tensionar mais
+                        </li>
+                        <li>A mulher está investindo (manda textos longos)</li>
+                        <li>Você quer evoluir pro encontro naturalmente</li>
+                      </>
+                    )}
+                    {activeTab === "VALUE_TEST" && (
+                      <>
+                        <li>Ela foi levemente agressiva ou desafiadora</li>
+                        <li>
+                          Ela mandou o clássico: "você joga seu papo em todas"
+                        </li>
+                        <li>Testou sua confiança e o seu "Frame"</li>
+                      </>
+                    )}
+                    {activeTab === "COLD_RESPONSE" && (
+                      <>
+                        <li>
+                          Ela mandou apenas "haha", "kkk" ou emojis vazios
+                        </li>
+                        <li>A resposta dela não te dá nada para continuar</li>
+                        <li>Ela está focada em outra coisa</li>
+                      </>
+                    )}
+                    {activeTab === "REACTIVATION" && (
+                      <>
+                        <li>Faz semanas ou meses que vocês não se falam</li>
+                        <li>
+                          Aquela menina que deixou a conversa morrer no meio
+                        </li>
+                        <li>
+                          Usar "Gatilhos de Curiosidade" pra fisgá-la novamente
+                        </li>
+                      </>
+                    )}
+                    {activeTab === "ONE_LINER" && (
+                      <>
+                        <li>Quiser demonstrar máximo desapego</li>
+                        <li>Quiser responder rápido e continuar misterioso</li>
+                        <li>
+                          Ela mandou "textão" reclamando e você quer quebrar a
+                          emoção
+                        </li>
+                      </>
+                    )}
+                    {activeTab === "SILENCE" && (
+                      <>
+                        <li>Sofrimento de Ghosting iminente</li>
+                        <li>Ela te deixou no "visualizado"</li>
+                        <li>
+                          Ensinar a ela que o vácuo tem consequências (retirada
+                          de validação)
+                        </li>
+                      </>
+                    )}
+                    {activeTab === "NSFW" && (
+                      <>
+                        <li>Quando o flerte casual mudar para tensão sexual</li>
+                        <li>Após um encontro onde o clima já está preparado</li>
+                        <li>
+                          Quando ela enviar "armadilhas" (indiretas sensuais)
+                        </li>
+                      </>
+                    )}
+                    {activeTab === "MANIPULATION" && (
+                      <>
+                        <li>
+                          Ela se comportar como se fosse o "prêmio" na conversa
+                        </li>
+                        <li>
+                          Precisar instalar um "mind-virus" (fazer ela não parar
+                          de pensar)
+                        </li>
+                        <li>
+                          Quiser desestabilizar ou inverter o quadro
+                          (gaslighting leve)
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                </div>
 
-        {(Array.isArray(activeProfile?.messages) ? activeProfile.messages : []).filter(m => m.mode === activeTab || (!m.mode && activeTab === 'STORY_REPLY')).map((msg) => (
-          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${settings.animations ? 'animate-fade-in' : ''} mb-6`}>
-            {msg.role === 'system' && (
-              <div className="w-full flex justify-center my-4 animate-fade-in">
-                <div className="bg-nalabia-gold/5 border border-nalabia-gold/20 text-nalabia-gold/80 px-4 py-2 rounded-full text-[10px] font-mono flex items-center gap-2">
-                  <BrainCircuit size={12} className="animate-pulse" />
-                  <span>{msg.content}</span>
+                <div
+                  className={`mt-12 text-[10px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}
+                >
+                  NaLábia • Inteligência Social
                 </div>
               </div>
             )}
-            
-            {msg.role === 'user' && (
-              <div className="max-w-[85%] text-right">
-                 {msg.image && (
-                  <div className="mb-2 rounded border border-nalabia-800 inline-block overflow-hidden">
-                    <img src={msg.image} alt="Upload" className="max-h-48 object-cover opacity-90" />
-                  </div>
-                )}
-                {msg.content && (
-                  <div className={`${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-300 px-4 py-2 rounded-2xl rounded-tr-sm inline-block`}>
-                    <p className="text-xs font-mono">{typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}</p>
-                  </div>
-                )}
-                {msg.mode && (
-                  <div className="flex items-center justify-end space-x-2 mt-1 opacity-40">
-                    <span className="text-[8px] font-mono text-gray-600 uppercase tracking-wider">{msg.speed}</span>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {msg.role === 'assistant' && (
-              <div className="w-full">
-                {msg.content ? (
-                   <div className="bg-red-950/20 border border-red-900/30 text-red-400 px-4 py-3 rounded-lg text-xs font-mono max-w-md">
-                     {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
-                   </div>
-                ) : msg.analysis && (
-                  <>
-                    <div className="max-w-md relative">
-                      <AnalysisView analysis={msg.analysis} />
-                      
-                      {/* Lab Trigger */}
-                      {!msg.labResult && (
-                        <button 
-                          onClick={() => handleRunLab(msg.id)}
-                          className="absolute top-4 right-4 text-gray-500 hover:text-gold transition-colors p-1"
-                          title="Abrir Laboratório"
+            {(Array.isArray(activeProfile?.messages)
+              ? activeProfile.messages
+              : []
+            )
+              .filter(
+                (m) =>
+                  m.mode === activeTab ||
+                  (!m.mode && activeTab === "STORY_REPLY"),
+              )
+              .map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} ${settings.animations ? "animate-fade-in" : ""} mb-6`}
+                >
+                  {msg.role === "system" && (
+                    <div className="w-full flex justify-center my-4 animate-fade-in">
+                      <div className="bg-nalabia-gold/5 border border-nalabia-gold/20 text-nalabia-gold/80 px-4 py-2 rounded-full text-[10px] font-mono flex items-center gap-2">
+                        <BrainCircuit size={12} className="animate-pulse" />
+                        <span>{msg.content}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {msg.role === "user" && (
+                    <div className="max-w-[85%] text-right">
+                      {msg.image && (
+                        <div className="mb-2 rounded border border-nalabia-800 inline-block overflow-hidden">
+                          <img
+                            src={msg.image}
+                            alt="Upload"
+                            className="max-h-48 object-cover opacity-90"
+                          />
+                        </div>
+                      )}
+                      {msg.content && (
+                        <div
+                          className={`${getThemeInputBg().split(" ")[0]} border border-nalabia-800 text-gray-300 px-4 py-2 rounded-2xl rounded-tr-sm inline-block`}
                         >
-                          <FlaskConical size={14} />
-                        </button>
+                          <p className="text-xs font-mono">
+                            {typeof msg.content === "string"
+                              ? msg.content
+                              : JSON.stringify(msg.content)}
+                          </p>
+                        </div>
+                      )}
+                      {msg.mode && (
+                        <div className="flex items-center justify-end space-x-2 mt-1 opacity-40">
+                          <span className="text-[8px] font-mono text-gray-600 uppercase tracking-wider">
+                            {msg.speed}
+                          </span>
+                        </div>
                       )}
                     </div>
-                    
-                    {/* Lab Result View */}
-                    {msg.labResult && (
-                      <div className="max-w-md mb-6">
-                        <LaboratoryView simulation={msg.labResult} />
-                      </div>
-                    )}
+                  )}
 
-                    {/* Responses Scroll */}
-                    <div className="-mx-2">
-                      <ResponseOptions 
-                        responses={msg.analysis.responses} 
-                        onRegenerate={() => handleRegenerate(msg.id)}
-                        isRegenerating={status === ProcessingState.REGENERATING}
-                        settings={settings}
-                      />
+                  {msg.role === "assistant" && (
+                    <div className="w-full">
+                      {msg.content ? (
+                        <div className="bg-red-950/20 border border-red-900/30 text-red-400 px-4 py-3 rounded-lg text-xs font-mono max-w-md">
+                          {typeof msg.content === "string"
+                            ? msg.content
+                            : JSON.stringify(msg.content)}
+                        </div>
+                      ) : (
+                        msg.analysis && (
+                          <>
+                            <div className="max-w-md relative">
+                              <AnalysisView analysis={msg.analysis} />
+
+                              {/* Lab Trigger */}
+                              {!msg.labResult && (
+                                <button
+                                  onClick={() => handleRunLab(msg.id)}
+                                  className="absolute top-4 right-4 text-gray-500 hover:text-gold transition-colors p-1"
+                                  title="Abrir Laboratório"
+                                >
+                                  <FlaskConical size={14} />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Lab Result View */}
+                            {msg.labResult && (
+                              <div className="max-w-md mb-6">
+                                <LaboratoryView simulation={msg.labResult} />
+                              </div>
+                            )}
+
+                            {/* Responses Scroll */}
+                            <div className="-mx-2">
+                              <ResponseOptions
+                                responses={msg.analysis.responses}
+                                onRegenerate={() => handleRegenerate(msg.id)}
+                                isRegenerating={
+                                  status === ProcessingState.REGENERATING
+                                }
+                                settings={settings}
+                              />
+                            </div>
+                          </>
+                        )
+                      )}
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
+              ))}
+
+            {status !== ProcessingState.IDLE &&
+              status !== ProcessingState.ERROR && (
+                <div className="flex items-center space-x-2 pl-2 opacity-50">
+                  <div
+                    className={`w-1 h-1 rounded-full animate-bounce ${getAccentBg()}`}
+                  ></div>
+                  <div
+                    className={`w-1 h-1 rounded-full animate-bounce delay-100 ${getAccentBg()}`}
+                  ></div>
+                  <div
+                    className={`w-1 h-1 rounded-full animate-bounce delay-200 ${getAccentBg()}`}
+                  ></div>
+                  {status === ProcessingState.ANALYZING && (
+                    <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">
+                      Analisando...
+                    </span>
+                  )}
+                  {status === ProcessingState.PROCESSING && (
+                    <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">
+                      Processando...
+                    </span>
+                  )}
+                  {status === ProcessingState.GENERATING_RESPONSE && (
+                    <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">
+                      Gerando resposta...
+                    </span>
+                  )}
+                  {status === ProcessingState.CALCULATING && (
+                    <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">
+                      Simulando...
+                    </span>
+                  )}
+                  {status === ProcessingState.REGENERATING && (
+                    <span className="text-[9px] font-mono text-gold ml-2 uppercase animate-pulse">
+                      Regerando...
+                    </span>
+                  )}
+                </div>
+              )}
+          </main>
+
+          {/* FOOTER */}
+          <footer
+            className={`flex-none ${getThemeHeaderBg()} border-t border-nalabia-800 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] z-20`}
+          >
+            {/* PROFILES & SLIDERS */}
+            <div className="px-5 py-4 border-b border-nalabia-800/50">
+              {/* Profiles Styles */}
+              <div className="flex space-x-3 mb-4 overflow-x-auto pb-2">
+                {PROFILES_STYLES.map((p) => {
+                  const Icon = p.icon;
+                  const isActive = activeProfileStyle === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handleProfileStyleChange(p.id)}
+                      className={`flex-none flex items-center space-x-1.5 px-3 py-1.5 rounded-full border text-[10px] font-mono uppercase tracking-wide transition-all ${
+                        isActive
+                          ? `${getAccentColor()}`
+                          : "bg-transparent border-nalabia-800 text-gray-600 hover:border-gray-600"
+                      }`}
+                    >
+                      <Icon size={10} />
+                      <span>{p.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        ))}
 
-        {status !== ProcessingState.IDLE && status !== ProcessingState.ERROR && (
-           <div className="flex items-center space-x-2 pl-2 opacity-50">
-             <div className={`w-1 h-1 rounded-full animate-bounce ${getAccentBg()}`}></div>
-             <div className={`w-1 h-1 rounded-full animate-bounce delay-100 ${getAccentBg()}`}></div>
-             <div className={`w-1 h-1 rounded-full animate-bounce delay-200 ${getAccentBg()}`}></div>
-             {status === ProcessingState.ANALYZING && <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">Analisando...</span>}
-             {status === ProcessingState.PROCESSING && <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">Processando...</span>}
-             {status === ProcessingState.GENERATING_RESPONSE && <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">Gerando resposta...</span>}
-             {status === ProcessingState.CALCULATING && <span className="text-[9px] font-mono text-gray-500 ml-2 uppercase animate-pulse">Simulando...</span>}
-             {status === ProcessingState.REGENERATING && <span className="text-[9px] font-mono text-gold ml-2 uppercase animate-pulse">Regerando...</span>}
-           </div>
-        )}
-      </main>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* Flirt */}
+                <div className="space-y-1 group relative">
+                  <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
+                    <span className="flex items-center gap-1">
+                      Flirt <HelpCircle size={8} />
+                    </span>
+                    <span className={getAccentText()}>{flirtLevel}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={flirtLevel}
+                    onChange={(e) => setFlirtLevel(parseInt(e.target.value))}
+                    className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold"
+                  />
 
-      {/* FOOTER */}
-      <footer className={`flex-none ${getThemeHeaderBg()} border-t border-nalabia-800 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] z-20`}>
-        
-        {/* PROFILES & SLIDERS */}
-        <div className="px-5 py-4 border-b border-nalabia-800/50">
-          
-          {/* Profiles Styles */}
-          <div className="flex space-x-3 mb-4 overflow-x-auto pb-2">
-             {PROFILES_STYLES.map(p => {
-               const Icon = p.icon;
-               const isActive = activeProfileStyle === p.id;
-               return (
-                 <button
-                    key={p.id}
-                    onClick={() => handleProfileStyleChange(p.id)}
-                    className={`flex-none flex items-center space-x-1.5 px-3 py-1.5 rounded-full border text-[10px] font-mono uppercase tracking-wide transition-all ${
-                      isActive 
-                      ? `${getAccentColor()}` 
-                      : 'bg-transparent border-nalabia-800 text-gray-600 hover:border-gray-600'
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                    <p className="text-[9px] text-gray-300 font-sans leading-tight">
+                      Grau de intenção sedutora. Alto = direto, Baixo =
+                      amigável.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dominance */}
+                <div className="space-y-1 group relative">
+                  <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
+                    <span className="flex items-center gap-1">
+                      Dominância <HelpCircle size={8} />
+                    </span>
+                    <span className={getAccentText()}>{dominanceLevel}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={dominanceLevel}
+                    onChange={(e) =>
+                      setDominanceLevel(parseInt(e.target.value))
+                    }
+                    className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold"
+                  />
+
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                    <p className="text-[9px] text-gray-300 font-sans leading-tight">
+                      Postura de liderança. Alto = assertivo (controla o frame).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mystery */}
+                <div className="space-y-1 group relative">
+                  <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
+                    <span className="flex items-center gap-1">
+                      Mistério <HelpCircle size={8} />
+                    </span>
+                    <span className={getAccentText()}>{mysteryLevel}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={mysteryLevel}
+                    onChange={(e) => setMysteryLevel(parseInt(e.target.value))}
+                    className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold"
+                  />
+
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                    <p className="text-[9px] text-gray-300 font-sans leading-tight">
+                      Falta de previsibilidade. Alto = instigante (menos é
+                      mais).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Speed Toggle */}
+                <div className="flex items-end h-full pb-1 group relative">
+                  <button
+                    onClick={() =>
+                      setSpeed((s) =>
+                        s === "short"
+                          ? "normal"
+                          : s === "normal"
+                            ? "fluid"
+                            : "short",
+                      )
+                    }
+                    className="w-full flex justify-between items-center bg-nalabia-800/50 px-2 py-1 rounded border border-nalabia-800 hover:border-nalabia-600 text-[9px] font-mono text-gray-400 uppercase cursor-help"
+                  >
+                    <span className="flex items-center gap-1">
+                      Velocidade <HelpCircle size={8} />
+                    </span>
+                    <span className={getAccentText()}>
+                      {speed === "short"
+                        ? "Curta"
+                        : speed === "normal"
+                          ? "Normal"
+                          : "Fluida"}
+                    </span>
+                  </button>
+
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                    <p className="text-[9px] text-gray-300 font-sans leading-tight">
+                      Ritmo da conversa e tamanho do texto enviado.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* INPUT */}
+            <div className="p-3 max-w-4xl mx-auto">
+              {selectedImage && (
+                <div
+                  className={`flex items-center ${getThemeInputBg().split(" ")[0]} p-2 rounded border border-nalabia-800 w-fit mb-2`}
+                >
+                  <img
+                    src={selectedImage}
+                    alt="Preview"
+                    className="h-8 w-8 object-cover rounded mr-2 opacity-80"
+                  />
+                  <button
+                    onClick={() => {
+                      setSelectedImage(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="text-gray-600 hover:text-white"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {needsSubscription ? (
+                <div
+                  className={`flex items-center justify-between ${getThemeInputBg().split(" ")[0]} border border-nalabia-800 rounded-xl py-3 px-4`}
+                >
+                  <span className="text-gray-500 text-sm">
+                    Assinatura necessária para enviar mensagens
+                  </span>
+                  <button
+                    onClick={() => setIsPlansDismissed(false)}
+                    className="text-gold hover:text-gold-glow text-sm font-bold transition-colors"
+                  >
+                    Ver Planos
+                  </button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex items-center space-x-2"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setIsProfilesOpen(true)}
+                    className={`p-3 rounded-xl ${getThemeInputBg().split(" ")[0]} border border-nalabia-800 text-gray-500 transition-all hover:text-white hover:border-white/20`}
+                  >
+                    <Users size={18} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`p-3 rounded-xl ${getThemeInputBg().split(" ")[0]} border border-nalabia-800 text-gray-500 transition-all hover:text-white`}
+                    disabled={status !== ProcessingState.IDLE}
+                  >
+                    <ImageIcon size={18} />
+                  </button>
+
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      placeholder={
+                        activeTab === "STORY_REPLY"
+                          ? "Anexar Story ou descrever..."
+                          : "Cole a conversa estruturada: Ela: ..., Eu: ..."
+                      }
+                      className={`w-full ${getThemeInputBg()} placeholder-gray-700 rounded-xl py-3 px-4 border border-nalabia-800 focus:border-white/20 focus:ring-1 focus:ring-white/10 focus:outline-none transition-all font-sans text-sm`}
+                      disabled={status !== ProcessingState.IDLE}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={`p-3 rounded-xl transition-all flex items-center justify-center border ${
+                      (!inputText && !selectedImage) ||
+                      status !== ProcessingState.IDLE
+                        ? `${getThemeInputBg().split(" ")[0]} border-nalabia-800 text-gray-700 opacity-50 cursor-not-allowed`
+                        : `${getAccentBg()} text-black border-transparent hover:opacity-90 hover:shadow-[0_0_20px_rgba(212,175,55,0.6)] shadow-lg`
                     }`}
-                 >
-                   <Icon size={10} />
-                   <span>{p.label}</span>
-                 </button>
-               )
-             })}
-          </div>
+                    disabled={
+                      (!inputText && !selectedImage) ||
+                      status !== ProcessingState.IDLE
+                    }
+                  >
+                    {status === ProcessingState.IDLE ? (
+                      <Send size={18} />
+                    ) : (
+                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    )}
+                  </button>
+                </form>
+              )}
 
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              {/* Flirt */}
-              <div className="space-y-1 group relative">
-                <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
-                  <span className="flex items-center gap-1">Flirt <HelpCircle size={8} /></span>
-                  <span className={getAccentText()}>{flirtLevel}</span>
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-2 px-2 gap-2 sm:gap-0">
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`text-[8px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}
+                  >
+                    NaLábia
+                  </span>
                 </div>
-                <input type="range" min="0" max="10" value={flirtLevel} onChange={(e) => setFlirtLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
-                
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Grau de intenção sedutora. Alto = direto, Baixo = amigável.</p>
-                </div>
-              </div>
-
-              {/* Dominance */}
-              <div className="space-y-1 group relative">
-                <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
-                  <span className="flex items-center gap-1">Dominância <HelpCircle size={8} /></span>
-                  <span className={getAccentText()}>{dominanceLevel}</span>
-                </div>
-                <input type="range" min="0" max="10" value={dominanceLevel} onChange={(e) => setDominanceLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
-                
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Postura de liderança. Alto = assertivo (controla o frame).</p>
-                </div>
-              </div>
-
-               {/* Mystery */}
-               <div className="space-y-1 group relative">
-                <div className="flex justify-between text-[8px] font-mono text-gray-500 uppercase cursor-help">
-                  <span className="flex items-center gap-1">Mistério <HelpCircle size={8} /></span>
-                  <span className={getAccentText()}>{mysteryLevel}</span>
-                </div>
-                <input type="range" min="0" max="10" value={mysteryLevel} onChange={(e) => setMysteryLevel(parseInt(e.target.value))} className="w-full h-1 bg-nalabia-800 rounded-lg appearance-none cursor-pointer accent-gold" />
-                
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Falta de previsibilidade. Alto = instigante (menos é mais).</p>
-                </div>
-              </div>
-
-              {/* Speed Toggle */}
-              <div className="flex items-end h-full pb-1 group relative">
-                 <button 
-                   onClick={() => setSpeed(s => s === 'short' ? 'normal' : s === 'normal' ? 'fluid' : 'short')}
-                   className="w-full flex justify-between items-center bg-nalabia-800/50 px-2 py-1 rounded border border-nalabia-800 hover:border-nalabia-600 text-[9px] font-mono text-gray-400 uppercase cursor-help"
-                 >
-                   <span className="flex items-center gap-1">Velocidade <HelpCircle size={8} /></span>
-                   <span className={getAccentText()}>{speed === 'short' ? 'Curta' : speed === 'normal' ? 'Normal' : 'Fluida'}</span>
-                 </button>
-                 
-                 {/* Tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 w-32 bg-black/90 p-2 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-                  <p className="text-[9px] text-gray-300 font-sans leading-tight">Ritmo da conversa e tamanho do texto enviado.</p>
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`text-[8px] font-mono tracking-widest uppercase animate-pulse ${getAccentText()} opacity-50`}
+                  >
+                    ● Online
+                  </span>
+                  <span
+                    className={`text-[8px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70 ml-2`}
+                  >
+                    © 2024 NaLábia
+                  </span>
                 </div>
               </div>
             </div>
-        </div>
-
-        {/* INPUT */}
-        <div className="p-3 max-w-4xl mx-auto">
-          {selectedImage && (
-            <div className={`flex items-center ${getThemeInputBg().split(' ')[0]} p-2 rounded border border-nalabia-800 w-fit mb-2`}>
-              <img src={selectedImage} alt="Preview" className="h-8 w-8 object-cover rounded mr-2 opacity-80" />
-              <button onClick={() => {setSelectedImage(null); if(fileInputRef.current) fileInputRef.current.value=''}} className="text-gray-600 hover:text-white">
-                <X size={14} />
-              </button>
-            </div>
-          )}
-
-          {needsSubscription ? (
-            <div className={`flex items-center justify-between ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 rounded-xl py-3 px-4`}>
-              <span className="text-gray-500 text-sm">Assinatura necessária para enviar mensagens</span>
-              <button 
-                onClick={() => setIsPlansDismissed(false)}
-                className="text-gold hover:text-gold-glow text-sm font-bold transition-colors"
-              >
-                Ver Planos
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex items-center space-x-2">
-              <input 
-                type="file" 
-                accept="image/*" 
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                className="hidden" 
-              />
-              
-              <button 
-                type="button" 
-                onClick={() => setIsProfilesOpen(true)}
-                className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-500 transition-all hover:text-white hover:border-white/20`}
-              >
-                <Users size={18} />
-              </button>
-
-               <button 
-                type="button" 
-                onClick={() => fileInputRef.current?.click()}
-                className={`p-3 rounded-xl ${getThemeInputBg().split(' ')[0]} border border-nalabia-800 text-gray-500 transition-all hover:text-white`}
-                disabled={status !== ProcessingState.IDLE}
-              >
-                <ImageIcon size={18} />
-              </button>
-
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder={activeTab === 'STORY_REPLY' ? "Anexar Story ou descrever..." : "Cole a conversa estruturada: Ela: ..., Eu: ..."}
-                  className={`w-full ${getThemeInputBg()} placeholder-gray-700 rounded-xl py-3 px-4 border border-nalabia-800 focus:border-white/20 focus:ring-1 focus:ring-white/10 focus:outline-none transition-all font-sans text-sm`}
-                  disabled={status !== ProcessingState.IDLE}
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className={`p-3 rounded-xl transition-all flex items-center justify-center border ${
-                  (!inputText && !selectedImage) || status !== ProcessingState.IDLE
-                    ? `${getThemeInputBg().split(' ')[0]} border-nalabia-800 text-gray-700 opacity-50 cursor-not-allowed` 
-                    : `${getAccentBg()} text-black border-transparent hover:opacity-90 hover:shadow-[0_0_20px_rgba(212,175,55,0.6)] shadow-lg`
-                }`}
-                disabled={(!inputText && !selectedImage) || status !== ProcessingState.IDLE}
-              >
-                {status === ProcessingState.IDLE ? <Send size={18} /> : <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>}
-              </button>
-            </form>
-          )}
-          
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-2 px-2 gap-2 sm:gap-0">
-            <div className="flex items-center space-x-2">
-              <span className={`text-[8px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70`}>
-                NaLábia
-              </span>
-            </div>
-             <div className="flex items-center space-x-2">
-               <span className={`text-[8px] font-mono tracking-widest uppercase animate-pulse ${getAccentText()} opacity-50`}>
-                ● Online
-              </span>
-              <span className={`text-[8px] font-mono tracking-widest uppercase ${getAccentText()} opacity-70 ml-2`}>
-                © 2024 NaLábia
-              </span>
-             </div>
-          </div>
-        </div>
-      </footer>
-      </>
+          </footer>
+        </>
       )}
     </div>
   );
