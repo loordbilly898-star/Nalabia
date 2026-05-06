@@ -38,10 +38,12 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({
     setIsProcessing(true);
     setError(null);
 
-    const checkoutUrl = "https://pay.cakto.com.br/exfk6pm_826428";
+    const checkoutUrl = "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX";
     
     try {
-      window.location.href = `${checkoutUrl}?src=${user.id}`;
+      const url = new URL(checkoutUrl);
+      url.searchParams.set("src", user.id);
+      window.location.href = url.toString();
     } catch (err: any) {
       setError(err.message || "Erro ao redirecionar para o pagamento.");
       setIsProcessing(false);

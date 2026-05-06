@@ -93,9 +93,9 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
     setError(null);
 
     const links: Record<string, string> = {
-      "mensal": "https://pay.cakto.com.br/nnbqprt_825346",
-      "trimestral": "https://pay.cakto.com.br/379zopu_826386",
-      "anual": "https://pay.cakto.com.br/x4pha2o_826385"
+      "mensal": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
+      "trimestral": "https://pay.cakto.com.br/379zopu_826386?affiliate=NAwEEUbX",
+      "anual": "https://pay.cakto.com.br/x4pha2o_826385?affiliate=NAwEEUbX"
     };
 
     const checkoutUrl = links[planId];
@@ -106,7 +106,9 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
     }
 
     try {
-      window.location.href = `${checkoutUrl}?src=${user.id}`;
+      const url = new URL(checkoutUrl);
+      url.searchParams.set("src", user.id);
+      window.location.href = url.toString();
     } catch (err: any) {
       console.error("Subscription error:", err);
       setError(

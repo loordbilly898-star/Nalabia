@@ -81,37 +81,28 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
     
     // Mapping format for fallback so users don't get stuck
     const links: Record<string, string> = {
-      "mensal": "https://pay.cakto.com.br/nnbqprt_825346",
-      "trimestral": "https://pay.cakto.com.br/379zopu_826386",
-      "anual": "https://pay.cakto.com.br/x4pha2o_826385",
-      "curso": "https://pay.cakto.com.br/exfk6pm_826428",
-      "dark": "https://pay.cakto.com.br/mnh4hcg_826434",
+      "mensal": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
+      "trimestral": "https://pay.cakto.com.br/379zopu_826386?affiliate=NAwEEUbX",
+      "anual": "https://pay.cakto.com.br/x4pha2o_826385?affiliate=NAwEEUbX",
+      "curso": "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX",
+      "dark": "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX",
       "mentoria": "https://pay.cakto.com.br/obgpnz3_874157"
     };
 
+    const checkoutUrl = links[productId];
+    if (!checkoutUrl) {
+       alert("Plano inválido.");
+       setLoadingProduct(null);
+       return;
+    }
+
     try {
-      const response = await fetch("/api/cakto/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          planId: productId,
-          email: user.email,
-        }),
-      });
-      const data = await response.json();
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      } else {
-        throw new Error(data.error || "Missing checkout url");
-      }
+      const url = new URL(checkoutUrl);
+      url.searchParams.set("src", user.id);
+      window.location.href = url.toString();
     } catch (e) {
-      console.error("Checkout error, using fallback:", e);
-      if (links[productId]) {
-        window.location.href = `${links[productId]}?src=${user.id}`;
-      } else {
-        alert("Erro ao redirecionar para pagamento. Tente novamente.");
-      }
+      console.error("Checkout error:", e);
+      alert("Erro ao redirecionar para pagamento. Tente novamente.");
     } finally {
       setLoadingProduct(null);
     }
