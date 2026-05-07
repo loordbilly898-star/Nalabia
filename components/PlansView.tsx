@@ -94,6 +94,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
 
     const links: Record<string, string> = {
       "mensal": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
+      "monthly": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
       "trimestral": "https://pay.cakto.com.br/379zopu?affiliate=NAwEEUbX",
       "anual": "https://pay.cakto.com.br/x4pha2o?affiliate=NAwEEUbX"
     };
