@@ -41,12 +41,12 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
     setIsProcessing(true);
     setError(null);
 
-    const checkoutUrl = "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX";
+    const checkoutUrl = "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX";
     
     try {
-      const url = new URL(checkoutUrl);
-      url.searchParams.set("src", user.id);
-      window.location.href = url.toString();
+      const separator = checkoutUrl.includes("?") ? "&" : "?";
+      const finalUrl = `${checkoutUrl}${separator}src=${user.id}`;
+      window.location.href = finalUrl;
     } catch (err: any) {
       setError(err.message || "Erro ao redirecionar para o pagamento.");
       setIsProcessing(false);

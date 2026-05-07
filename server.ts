@@ -336,20 +336,21 @@ app.post("/api/cakto/create-checkout", async (req, res) => {
 
     let checkoutUrl = "";
     if (planId === "mensal" || planId === "monthly")
-      checkoutUrl = "https://pay.cakto.com.br/nnbqprt_825346";
+      checkoutUrl = "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX";
     else if (planId === "trimestral")
-      checkoutUrl = "https://pay.cakto.com.br/379zopu_826386";
+      checkoutUrl = "https://pay.cakto.com.br/379zopu?affiliate=NAwEEUbX";
     else if (planId === "anual")
-      checkoutUrl = "https://pay.cakto.com.br/x4pha2o_826385";
+      checkoutUrl = "https://pay.cakto.com.br/x4pha2o?affiliate=NAwEEUbX";
     else if (planId === "curso")
-      checkoutUrl = "https://pay.cakto.com.br/exfk6pm_826428";
+      checkoutUrl = "https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX";
     else if (planId === "dark")
-      checkoutUrl = "https://pay.cakto.com.br/mnh4hcg_826434";
+      checkoutUrl = "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX";
     else if (planId === "mentoria")
-      checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157";
+      checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157"; // Sem link de afiliado fornecido para mentoria
     else return res.status(400).json({ error: "Invalid planId" });
 
-    res.json({ checkout_url: `${checkoutUrl}?src=${userId}` });
+    const separator = checkoutUrl.includes("?") ? "&" : "?";
+    res.json({ checkout_url: `${checkoutUrl}${separator}src=${userId}` });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to create Cakto checkout" });
   }
@@ -600,6 +601,12 @@ async function processSubscriptionUpdate(subscription: any) {
             ) {
               finalExpiraEm.setDate(finalExpiraEm.getDate() + 90);
               finalPlanoType = "trimestral";
+            } else if (
+              reason.toLowerCase().includes("semestral") ||
+              planName.toLowerCase().includes("semestral")
+            ) {
+              finalExpiraEm.setDate(finalExpiraEm.getDate() + 180);
+              finalPlanoType = "semestral";
             } else if (
               reason.toLowerCase().includes("anual") ||
               planName.toLowerCase().includes("anual")

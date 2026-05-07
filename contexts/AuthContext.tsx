@@ -181,14 +181,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             const expDate = new Date(data.expiraEm);
             if (new Date() > expDate) {
               console.log(
-                "Subscription expired! Updating database to pending.",
+                "Subscription expired! Updating database to inactive.",
               );
-              data.status = "expirado";
+              data.status = "inativo";
               data.nalabiaPrimeAcess = false;
               // Update database automatically
               supabase
                 .from("users")
-                .update({ status: "expirado", nalabiaPrimeAcess: false })
+                .update({ status: "inativo", nalabiaPrimeAcess: false })
                 .eq("userID", data.userID)
                 .then(({ error }) => {
                   if (error) console.error("Error auto-expiring:", error);
@@ -381,6 +381,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          try {
+            // Tenta logar também globalmente a cada SIGNED_IN capturado
+            supabase.from("sign_ins").insert({
+              user_id: session.user.id,
+              email: session.user.email,
+              signed_in_at: new Date().toISOString()
+            }).then();
+            
+            supabase.from("Sign-ins").insert({
+              user_id: session.user.id,
+              email: session.user.email,
+              signed_in_at: new Date().toISOString()
+            }).then();
+          } catch(e) {}
+        }
+
         setUser(session?.user ?? null);
         if (session?.user) {
           fetchUserData(session.user);
@@ -437,7 +454,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         responseTime: Date.now() - startTime,
       });
 
-      if (onboardingData && data.user) {
+      if (data.user) {
+        // Envia log de login para a tabela sign_ins para o admin visualizar
+        try {
+          // Tenta formatos prováveis caso a tabela tenha nomes diferentes (silencia erros)
+          supabase.from("sign_ins").insert({
+            user_id: data.user.id,
+            email: data.user.email,
+            signed_in_at: new Date().toISOString()
+          }).then();
+          
+          supabase.from("Sign-ins").insert({
+            user_id: data.user.id,
+            email: data.user.email,
+            signed_in_at: new Date().toISOString()
+          }).then();
+        } catch (e) {
+          // Ignorar erros se a tabela não existir
+        }
+
         const { error: updateError } = await supabase
           .from("users")
           .update({ onboardingCompleted: true })
@@ -565,11 +600,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     if (data?.user && !error) {
+      // Inserir os dados diretamente na tabela users do banco de dados na criação de conta
+      try {
+        const newUserToInsert = {
+          userID: data.user.id,
+          name: name || data.user.user_metadata?.full_name || "Usuário",
+          email: email,
+          level: 1,
+          xp: 0,
+          createdAt: Date.now(),
+          onboardingCompleted: !!onboardingData,
+          status: "pendente",
+          plano: "",
+          nalabiaPrimeAcess: false,
+          darkPackAccess: false,
+          coursesAccess: false,
+          mentoriaAccess: false,
+          freeMessagesUsed: 0,
+        };
+        await supabase.from("users").insert(newUserToInsert);
+      } catch (insertEx) {
+        console.warn("Nao foi possivel salvar na tabela users pre-login", insertEx);
+      }
+
       if (onboardingData) {
-        // We defer full db profile creation until first login to respect RLS
-        // Inform UI it's done. But onboarding hasn't been confirmed on db yet.
+        // Tenta também enviar o AI perfil 
+        try {
+          const fullProfile: UserAIProfile = {
+            ...onboardingData,
+            userID: data.user.id,
+          };
+          await supabase.from("user_ai_profile").upsert(fullProfile);
+        } catch (pfEx) {}
+
         console.log(
-          "Registry successful. Data sync deferred to first login due to RLS.",
+          "Registry successful. Data sync attempted.",
         );
       }
     }

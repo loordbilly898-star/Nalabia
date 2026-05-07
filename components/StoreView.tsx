@@ -82,10 +82,10 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
     // Mapping format for fallback so users don't get stuck
     const links: Record<string, string> = {
       "mensal": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
-      "trimestral": "https://pay.cakto.com.br/379zopu_826386?affiliate=NAwEEUbX",
-      "anual": "https://pay.cakto.com.br/x4pha2o_826385?affiliate=NAwEEUbX",
-      "curso": "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX",
-      "dark": "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX",
+      "trimestral": "https://pay.cakto.com.br/379zopu?affiliate=NAwEEUbX",
+      "anual": "https://pay.cakto.com.br/x4pha2o?affiliate=NAwEEUbX",
+      "curso": "https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX",
+      "dark": "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX",
       "mentoria": "https://pay.cakto.com.br/obgpnz3_874157"
     };
 
@@ -97,9 +97,9 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
     }
 
     try {
-      const url = new URL(checkoutUrl);
-      url.searchParams.set("src", user.id);
-      window.location.href = url.toString();
+      const separator = checkoutUrl.includes("?") ? "&" : "?";
+      const finalUrl = `${checkoutUrl}${separator}src=${user.id}`;
+      window.location.href = finalUrl;
     } catch (e) {
       console.error("Checkout error:", e);
       alert("Erro ao redirecionar para pagamento. Tente novamente.");
