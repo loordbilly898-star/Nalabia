@@ -346,7 +346,7 @@ app.post("/api/cakto/create-checkout", async (req, res) => {
     else if (planId === "dark")
       checkoutUrl = "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX";
     else if (planId === "mentoria")
-      checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157"; // Sem link de afiliado fornecido para mentoria
+      checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157?affiliate=43LRhHmd";
     else return res.status(400).json({ error: "Invalid planId" });
 
     const separator = checkoutUrl.includes("?") ? "&" : "?";

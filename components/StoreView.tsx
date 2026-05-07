@@ -87,7 +87,7 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
       "anual": "https://pay.cakto.com.br/x4pha2o?affiliate=NAwEEUbX",
       "curso": "https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX",
       "dark": "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX",
-      "mentoria": "https://pay.cakto.com.br/obgpnz3_874157"
+      "mentoria": "https://pay.cakto.com.br/obgpnz3_874157?affiliate=43LRhHmd"
     };
 
     const checkoutUrl = links[productId];

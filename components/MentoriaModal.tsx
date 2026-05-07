@@ -38,7 +38,7 @@ export const MentoriaModal: React.FC<MentoriaModalProps> = ({
     setIsProcessing(true);
     setError(null);
 
-    const checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157";
+    const checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157?affiliate=43LRhHmd";
     
     try {
       const url = new URL(checkoutUrl);
