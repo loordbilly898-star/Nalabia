@@ -632,7 +632,7 @@ const App: React.FC = () => {
       setActiveTab("STORE");
       return;
     }
-    if (tabId === "CHATBOT" && !userData?.mentoriaAccess) {
+    if (tabId === "CHATBOT" && !(userData?.mentoriaAccess || userData?.settings?.mentoriaAccess)) {
       setActiveTab("STORE");
       return;
     }
@@ -1193,10 +1193,7 @@ const App: React.FC = () => {
           onFinish={() => {
             setShowQuiz(false);
             setShowLanding(false);
-            const signupUrlParams = new URLSearchParams(window.location.search);
-            signupUrlParams.set('signup', 'true');
-            signupUrlParams.set('from', 'quiz');
-            window.history.replaceState({}, '', `${window.location.pathname}?${signupUrlParams}`);
+            setIsPlansDismissed(false); // Make sure PlansView is shown
           }} 
           onGoToLogin={() => {
             setShowQuiz(false);
@@ -1209,6 +1206,11 @@ const App: React.FC = () => {
     if (showLanding) {
       return <LandingView onGetStarted={() => setShowQuiz(true)} />;
     }
+    
+    if (!isPlansDismissed) {
+      return <PlansView onClose={() => setIsPlansDismissed(true)} />;
+    }
+
     return <LoginView />;
   }
 

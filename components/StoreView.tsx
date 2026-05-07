@@ -33,7 +33,7 @@ const PRODUCTS = [
       "Gatilhos Secretos de Resposta",
       "Acesso Imediato e Permanente",
     ],
-    checkAccess: (userData: any) => userData?.mentoriaAccess,
+    checkAccess: (userData: any) => userData?.mentoriaAccess || userData?.settings?.mentoriaAccess,
   },
   {
     id: "dark",

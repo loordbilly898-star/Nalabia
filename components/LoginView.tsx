@@ -85,7 +85,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
           <p className="text-xs font-mono tracking-widest mt-2 text-gold opacity-70">
             OS ∞
           </p>
-          {isRegistering && (
+          
+          {new URLSearchParams(window.location.search).get("from") === "payment_approved" && (
+            <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-sm text-yellow-500 font-medium">
+                Pagamento aprovado! 🎉<br/>
+                Para acessar sua assinatura, crie a senha da sua conta abaixo. Use <b>exatamente o mesmo e-mail</b> que você usou no Cakto.
+              </p>
+            </div>
+          )}
+
+          {isRegistering && new URLSearchParams(window.location.search).get("from") !== "payment_approved" && (
             <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
               <p className="text-sm text-green-400 font-medium">
                 Assine e ganhe acesso imediato à comunidade VIP no WhatsApp:{" "}

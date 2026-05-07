@@ -234,12 +234,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             data.nalabiaPrimeAcess = true;
             data.darkPackAccess = true;
             data.coursesAccess = true;
+            data.mentoriaAccess = true;
           } else if (isLegacyPremium) {
             data.plano = "Mensal";
             data.status = "ativo";
             data.nalabiaPrimeAcess = true;
             data.darkPackAccess = true;
             data.coursesAccess = true;
+            data.mentoriaAccess = true;
           }
 
           // Insert into database, handling RLS via auth matching
@@ -282,6 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           data.nalabiaPrimeAcess = true;
           data.darkPackAccess = true;
           data.coursesAccess = true;
+          data.mentoriaAccess = true;
           data.status = "ativo";
           data.plano = "Desenvolvedor";
         } else if (
@@ -296,6 +299,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           data.nalabiaPrimeAcess = true;
           data.darkPackAccess = true;
           data.coursesAccess = true;
+          data.mentoriaAccess = true;
           data.status = "ativo";
           data.plano = "Mensal";
         } else if (currentUser.email === "gamerbilly898@gmail.com") {
@@ -547,6 +551,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     let signUpResult = await Promise.race([signUpPromise, timeoutPromise]);
 
     let { data, error } = signUpResult;
+
+    if (error && error.message?.toLowerCase().includes("user already registered")) {
+        // Tentativa de "Claim" para contas auto-criadas pelo webhook
+        const claimRes = await fetch("/api/auth/claim-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const claimData = await claimRes.json();
+        
+        if (claimRes.ok && claimData.success) {
+           // Success! The password was updated. Let's log in instead of throwing error.
+           const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+           if (loginErr) throw loginErr;
+           data = loginData;
+           error = null as any;
+        } else {
+           // Some other error or it was conventionally registered
+           throw new Error(claimData.error || "Este e-mail já está em uso.");
+        }
+    }
 
     // Se houve erro de servidor demorando (Timeout) nativo do Supabase
     if (

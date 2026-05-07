@@ -568,7 +568,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
                 
                 <div className="space-y-3">
                   <button onClick={handleSignup} className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold uppercase py-3 px-4 rounded-lg transition-all text-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]">
-                    Criar conta grátis
+                    Ver Planos
                   </button>
                   {freeUses > 0 && (
                     <button 
@@ -590,7 +590,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
             
             {(step === 10 || step === 9) && !showPaywall && (
               <div className="mt-8 text-center pb-8 p-4">
-                 <button onClick={handleSignup} className="text-sm text-gray-500 hover:text-white underline">Pular e criar a conta logo</button>
+                 <button onClick={handleSignup} className="text-sm text-gray-500 hover:text-white underline">Pular e assinar logo</button>
               </div>
             )}
           </div>
@@ -601,7 +601,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
       {showPaywall && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
           <h2 className="text-4xl font-black text-rose-500 mb-4">Você gostou, né? 😏</h2>
-          <p className="text-gray-300 text-lg mb-6 max-w-md">Seus 3 testes grátis acabaram. Crie sua conta agora e tenha respostas ILIMITADAS.</p>
+          <p className="text-gray-300 text-lg mb-6 max-w-md">Seus 3 testes grátis acabaram. Assine agora e tenha respostas ILIMITADAS.</p>
           
           <div className="text-5xl font-black text-yellow-500 mb-8 font-mono tracking-wider tabular-nums drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
             {formatCountdown()}
@@ -614,7 +614,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
           </ul>
 
           <button onClick={handleSignup} className="w-full max-w-xs bg-rose-600 hover:bg-rose-500 text-white font-black uppercase tracking-widest py-5 px-6 rounded-2xl transition-all hover:scale-[1.05] shadow-[0_0_30px_rgba(225,29,72,0.6)] mb-6">
-            CRIAR MINHA CONTA 🔥
+            VER PLANOS 🔥
           </button>
           
           <button onClick={onGoToLogin} className="text-gray-500 hover:text-gray-300 underline underline-offset-4 font-medium transition-colors">

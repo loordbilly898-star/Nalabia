@@ -300,7 +300,7 @@ app.post("/api/verify-payment", async (req, res) => {
           success: true,
           message: "Pago verificado pelo sistema.",
         });
-      if (type === "mentoria" && dbUser.mentoriaAccess)
+      if (type === "mentoria" && (dbUser.mentoriaAccess || dbUser.settings?.mentoriaAccess))
         return res.json({
           success: true,
           message: "Pago verificado pelo sistema.",
@@ -496,25 +496,59 @@ async function processSubscriptionUpdate(subscription: any) {
 
     while (retries > 0 && !success) {
       try {
+        // Find user by external_reference first
         let { data: userData } = await supabase
           .from("users")
           .select("*")
           .eq("userID", userId)
           .single();
 
-        // If user document doesn't exist yet, we must create a skeleton so the payment registers!
+        // If user document doesn't exist yet, check if we need to auto-create them in Auth!
         if (!userData) {
-          console.log(
-            `[Payment Process] User document ${userId} not found! Creating skeleton...`,
-          );
-          userData = {
-            userID: userId,
-            email: payerEmail || "",
-            level: 1,
-            xp: 0,
-            createdAt: Date.now(),
-            onboardingCompleted: false,
-          };
+          if (!userId && payerEmail) {
+            console.log(`[Payment Process] Auto-creating auth user for ${payerEmail}`);
+            // Check if they exist in auth first
+            const { data: existingAuth } = await supabase.auth.admin.listUsers();
+            let authId = existingAuth?.users.find(u => u.email?.toLowerCase() === payerEmail.toLowerCase())?.id;
+            
+            if (!authId) {
+              const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+                email: payerEmail,
+                email_confirm: true,
+                password: "AutoPass" + Math.random().toString(36) + "!", // Secure random temp pass
+                user_metadata: { auto_created: true }
+              });
+              
+              if (authErr) {
+                console.error("[Payment Process] Error auto-creating auth user:", authErr);
+              } else if (authData?.user) {
+                authId = authData.user.id;
+                console.log(`[Payment Process] Auto-created auth user ${authId}`);
+              }
+            } else {
+               console.log(`[Payment Process] Found existing auth user ${authId}`);
+            }
+            
+            if (authId) {
+               userId = authId;
+            }
+          }
+
+          if (userId) {
+            console.log(
+              `[Payment Process] User document ${userId} not found! Creating skeleton...`,
+            );
+            userData = {
+              userID: userId,
+              email: payerEmail || "",
+              level: 1,
+              xp: 0,
+              createdAt: Date.now(),
+              onboardingCompleted: false,
+            };
+          } else {
+             throw new Error("Could not determine or create a userId for this payment.");
+          }
         }
 
         if (
@@ -580,7 +614,7 @@ async function processSubscriptionUpdate(subscription: any) {
               `[Payment Process] Granting Dark Pack Access to ${userId}`,
             );
           } else if (isMentoria) {
-            updateData.mentoriaAccess = true;
+            updateData.settings = { ...(userData.settings || {}), mentoriaAccess: true };
             updateData.plano = "Mentoria VIP";
             finalPlano = "Mentoria VIP";
             finalPlanoType = "vitalicio";
@@ -731,6 +765,39 @@ app.post("/api/admin/activate-user", async (req, res) => {
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/auth/claim-account", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Missing email or password" });
+
+  try {
+    // 1. Find user in auth
+    const { data: existingAuth, error: listErr } = await supabase.auth.admin.listUsers();
+    if (listErr) throw listErr;
+    
+    const authUser = existingAuth?.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (!authUser) {
+       return res.status(404).json({ error: "Account not found." });
+    }
+
+    // 2. Verify that it was auto-created
+    if (!authUser.user_metadata?.auto_created) {
+       return res.status(403).json({ error: "This email is already registered conventionally. Please login instead." });
+    }
+
+    // 3. Update the user password and remove the auto_created flag
+    const { error: updateErr } = await supabase.auth.admin.updateUserById(authUser.id, {
+       password: password,
+       user_metadata: { ...authUser.user_metadata, auto_created: false }
+    });
+
+    if (updateErr) throw updateErr;
+
+    res.json({ success: true, message: "Account claimed successfully. You can now login." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

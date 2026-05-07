@@ -26,10 +26,11 @@ export const MentoriaModal: React.FC<MentoriaModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    if (isOpen && userData?.mentoriaAccess) {
+    const hasAccess = userData?.mentoriaAccess || userData?.settings?.mentoriaAccess;
+    if (isOpen && hasAccess) {
       onSuccess();
     }
-  }, [userData?.mentoriaAccess, isOpen, onSuccess]);
+  }, [userData?.mentoriaAccess, userData?.settings?.mentoriaAccess, isOpen, onSuccess]);
 
   if (!isOpen) return null;
 

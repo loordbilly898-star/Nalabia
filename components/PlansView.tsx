@@ -79,16 +79,20 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
 
     if (status === "approved" || status === "authorized" || paymentId) {
       setVerifyingPayment(true);
-      // Wait a bit for the webhook to process, then check status again
+      // Wait a bit for the webhook to process, then redirect
       const timer = setTimeout(() => {
-        window.location.href = "/dashboard";
+        if (!user) {
+           // We need them to set their password
+           window.location.href = "/?signup=true&from=payment_approved";
+        } else {
+           window.location.href = "/dashboard";
+        }
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [user]);
 
   const handleSubscribe = async (planId: string, planName: string) => {
-    if (!user) return;
     setLoadingPlan(planId);
     setError(null);
 
@@ -108,7 +112,9 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
 
     try {
       const separator = checkoutUrl.includes("?") ? "&" : "?";
-      const finalUrl = `${checkoutUrl}${separator}src=${user.id}`;
+      // Se não houver user.id, não passamos src. O webhook vai usar o payer_email para criar/identificar a conta.
+      const srcParam = user?.id ? `${separator}src=${user.id}` : "";
+      const finalUrl = `${checkoutUrl}${srcParam}`;
       window.location.href = finalUrl;
     } catch (err: any) {
       console.error("Subscription error:", err);
