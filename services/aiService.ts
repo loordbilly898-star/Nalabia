@@ -607,11 +607,12 @@ export const analyzeContent = async (
           case "FLOWING":
             return "MANDATO: Manter a tensão sexual e intelectual. Evite interrogatórios (onde você mora? o que faz?). Transforme perguntas em afirmações provocativas. Intercale 'Push & Pull' (Afasta com uma brincadeira, aproxima com um elogio sutil e desapegado).";
           case "STORY_REPLY":
-            return `MANDATO — STORY VISION LOCK & ENGINE V2:
-          1. EYE (VISÃO): Descreva o que você vê (objetivos, ambiente, ação) sem alucinar. Use "VISUAL INCERTO" se necessário.
-          2. CATEGORY: SELFIE, CORPO, COMIDA/BEBIDA, VIAGEM, ACADEMIA ou RANDOM.
-          3. READ: 1 frase sobre o momento (Ex: "Relaxando no sol").
-          4. REPLY: Gere 3 respostas de "Lábia de 2 Segundos". Curtas (máx 1 frase), naturais, fáceis de responder e sem esforço intelectual. Se parecer mensagem pensada, está ERRADA.`;
+            return `MANDATO — STORY FLIRT & LÁBIA (PLAYFUL & WITTY):
+          O objetivo é gerar muita curiosidade e uma resposta imediata dela. Saia do padrão chato de "elogiador comum" e seja altamente criativo, provocador ou brincalhão.
+          - Se for um story dela de biquíni/corpo: NÃO faça o elogio padrão. Provoque. "Tem que vir com aviso de perigo esse story..." ou "Injusto aparecer no meu feed a essa hora."
+          - Se for comida/lugar: Fale algo presunçoso e engraçado. "Roubaria seu prato fácil." ou "Eu que escolhi esse lugar, admite."
+          - OBRIGATÓRIO: A resposta tem que ter "Lábia". Tem que parecer que você é o cara mais desenrolado que ela conhece, que não fica babando ovo mas sabe flertar com classe.
+          - Use no MÁXIMO 1 frase curta. Sem interrogatórios diretos. Gere 3 opções variadas de altíssima lábia.`;
           case "VALUE_TEST":
             return "MANDATO: Detecção e aniquilação de testes (Shit-tests). Ela está medindo seu valor. Não se defenda, não se explique. Use o 'Excesso de Confiança' (Amplify) ou a 'Indiferença Superior'. Mostre que o julgamento dela não afeta seu estado emocional.";
           case "COLD_RESPONSE":

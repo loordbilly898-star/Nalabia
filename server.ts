@@ -11,6 +11,8 @@ const app = express();
 const PORT = 3000;
 
 const allowedOrigins = [
+  "https://nalabia.com.br",
+  "https://www.nalabia.com.br",
   "https://nalabia-prime.run.app",
   "https://www.nalabia-prime.run.app",
   "https://ais-dev-2fdtxbfqn7qj57ixyqgzeg-233310227239.us-east1.run.app",
@@ -511,13 +513,26 @@ async function processSubscriptionUpdate(subscription: any) {
           userData = data;
         }
 
+        // If user document doesn't exist by ID, try by email
+        if (!userData && payerEmail) {
+          const { data: userByEmail } = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", payerEmail)
+            .single();
+          if (userByEmail) {
+            userData = userByEmail;
+            userId = userByEmail.userID; // Sync the ID
+          }
+        }
+
         // If user document doesn't exist yet, check if we need to auto-create them in Auth!
         if (!userData) {
-          if (!userId && payerEmail) {
+          if (payerEmail) {
             console.log(`[Payment Process] Auto-creating auth user for ${payerEmail}`);
             // Check if they exist in auth first
             const { data: existingAuth } = await supabase.auth.admin.listUsers();
-            let authId = existingAuth?.users.find(u => u.email?.toLowerCase() === payerEmail.toLowerCase())?.id;
+            let authId = existingAuth?.users.find((u: any) => u.email?.toLowerCase() === payerEmail.toLowerCase())?.id;
             
             if (!authId) {
               const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
@@ -785,7 +800,7 @@ app.post("/api/auth/claim-account", async (req, res) => {
     const { data: existingAuth, error: listErr } = await supabase.auth.admin.listUsers();
     if (listErr) throw listErr;
     
-    const authUser = existingAuth?.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const authUser = existingAuth?.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
     if (!authUser) {
        return res.status(404).json({ error: "Account not found." });
     }

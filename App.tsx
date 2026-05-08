@@ -39,6 +39,8 @@ import { CoursesModal } from "./components/CoursesModal";
 import { MentoriaModal } from "./components/MentoriaModal";
 import StoreView from "./components/StoreView";
 import AssistedModeModal from "./components/AssistedModeModal";
+import { UpsellView } from "./components/UpsellView";
+import { InAppOffers } from "./components/InAppOffers";
 import {
   Send,
   ImageIcon,
@@ -319,6 +321,10 @@ const App: React.FC = () => {
       return true;
     }
     return params.get('from') !== 'quiz' && !localStorage.getItem('nalabia_trial_done') && !localStorage.getItem('nalabia_from_quiz');
+  });
+  const [showUpsell, setShowUpsell] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("upsell") === "true";
   });
   const [helpMode, setHelpMode] = useState<AnalysisMode | null>(null);
   const [showAssistedMode, setShowAssistedMode] = useState(false);
@@ -1183,6 +1189,10 @@ const App: React.FC = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gold"></div>
       </div>
     );
+  }
+
+  if (showUpsell) {
+    return <UpsellView />;
   }
 
   // Check subscription access
@@ -2200,6 +2210,8 @@ const App: React.FC = () => {
           </footer>
         </>
       )}
+      {/* The floating in-app offers for users who are missing products */}
+      {user && user.plano && <InAppOffers />}
     </div>
   );
 };
