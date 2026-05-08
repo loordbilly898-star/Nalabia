@@ -154,6 +154,10 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
 
           {/* Payment Section */}
           <div className="space-y-4">
+            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl text-xs text-blue-400 text-center">
+              ⚠️ <b>IMPORTANTE:</b> Use <span className="underline">o mesmo email</span> ({user?.email}) na compra para liberar na hora.
+            </div>
+
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm flex items-start gap-2">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
@@ -181,13 +185,6 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
                 </>
               )}
             </button>
-
-            <p className="text-[10px] text-gray-500 text-center px-4">
-              <strong className="text-gray-400">Importante:</strong> Para
-              liberação automática, certifique-se de usar o mesmo e-mail da sua
-              conta NaLábia (<span className="text-white">{user?.email}</span>)
-              na hora do pagamento.
-            </p>
 
             <button
               onClick={handleVerifyPayment}

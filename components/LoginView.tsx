@@ -94,16 +94,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData }) => {
               </p>
             </div>
           )}
-
-          {isRegistering && new URLSearchParams(window.location.search).get("from") !== "payment_approved" && (
-            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <p className="text-sm text-green-400 font-medium">
-                Assine e ganhe acesso imediato à comunidade VIP no WhatsApp:{" "}
-                <br />
-                <span className="font-bold">NaLábia CLUB</span>
-              </p>
-            </div>
-          )}
         </div>
 
         {error && (

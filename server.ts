@@ -288,33 +288,35 @@ app.post("/api/verify-payment", async (req, res) => {
       .select("*")
       .eq("userID", userId)
       .single();
+
+    const emailToCheck = dbUser?.email || "";
+    let { data: currAssinatura } = emailToCheck
+      ? await supabase
+          .from("assinaturas")
+          .select("*")
+          .eq("email", emailToCheck)
+          .order("expira_em", { ascending: false })
+          .maybeSingle()
+      : { data: null };
+
     if (dbUser && dbUser.status === "ativo") {
-      // Se já está ativo e tem acesso ao item específico, aprova imediatamente!
-      if (type === "courses" && dbUser.coursesAccess)
-        return res.json({
-          success: true,
-          message: "Pago verificado pelo sistema.",
-        });
-      if (type === "darkpack" && dbUser.darkPackAccess)
-        return res.json({
-          success: true,
-          message: "Pago verificado pelo sistema.",
-        });
-      if (type === "mentoria" && (dbUser.mentoriaAccess || dbUser.settings?.mentoriaAccess))
-        return res.json({
-          success: true,
-          message: "Pago verificado pelo sistema.",
-        });
-      // Se não for pacote específico, basta checar se tem acesso Prime (foi assinado)
-      if (
-        (!type ||
-          (type !== "courses" && type !== "darkpack" && type !== "mentoria")) &&
-        dbUser.nalabiaPrimeAcess
-      ) {
-        return res.json({
-          success: true,
-          message: "Assinatura verificada pelo sistema.",
-        });
+      // Check from dbUser
+      if (type === "courses" && dbUser.coursesAccess) return res.json({ success: true, message: "Pago verificado." });
+      if (type === "darkpack" && dbUser.darkPackAccess) return res.json({ success: true, message: "Pago verificado." });
+      if (type === "mentoria" && (dbUser.mentoriaAccess || dbUser.settings?.mentoriaAccess)) return res.json({ success: true, message: "Pago verificado." });
+      if ((!type || (type !== "courses" && type !== "darkpack" && type !== "mentoria")) && dbUser.nalabiaPrimeAcess) {
+        return res.json({ success: true, message: "Assinatura verificada." });
+      }
+    }
+
+    // Fallback check from assinaturas
+    if (currAssinatura && currAssinatura.status === "ativa" && new Date(currAssinatura.expira_em) > new Date()) {
+      const pNome = (currAssinatura.plano_nome || "").toLowerCase();
+      if (type === "courses" && (pNome.includes("curso") || pNome.includes("academia"))) return res.json({ success: true, message: "Pago verificado." });
+      if (type === "darkpack" && pNome.includes("dark")) return res.json({ success: true, message: "Pago verificado." });
+      if (type === "mentoria" && pNome.includes("mentoria")) return res.json({ success: true, message: "Pago verificado." });
+      if (!type || (type !== "courses" && type !== "darkpack" && type !== "mentoria")) {
+        return res.json({ success: true, message: "Assinatura verificada." });
       }
     }
 
@@ -392,11 +394,13 @@ app.post("/api/webhook/cakto", async (req, res) => {
       payload.offer?.name ||
       payload.items?.[0]?.title ||
       "";
-    const payerEmail =
+    const rawEmail =
       payload.customer?.email ||
       payload.client?.email ||
       payload.email ||
-      payload.payer_email;
+      payload.payer_email || "";
+      
+    const payerEmail = String(rawEmail).trim().toLowerCase();
 
     console.log(
       `[Cakto] Parsed -> Status: ${status}, UserId: ${userId}, Email: ${payerEmail}, Amount: ${amount}, Reason: ${reason}`,
@@ -490,18 +494,22 @@ async function processSubscriptionUpdate(subscription: any) {
     }
   }
 
-  if (userId) {
+  if (userId || payerEmail) {
     let retries = 3;
     let success = false;
 
     while (retries > 0 && !success) {
       try {
+        let userData: any = null;
         // Find user by external_reference first
-        let { data: userData } = await supabase
-          .from("users")
-          .select("*")
-          .eq("userID", userId)
-          .single();
+        if (userId) {
+          const { data } = await supabase
+            .from("users")
+            .select("*")
+            .eq("userID", userId)
+            .single();
+          userData = data;
+        }
 
         // If user document doesn't exist yet, check if we need to auto-create them in Auth!
         if (!userData) {

@@ -135,6 +135,12 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
               Tudo que você precisa por um investimento irrisório.
             </span>
           </p>
+
+          <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400 text-sm max-w-md mx-auto text-left">
+            <p className="font-medium text-center">
+              ⚠️ <span className="font-bold">IMPORTANTE:</span> Você deve utilizar o <span className="font-bold underline">exato mesmo email</span> ({user?.email || "da sua conta"}) na hora do pagamento para liberar o acesso automaticamente.
+            </p>
+          </div>
         </div>
       </div>
 

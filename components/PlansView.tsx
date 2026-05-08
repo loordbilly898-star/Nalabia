@@ -214,19 +214,17 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
             </div>
           )}
 
-          <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm max-w-md mx-auto">
-            <p className="font-medium">
-              🎁 BÔNUS EXCLUSIVO: <br />
-              Assine qualquer plano e ganhe acesso imediato à comunidade VIP no
-              WhatsApp: <span className="font-bold">NaLábia CLUB</span>
-            </p>
-          </div>
-
           {error && (
             <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm max-w-md mx-auto">
               {error}
             </div>
           )}
+
+          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400 text-sm max-w-md mx-auto">
+            <p className="font-medium">
+              ⚠️ <span className="font-bold">IMPORTANTE:</span> Você deve utilizar o <span className="font-bold underline">exato mesmo email</span> ({user?.email || "da sua conta"}) na hora do pagamento para liberar o acesso automaticamente.
+            </p>
+          </div>
         </div>
 
         <div className="flex justify-center mb-8">

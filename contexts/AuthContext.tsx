@@ -264,6 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // --- NEW: Prioritize check in 'assinaturas' table ---
         if (assinatura && assinatura.status === "ativa") {
           const expirationDate = new Date(assinatura.expira_em);
+          // Vitalicio is +10 years, so it's always actively overriding.
           if (expirationDate > new Date()) {
             console.log(
               `[Auth] Valid assinatura found for ${data.email}. Overriding status.`,
@@ -272,6 +273,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             data.nalabiaPrimeAcess = true;
             data.plano = assinatura.plano_nome;
             data.expiraEm = assinatura.expira_em;
+            
+            const pNome = (assinatura.plano_nome || "").toLowerCase();
+            if (pNome.includes("curso") || pNome.includes("academia")) {
+              data.coursesAccess = true;
+            }
+            if (pNome.includes("dark")) {
+              data.darkPackAccess = true;
+            }
+            if (pNome.includes("mentoria")) {
+              data.mentoriaAccess = true;
+              data.settings = { ...(data.settings || {}), mentoriaAccess: true };
+            }
           }
         }
         // --- END NEW ---

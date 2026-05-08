@@ -145,6 +145,10 @@ export const MentoriaModal: React.FC<MentoriaModalProps> = ({
 
           {/* Payment Section */}
           <div className="space-y-4">
+            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl text-xs text-blue-400 text-center">
+              ⚠️ <b>IMPORTANTE:</b> Use <span className="underline">o mesmo email</span> ({user?.email}) na compra para liberar na hora.
+            </div>
+
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm flex items-start gap-2">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />

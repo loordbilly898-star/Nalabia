@@ -115,7 +115,7 @@ const SLIDES = [
     id: "cta",
     title: "A Vantagem Injusta",
     subtitle:
-      "O acesso ao NaLábia Prime é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social e ganhe acesso imediato à comunidade VIP no WhatsApp: NaLábia CLUB.",
+      "O acesso ao NaLábia Prime é a diferença entre ser ignorado e ser inesquecível. Junte-se ao seleto grupo de homens que dominam a dinâmica social.",
     icon: Star,
     cta: "CRIAR MINHA CONTA AGORA",
   },
