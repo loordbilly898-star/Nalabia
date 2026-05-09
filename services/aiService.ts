@@ -148,7 +148,7 @@ export const getMistralAI = (settings?: AppSettings) => {
   const customKey = settings?.customApiKey;
   let customKeyToPass: string | undefined = undefined;
 
-  if (customKey && customKey.trim() !== "" && !customKey.startsWith("AIza")) {
+  if (customKey && customKey.trim() !== "") {
     customKeyToPass = customKey.trim();
   }
 

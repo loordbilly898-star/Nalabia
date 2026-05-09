@@ -32,13 +32,13 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis }) => {
       <div className="border-b border-gold-dim/10 pb-3">
         <h3 className="text-xs font-mono text-gold-glow uppercase tracking-wider mb-1">
           <span className="animate-pulse mr-2">●</span>
-          Leitura do Momento
+          Mentoria & Leitura da Dinâmica
         </h3>
-        <p className="text-gray-200 text-sm font-medium leading-relaxed">
+        <div className="text-gray-200 text-sm font-medium leading-relaxed whitespace-pre-wrap">
           {typeof analysis.momentReading === "string"
             ? analysis.momentReading
             : JSON.stringify(analysis.momentReading)}
-        </p>
+        </div>
       </div>
 
       {/* Visual Radar */}

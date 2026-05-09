@@ -1,9 +1,9 @@
-import { Mistral } from "@mistralai/mistralai";
 import express from "express";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { Mistral } from "@mistralai/mistralai";
 
 dotenv.config();
 
@@ -223,6 +223,8 @@ app.post("/api/ai/stream", async (req, res) => {
     if (typeof res.flushHeaders === "function") {
       res.flushHeaders();
     }
+
+    if (!stream) throw new Error("Stream not initialized.");
 
     let chunkCount = 0;
     try {
