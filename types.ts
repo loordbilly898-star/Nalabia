@@ -117,7 +117,8 @@ export type AnalysisMode =
   | "NSFW"
   | "MANIPULATION"
   | "COURSES"
-  | "STORE";
+  | "STORE"
+  | "RANKING";
 
 export interface SavedResponse {
   id: string;

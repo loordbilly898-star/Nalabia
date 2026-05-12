@@ -39,6 +39,7 @@ import { CoursesModal } from "./components/CoursesModal";
 import { MentoriaModal } from "./components/MentoriaModal";
 import StoreView from "./components/StoreView";
 import AssistedModeModal from "./components/AssistedModeModal";
+import RankingView, { RANK_INFO, getRankByXP } from "./components/RankingView";
 import { UpsellView } from "./components/UpsellView";
 import { InAppOffers } from "./components/InAppOffers";
 import {
@@ -76,6 +77,7 @@ import {
   Compass,
   ChevronRight,
   BrainCircuit,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import { checkDeviceUsage, incrementDeviceUsage } from "./services/antiFraud";
@@ -150,6 +152,12 @@ const TABS: {
     label: "Estatísticas",
     icon: Crown,
     desc: "Dashboard do Usuário",
+  },
+  {
+    id: "RANKING",
+    label: "Ranking",
+    icon: Trophy,
+    desc: "Placar Global",
   },
   {
     id: "CHATBOT",
@@ -1499,25 +1507,34 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {userData && (
-            <div className="flex flex-col items-end mr-2">
-              <span className="text-[10px] font-mono text-gold">
-                NÍVEL {userData.level}
-              </span>
-              <span className="text-[10px] font-mono text-gray-500">
-                {userData.xp} XP
-              </span>
-              {userData.plano && (
-                <span className="text-[8px] font-mono text-emerald-400 mt-0.5 uppercase">
-                  {userData.plano}
-                </span>
-              )}
-            </div>
-          )}
+          {userData && (() => {
+            const currentRank = getRankByXP(userData.xp || 0);
+            const rankInfo = RANK_INFO[currentRank];
+            const RankIcon = rankInfo.icon;
+            
+            return (
+              <button
+                onClick={() => handleTabChange("RANKING")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all mr-2 ${activeTab === 'RANKING' ? 'bg-white/10 border-gold-glow' : `bg-black/50 ${rankInfo.border} hover:bg-white/5`}`}
+                title="Meu Ranking"
+              >
+                <RankIcon className={`w-4 h-4 ${rankInfo.color}`} />
+                <div className="flex flex-col items-start leading-none">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${rankInfo.color}`}>
+                    {currentRank}
+                  </span>
+                  <span className="text-[9px] font-mono text-gray-500 mt-0.5">
+                    {userData.xp || 0} XP
+                  </span>
+                </div>
+              </button>
+            );
+          })()}
+          
           <div className="flex items-center space-x-1">
             <button
               onClick={() => handleTabChange("STORE")}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 border border-purple-400/50 rounded-full text-xs font-black text-white shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:shadow-[0_0_30px_rgba(236,72,153,0.8)] hover:scale-105 transition-all uppercase animate-pulse"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 border border-purple-400/50 rounded-full text-xs font-black text-white shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:shadow-[0_0_30px_rgba(236,72,153,0.8)] hover:scale-105 transition-all uppercase animate-pulse mr-1"
               title="Área VIP"
             >
               <Crown size={16} className="text-yellow-300 drop-shadow-md" />
@@ -1579,6 +1596,10 @@ const App: React.FC = () => {
             settings={settings}
             userAIProfile={userAIProfile}
           />
+        </div>
+      ) : activeTab === "RANKING" ? (
+        <div className="flex-1 overflow-hidden">
+          <RankingView />
         </div>
       ) : activeTab === "CHATBOT" ? (
         <div className="flex-1 overflow-hidden">

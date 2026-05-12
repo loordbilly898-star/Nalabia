@@ -20,6 +20,7 @@ import {
   Flame,
   Brain,
   BookOpen,
+  Trophy,
 } from "lucide-react";
 
 interface HomeViewProps {
@@ -212,6 +213,13 @@ const CATEGORIES = [
         icon: Crown,
         desc: "Seu desempenho e evolução.",
         tip: "Acompanhe seu nível, XP e taxa de sucesso.",
+      },
+      {
+        id: "RANKING" as AnalysisMode,
+        label: "Notoriedade",
+        icon: Trophy,
+        desc: "Ranking Global NALÁBIA.",
+        tip: "Compare seu XP e suba na hierarquia social contra outros jogadores.",
       },
     ],
   },
