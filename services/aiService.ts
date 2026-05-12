@@ -585,8 +585,9 @@ export const analyzeContent = async (
       `;
       } else {
         historyInstruction = `
-      📜 HISTÓRICO: Vazio. 
-      ${mode === "FIRST_CONTACT" ? "Este é o PRIMEIRO CONTATO. Gere uma linha de abertura impactante." : "Sem mensagens anteriores."}
+      📜 HISTÓRICO DE MENTORIA RECENTE: Vazio na plataforma.
+      (ATENÇÃO: A base de histórico está vazia, mas você DEVE ler e considerar qualquer mensagem presente na IMAGEM ENVIADA. Não ignore os balões de chat da imagem.)
+      ${mode === "FIRST_CONTACT" ? "MENSAGEM: Trate como PRIMEIRO CONTATO ou retomada dependendo do que ver na imagem." : ""}
       `;
       }
 
@@ -603,30 +604,29 @@ export const analyzeContent = async (
       const getModeInstructions = (mode: AnalysisMode): string => {
         switch (mode) {
           case "FIRST_CONTACT":
-            return "MANDATO: Criar impacto instantâneo. NÃO seja o cara que diz 'Oi'. Use ganchos psicológicos (Cold Reading) ou perguntas de 'Frame' (Parece que você é do tipo que...). O objetivo é fazer ela sentir que você a 'leu' em segundos. Curiosidade é a única métrica aqui.";
+            return "MANDATO: Criar impacto instantâneo. NÃO seja o cara que diz 'Oi'. Use ganchos psicológicos (Cold Reading) ou perguntas de 'Frame'. O objetivo é fazer ela sentir que você a 'leu' em segundos. TEM QUE SER CURTO, CASUAL E NÃO-BRUXENTO. Respeite as configurações (sliders) enviadas.";
           case "FLOWING":
-            return "MANDATO: Manter a tensão sexual e intelectual. Evite interrogatórios (onde você mora? o que faz?). Transforme perguntas em afirmações provocativas. Intercale 'Push & Pull' (Afasta com uma brincadeira, aproxima com um elogio sutil e desapegado).";
+            return "MANDATO: Manter a tensão sexual e intelectual. Evite interrogatórios. Transforme perguntas em afirmações provocativas. MENSAGENS CURTAS E CASUAIS. Respeite as configurações (sliders) enviadas.";
           case "STORY_REPLY":
-            return `MANDATO — STORY FLIRT & LÁBIA (PLAYFUL & WITTY):
-          O objetivo é gerar muita curiosidade e uma resposta imediata dela. Saia do padrão chato de "elogiador comum" e seja altamente criativo, provocador ou brincalhão.
-          - Se for um story dela de biquíni/corpo: NÃO faça o elogio padrão. Provoque. "Tem que vir com aviso de perigo esse story..." ou "Injusto aparecer no meu feed a essa hora."
-          - Se for comida/lugar: Fale algo presunçoso e engraçado. "Roubaria seu prato fácil." ou "Eu que escolhi esse lugar, admite."
-          - OBRIGATÓRIO: A resposta tem que ter "Lábia". Tem que parecer que você é o cara mais desenrolado que ela conhece, que não fica babando ovo mas sabe flertar com classe.
-          - Use no MÁXIMO 1 frase curta. Sem interrogatórios diretos. Gere 3 opções variadas de altíssima lábia.`;
+            return `MANDATO — STORY FLIRT & LÁBIA:
+          O objetivo é gerar muita curiosidade e uma resposta imediata dela. Saia do padrão de "elogiador comum", seja criativo mas MANTENHA-SE CASUAL.
+          - Se for de biquíni/corpo: NÃO elogie direto. Use algo como "Injusto aparecer no meu feed a essa hora."
+          - OBRIGATÓRIO: A resposta tem que ter "Lábia" MAS NÃO PODE SER ESOTÉRICA OU ASSUSTADORA. Escreva como um cara extremamente confiante e normal de 2026.
+          - Use no MÁXIMO 1 linha / frase curta. Respeite fielmente os níveis dos sliders (Flerte, Mistério, etc). Se estiverem baixos, responda natural. Sem 'textão'.`;
           case "VALUE_TEST":
-            return "MANDATO: Detecção e aniquilação de testes (Shit-tests). Ela está medindo seu valor. Não se defenda, não se explique. Use o 'Excesso de Confiança' (Amplify) ou a 'Indiferença Superior'. Mostre que o julgamento dela não afeta seu estado emocional.";
+            return "MANDATO: Detecção de testes. Use 'Excesso de Confiança' (Amplify) ou 'Indiferença Superior'. Seja casual, curto e não force. Respeite as configurações (sliders).";
           case "COLD_RESPONSE":
-            return "MANDATO: Choque de escassez. Se ela esfriou, você congelou. Mensagens curtas, demoradas e sem justificativa. O objetivo é fazer ela se perguntar por que você perdeu o interesse. Use a técnica de 'Inversão de Investimento'.";
+            return "MANDATO: Choque de escassez. Mensagens MUITO CURTAS, demoradas e sem justificativa. Respeite as configurações (sliders).";
           case "REACTIVATION":
-            return "MANDATO: Ressuscitar sem parecer carente. Use ganchos de estilo de vida (Vi isso e lembrei do seu mau gosto para X). Deve parecer um pensamento aleatório, não uma tentativa de puxar conversa. Desapego absoluto.";
+            return "MANDATO: Ressuscitar sem parecer carente. Use ganchos de estilo de vida de forma rápida e desapegada. Respeite as configurações (sliders).";
           case "NSFW":
-            return "MANDATO: Dominação e escalação. Use linguagem de duplo sentido, audácia e confiança implícita. O objetivo é criar uma 'bolha' de intimidade onde só vocês dois entendem o que está acontecendo. Saia da zona de amizade com força.";
+            return "MANDATO: Dominação e escalação. Duplo sentido curto. Sem textão. Respeite as configurações (sliders).";
           case "MANIPULATION":
-            return "MANDATO: Psicologia reversa e gatilhos de elite. Use escassez, validação intermitente e autoridade social. O objetivo é transformar você no foco de atenção dela, invertendo o papel de quem busca validação.";
+            return "MANDATO: Psicologia reversa e gatilhos de elite. Respeite as configurações (sliders).";
           case "RED_FLAG_DETECTOR":
-            return "MANDATO: Diagnóstico de toxicidade. Identifique se ela é 'vampira de atenção', narcisista ou apenas desinteressada. Se o veredito for negativo, instrua o usuário a dar o 'Ghosting Tático' para preservar o próprio valor.";
+            return "MANDATO: Diagnóstico de toxicidade. Instrua o usuário. Seja direto.";
           default:
-            return "MANDATO: Estratégia geral NaLábia. Mantenha o Frame alto, a resposta curta e o interesse dela sempre um degrau abaixo do seu investimento aparente.";
+            return "MANDATO: Estratégia geral NaLábia. Resposta curta, casual, não bruxenta e respeitando os níveis (sliders) atuais passados.";
         }
       };
 
@@ -638,11 +638,12 @@ export const analyzeContent = async (
     ⚙️ PARÂMETROS ATUAIS DE GERAÇÃO:
     - MODO ATIVO: ${mode}
     - INSTRUÇÃO TÁTICA DO MODO: ${getModeInstructions(mode)}
-    - FLERTE: ${flirtLevel}/10
-    - LÁBIA (Witty): ${wittyLevel}/10
-    - DOMINÂNCIA: ${dominanceLevel}/10
-    - MISTÉRIO: ${mysteryLevel}/10
+    - FLERTE: ${flirtLevel}/10 (1 = Super casual/amigável, 10 = Altamente direto/Sexual)
+    - LÁBIA (Witty): ${wittyLevel}/10 (1 = Neutro, 10 = Sarcástico, Brincalhão, Provocador)
+    - DOMINÂNCIA: ${dominanceLevel}/10 (1 = Passivo/Reativo, 10 = Assume o controle, Macho Alpha)
+    - MISTÉRIO: ${mysteryLevel}/10 (1 = Livro aberto, 10 = Responde com perguntas, gera lacunas)
     - RITMO/VELOCIDADE: ${speed}
+    MUITO IMPORTANTE: Se o nível do slider for baixo (1 a 4), você NÃO DEVE aplicar aquele traço. Ex: Se Flerte for 1, a resposta DEVE SER ZERO FLERTE. Se for 10, DEVE SER MUITO FORTE. O usuário reclamou que você não obedece isso. Obedeça rigorosamente. Não use "textão" bruxento.
 
     🧠 META-APRENDIZADO & CONSCIÊNCIA:
     Sua missão é evoluir. Analise o histórico e as memórias para:
@@ -677,7 +678,7 @@ export const analyzeContent = async (
           content: [
             {
               type: "text",
-              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. This is a chat screenshot.\n2. Bubbles aligned to the RIGHT edge of the screen are sent by the USER (MAN). He usually DOES NOT have a profile pic next to his bubbles.\n3. Bubbles aligned to the LEFT edge of the screen are sent by the OTHER PERSON (WOMAN). She usually has a profile pic next to her bubble.\n4. YOUR TASK: You are acting as the MAN. You must read her last message and generate what the MAN should reply back to her.",
+              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. IF THIS IS A CHAT SCREENSHOT:\n- Bubbles aligned to the EXACT RIGHT EDGE (Direita) are sent by the USER (MAN). He DOES NOT have a profile pic next to his bubbles.\n- Bubbles aligned to the EXACT LEFT EDGE (Esquerda) are sent by the OTHER PERSON (WOMAN). She usually HAS a profile pic next to her bubble.\n- YOUR TASK: Read the conversation, identify her last message (left side), and generate what the MAN (right side) should reply back to her.\n2. IF THIS IS A PROFILE OR STORY (No chat bubbles):\n- Read her bio, text, or context.\n- GENERATE the FIRST MESSAGE that the MAN should send to her.\n3. ABSOLUTE RULE: DO NOT CONFUSE WHO IS WHO. YOU ARE DRAFTING THE MALE USER'S RESPONSE.",
             },
             { type: "image_url", imageUrl: { url: imageBase64 } },
             { type: "text", text: prompt },
@@ -819,7 +820,7 @@ export const regenerateContent = async (
           content: [
             {
               type: "text",
-              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. This is a chat screenshot.\n2. Bubbles aligned to the RIGHT edge of the screen are sent by the USER (MAN). He usually DOES NOT have a profile pic next to his bubbles.\n3. Bubbles aligned to the LEFT edge of the screen are sent by the OTHER PERSON (WOMAN). She usually has a profile pic next to her bubble.\n4. YOUR TASK: You are acting as the MAN. You must read her last message and generate what the MAN should reply back to her.",
+              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. IF THIS IS A CHAT SCREENSHOT:\n- Bubbles aligned to the EXACT RIGHT EDGE (Direita) are sent by the USER (MAN). He DOES NOT have a profile pic next to his bubbles.\n- Bubbles aligned to the EXACT LEFT EDGE (Esquerda) are sent by the OTHER PERSON (WOMAN). She usually HAS a profile pic next to her bubble.\n- YOUR TASK: Read the conversation, identify her last message (left side), and generate what the MAN (right side) should reply back to her.\n2. IF THIS IS A PROFILE OR STORY (No chat bubbles):\n- Read her bio, text, or context.\n- GENERATE the FIRST MESSAGE that the MAN should send to her.\n3. ABSOLUTE RULE: DO NOT CONFUSE WHO IS WHO. YOU ARE DRAFTING THE MALE USER'S RESPONSE.",
             },
             { type: "image_url", imageUrl: { url: imageBase64 } },
             { type: "text", text: prompt },
@@ -940,7 +941,7 @@ export const runLaboratory = async (
           content: [
             {
               type: "text",
-              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. This is a chat screenshot.\n2. Bubbles aligned to the RIGHT edge of the screen are sent by the USER (MAN). He usually DOES NOT have a profile pic next to his bubbles.\n3. Bubbles aligned to the LEFT edge of the screen are sent by the OTHER PERSON (WOMAN). She usually has a profile pic next to her bubble.\n4. YOUR TASK: You are acting as the MAN. You must read her last message and generate what the MAN should reply back to her.",
+              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. IF THIS IS A CHAT SCREENSHOT:\n- Bubbles aligned to the EXACT RIGHT EDGE (Direita) are sent by the USER (MAN). He DOES NOT have a profile pic next to his bubbles.\n- Bubbles aligned to the EXACT LEFT EDGE (Esquerda) are sent by the OTHER PERSON (WOMAN). She usually HAS a profile pic next to her bubble.\n- YOUR TASK: Read the conversation, identify her last message (left side), and generate what the MAN (right side) should reply back to her.\n2. IF THIS IS A PROFILE OR STORY (No chat bubbles):\n- Read her bio, text, or context.\n- GENERATE the FIRST MESSAGE that the MAN should send to her.\n3. ABSOLUTE RULE: DO NOT CONFUSE WHO IS WHO. YOU ARE DRAFTING THE MALE USER'S RESPONSE.",
             },
             { type: "image_url", imageUrl: { url: imageBase64 } },
             { type: "text", text: prompt },
