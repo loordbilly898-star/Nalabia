@@ -65,7 +65,7 @@ export function InAppOffers() {
       bg: "bg-red-900/20",
       border: "border-red-500/30",
       cta: "Liberar Dark Pack",
-      link: "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX",
+      link: "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX",
     },
     courses: {
       title: "Todos os Cursos",
@@ -75,7 +75,7 @@ export function InAppOffers() {
       bg: "bg-blue-900/20",
       border: "border-blue-500/30",
       cta: "Acessar Cursos",
-      link: "https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX",
+      link: "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX",
     }
   };
 

@@ -1,7 +1,10 @@
 import React, { useEffect } from "react";
 import { Sparkles, ArrowRight, ShieldCheck, Star } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 export function UpsellView() {
+  const { user } = useAuth();
+  
   useEffect(() => {
     // Inject the Cakto script dynamically
     const script = document.createElement("script");
@@ -109,16 +112,16 @@ export function UpsellView() {
                 <cakto-upsell-accept
                   bg-color="#fbbf24"
                   text-color="#000000"
-                  upsell-accept-url="https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX&src=73383c8a-50ec-43ee-a989-f87f68e4713e"
+                  upsell-accept-url="https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX&src=${user?.id || ''}"
                   offer-id="obgpnz3"
                   app-base-url="https://app.cakto.com.br"
                   offer-type="upsell"
-                  upsell-reject-url="https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX&src=73383c8a-50ec-43ee-a989-f87f68e4713e"   
+                  upsell-reject-url="https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX&src=${user?.id || ''}"   
                 >
                   SIM, ADICIONAR OFERTA AGORA
                 </cakto-upsell-accept>
                 <cakto-upsell-reject
-                  upsell-reject-url="https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX&src=73383c8a-50ec-43ee-a989-f87f68e4713e"       
+                  upsell-reject-url="https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX&src=${user?.id || ''}"       
                 >
                   Não, eu passo e vou perder essa oportunidade
                 </cakto-upsell-reject>

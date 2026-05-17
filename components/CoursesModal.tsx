@@ -38,7 +38,7 @@ export const CoursesModal: React.FC<CoursesModalProps> = ({
     setIsProcessing(true);
     setError(null);
 
-    const checkoutUrl = "https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX";
+    const checkoutUrl = "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX";
     
     try {
       const separator = checkoutUrl.includes("?") ? "&" : "?";

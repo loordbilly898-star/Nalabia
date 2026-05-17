@@ -41,7 +41,7 @@ export const DarkPackModal: React.FC<DarkPackModalProps> = ({
     setIsProcessing(true);
     setError(null);
 
-    const checkoutUrl = "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX";
+    const checkoutUrl = "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX";
     
     try {
       const separator = checkoutUrl.includes("?") ? "&" : "?";

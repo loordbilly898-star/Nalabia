@@ -344,13 +344,13 @@ app.post("/api/cakto/create-checkout", async (req, res) => {
     if (planId === "mensal" || planId === "monthly")
       checkoutUrl = "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX";
     else if (planId === "trimestral")
-      checkoutUrl = "https://pay.cakto.com.br/379zopu?affiliate=NAwEEUbX";
+      checkoutUrl = "https://pay.cakto.com.br/379zopu_826386?affiliate=NAwEEUbX";
     else if (planId === "anual")
-      checkoutUrl = "https://pay.cakto.com.br/x4pha2o?affiliate=NAwEEUbX";
+      checkoutUrl = "https://pay.cakto.com.br/x4pha2o_826385?affiliate=NAwEEUbX";
     else if (planId === "curso")
-      checkoutUrl = "https://pay.cakto.com.br/exfk6pm?affiliate=NAwEEUbX";
+      checkoutUrl = "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX";
     else if (planId === "dark")
-      checkoutUrl = "https://pay.cakto.com.br/mnh4hcg?affiliate=NAwEEUbX";
+      checkoutUrl = "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX";
     else if (planId === "mentoria")
       checkoutUrl = "https://pay.cakto.com.br/obgpnz3_874157?affiliate=43LRhHmd";
     else return res.status(400).json({ error: "Invalid planId" });
@@ -392,12 +392,23 @@ app.post("/api/webhook/cakto", async (req, res) => {
     const amount = payload.amount
       ? Number(payload.amount) / 100
       : Number(payload.transaction_amount) || 0;
+    const payloadString = JSON.stringify(payload).toLowerCase();
+    
+    // Add known Cakto offer IDs if present in payload to help identification
+    let extraReason = "";
+    if (payloadString.includes("nnbqprt")) extraReason += " mensal";
+    if (payloadString.includes("379zopu")) extraReason += " trimestral";
+    if (payloadString.includes("x4pha2o")) extraReason += " anual";
+    if (payloadString.includes("exfk6pm")) extraReason += " curso";
+    if (payloadString.includes("mnh4hcg")) extraReason += " darkpack";
+    if (payloadString.includes("obgpnz3")) extraReason += " mentoria";
+
     const reason =
-      payload.metadata?.planName ||
+      (payload.metadata?.planName ||
       payload.product?.name ||
       payload.offer?.name ||
       payload.items?.[0]?.title ||
-      "";
+      "") + extraReason;
     const rawEmail =
       payload.customer?.email ||
       payload.client?.email ||
@@ -696,6 +707,7 @@ async function processSubscriptionUpdate(subscription: any) {
             .from("assinaturas")
             .upsert(
               {
+                id: userId,
                 email: payerEmail || userData.email,
                 status: "ativa",
                 plano: finalPlanoType,
@@ -704,7 +716,7 @@ async function processSubscriptionUpdate(subscription: any) {
                 expira_em: finalExpiraEm.toISOString(),
                 updated_at: new Date().toISOString(),
               },
-              { onConflict: "email" },
+              { onConflict: "id" },
             );
           if (assinError)
             console.error(
