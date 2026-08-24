@@ -631,45 +631,36 @@ export const analyzeContent = async (
       };
 
       const prompt = `
-    ${SYSTEM_PROMPT}
+${SYSTEM_PROMPT}
 
-    ${getQuizProfilePrompt()}
+${getQuizProfilePrompt()}
 
-    ⚙️ PARÂMETROS ATUAIS DE GERAÇÃO:
-    - MODO ATIVO: ${mode}
-    - INSTRUÇÃO TÁTICA DO MODO: ${getModeInstructions(mode)}
-    - FLERTE: ${flirtLevel}/10 (1 = Super casual/amigável, 10 = Altamente direto/Sexual)
-    - LÁBIA (Witty): ${wittyLevel}/10 (1 = Neutro, 10 = Sarcástico, Brincalhão, Provocador)
-    - DOMINÂNCIA: ${dominanceLevel}/10 (1 = Passivo/Reativo, 10 = Assume o controle, Macho Alpha)
-    - MISTÉRIO: ${mysteryLevel}/10 (1 = Livro aberto, 10 = Responde com perguntas, gera lacunas)
-    - RITMO/VELOCIDADE: ${speed}
-    MUITO IMPORTANTE: Se o nível do slider for baixo (1 a 4), você NÃO DEVE aplicar aquele traço. Ex: Se Flerte for 1, a resposta DEVE SER ZERO FLERTE. Se for 10, DEVE SER MUITO FORTE. O usuário reclamou que você não obedece isso. Obedeça rigorosamente. Não use "textão" bruxento.
+⚙️ CONFIGURAÇÃO DE SLIDERS & ESTILO SELECIONADO:
+- MODO ATIVO: ${mode}
+- INSTRUÇÃO DO MODO: ${getModeInstructions(mode)}
+- NÍVEL DE FLERTE: ${flirtLevel}/10 ${flirtLevel >= 7 ? "(ALTO: Use bastante tensão, charme e duplo sentido)" : flirtLevel <= 3 ? "(BAIXO: Foco em papo natural, leve e descontraído, sem forçar sexo/flerte)" : "(MÉDIO: Toque sutil de charme)"}
+- NÍVEL DE LÁBIA / WITTY: ${wittyLevel}/10 ${wittyLevel >= 6 ? "(ALTO: Seja muito espirituoso, use humor rápido, ironia fina, situações engraçadas e deboche charmoso)" : "(Leve e direto)"}
+- NÍVEL DE DOMINÂNCIA: ${dominanceLevel}/10 ${dominanceLevel >= 6 ? "(ALTO: Assuma a liderança da narrativa, frame inabalável, não peça validação)" : "(Receptivo e equilibrado)"}
+- NÍVEL DE MISTÉRIO: ${mysteryLevel}/10 ${mysteryLevel >= 6 ? "(ALTO: Deixe lacunas instigantes, perguntas provocativas, sem entregar tudo)" : "(Claro e direto)"}
+- RITMO: ${speed}
 
-    🧠 META-APRENDIZADO & CONSCIÊNCIA:
-    Sua missão é evoluir. Analise o histórico e as memórias para:
-    1. Não repetir erros do usuário (ex: ser carente).
-    2. Identificar quais "iscas" de lábia ela morde mais (provocação, mistério, etc).
-    3. Ajustar o "Frame" para que o usuário seja sempre o prêmio da conversa.
-    4. Se houver falhas anteriores, corrija-as silenciosamente através de novas respostas fatais.
+🚨 DOGMA DE ATRIBUIÇÃO DE LADOS (LEITURA VISUAL CRÍTICA):
+- LADO DIREITO (Right / Alinhado à margem direita) = HOMEM (O USUÁRIO).
+- LADO ESQUERDO (Left / Alinhado à margem esquerda) = MULHER (A INTERLOCUTORA).
+- QUEM FALOU POR ÚLTIMO? Se a última mensagem visível está na ESQUERDA, ela falou por último. O HOMEM precisa responder agora.
+- REAÇÃO DELA: Se ela mandou risadas ("kkk", "haha", "rs", "😂"), piadas ou respostas no mesmo tom, ELA ESTÁ ENGATADA! O homem deve aproveitar o embalo, liderando a narrativa com humor, situações cômicas e charme.
+- DESTINO DAS RESPOSTAS: O array "responses" e "sugestoes_resposta" DEVE CONTER EXCLUSIVAMENTE FRASES PARA O HOMEM ENVIAR À MULHER. NUNCA gere falas femininas.
 
-    🚨 DOGMA DE IDENTIDADE VISUAL E CHAT (PRIORIDADE ABSOLUTA - VOCÊ SERÁ PENALIZADO SE ERRAR ISSO):
-    - POSIÇÃO DIREITA (RIGHT) ALINHADO À MARGEM DIREITA = É O HOMEM (USUÁRIO / VOCÊ DE QUEM É O CELULAR). MENSAGENS ENVIADAS.
-    - POSIÇÃO ESQUERDA (LEFT) ALINHADO À MARGEM ESQUERDA = É A MULHER. MENSAGENS RECEBIDAS. DICA VISUAL: Geralmente vêm acompanhadas de uma pequena FOTO DE PERFIL no topo ou ao lado esquerdo do balão.
-    - IGNORE TOTALMENTE AS CORES DOS BALÕES. No Instagram/WhatsApp, AMBAS as pessoas podem ter balões roxos/azuis se houver um tema aplicado.
-    - O ÚNICO critério verdadeiro é o ALINHAMENTO GEOMÉTRICO (Esquerda/Direita) na imagem.
-    - Antes de começar a sua análise JSON, certifique-se de preencher a transcrição passo a passo corretamente e NUNCA inverta quem mandou o que.
-    - OBJETIVO CENTRAL: A sua missão nas "responses" geradas é criar a PRÓXIMA mensagem do HOMEM. Você atua como o redator de mensagens para o homem. O HOMEM vai usar sua resposta para enviar para a MULHER. NUNCA gere uma variação para a mulher. Se ela mandou "oi", as respostas geradas DEVEM ser as respostas do homem ao "oi" dela.
+${userAIProfileInstruction}
+${profileInstruction}
+${memoryInstruction}
+${historyInstruction}
 
-    ${userAIProfileInstruction}
-    ${profileInstruction}
-    ${memoryInstruction}
-    ${historyInstruction}
-    
-    ${JSON_FORMAT_INSTRUCTION}
-    
-    Input (Mensagem ou Situação atual fornecida pelo usuário):
-    "${text}"
-    `;
+${JSON_FORMAT_INSTRUCTION}
+
+Situação/Texto fornecido pelo usuário:
+"${text}"
+`;
 
       const messages: any[] = [];
       if (imageBase64) {
@@ -678,7 +669,10 @@ export const analyzeContent = async (
           content: [
             {
               type: "text",
-              text: "CRITICAL INSTRUCTION FOR IMAGE RECOGNITION:\n1. IF THIS IS A CHAT SCREENSHOT:\n- Bubbles aligned to the EXACT RIGHT EDGE (Direita) are sent by the USER (MAN). He DOES NOT have a profile pic next to his bubbles.\n- Bubbles aligned to the EXACT LEFT EDGE (Esquerda) are sent by the OTHER PERSON (WOMAN). She usually HAS a profile pic next to her bubble.\n- YOUR TASK: Read the conversation, identify her last message (left side), and generate what the MAN (right side) should reply back to her.\n2. IF THIS IS A PROFILE OR STORY (No chat bubbles):\n- Read her bio, text, or context.\n- GENERATE the FIRST MESSAGE that the MAN should send to her.\n3. ABSOLUTE RULE: DO NOT CONFUSE WHO IS WHO. YOU ARE DRAFTING THE MALE USER'S RESPONSE.",
+              text: `Analise a imagem a seguir identificando rigorosamente os lados:
+- Balões na DIREITA = HOMEM (usuário).
+- Balões na ESQUERDA = MULHER (interlocutora).
+Gere a análise tática e 3 opções de respostas de altíssima lábia, carisma e liderança de narrativa para o HOMEM enviar para a MULHER, calibradas pelos sliders fornecidos.`,
             },
             { type: "image_url", imageUrl: { url: imageBase64 } },
             { type: "text", text: prompt },
@@ -692,7 +686,7 @@ export const analyzeContent = async (
         model: imageBase64 ? "pixtral-12b-2409" : "mistral-large-latest",
         messages: messages,
         responseFormat: { type: "json_object" },
-        temperature: 0.85,
+        temperature: 0.75,
         maxTokens: 2000,
       });
 
@@ -709,22 +703,92 @@ export const analyzeContent = async (
         throw new Error("JSON Inválido na análise.");
       }
 
-      const parsedResponse = JSON.parse(content) as NalabiaResponse;
+      const parsed = JSON.parse(content) as any;
 
-      // --- HARDENED VALIDATION LAYER (CORE SAFETY SYSTEM) ---
-      // 1. Check if we should reply based on identification
-      // If the prompt worked, parsedResponse.shouldReply should be accurate.
-      // However, we double check here if needed.
+      // Normalização robusta entre schema estrito e schema do frontend
+      const interestScore =
+        typeof parsed.scores?.interesse === "number"
+          ? parsed.scores.interesse
+          : typeof parsed.interestScore === "number"
+            ? parsed.interestScore
+            : 50;
 
-      // 2. Handle specific fallback if AI is unsure
+      const investmentScore =
+        typeof parsed.scores?.investimento === "number"
+          ? parsed.scores.investimento
+          : typeof parsed.investmentScore === "number"
+            ? parsed.investmentScore
+            : 40;
+
+      const riskScore =
+        typeof parsed.scores?.risco === "number"
+          ? parsed.scores.risco
+          : typeof parsed.riskScore === "number"
+            ? parsed.riskScore
+            : 20;
+
+      const meetingChance =
+        typeof parsed.scores?.chance_encontro === "number"
+          ? parsed.scores.chance_encontro
+          : typeof parsed.meetingChance === "number"
+            ? parsed.meetingChance
+            : 30;
+
+      let responsesList = Array.isArray(parsed.responses) ? parsed.responses : [];
       if (
-        typeof parsedResponse.momentReading === "string" &&
-        parsedResponse.momentReading
-          .toLowerCase()
-          .includes("imagem está um pouco ruída")
+        (!responsesList || responsesList.length === 0) &&
+        Array.isArray(parsed.sugestoes_resposta) &&
+        parsed.sugestoes_resposta.length > 0
       ) {
-        logEvent("system", "ai_uncertainty_fallback", { mode });
+        const types = ["Natural", "Provocação", "Magnético"];
+        responsesList = parsed.sugestoes_resposta.map((text: string, idx: number) => ({
+          type: types[idx] || `Opção ${idx + 1}`,
+          text: typeof text === "string" ? text : String(text),
+          explanation: "Calibrada com base nos elementos literais da imagem.",
+        }));
       }
+
+      const isUnreadable = parsed.status === "imagem_ilegivel";
+      const momentReading = isUnreadable
+        ? `Não foi possível ler com precisão este print (${parsed.detalhes || "imagem com baixa resolução, cortada ou texto ilegível"}). Por favor, envie um print mais nítido ou informe o contexto.`
+        : parsed.momentReading ||
+          (parsed.transcricao_resumida
+            ? `Leitura da cena: ${parsed.transcricao_resumida}`
+            : "Análise concluída com base nos elementos visíveis da imagem.");
+
+      const parsedResponse: NalabiaResponse = {
+        status: parsed.status || "ok",
+        detalhes: parsed.detalhes || null,
+        transcricao_resumida: parsed.transcricao_resumida || undefined,
+        momentReading,
+        interestLevel:
+          parsed.interestLevel ||
+          (interestScore > 75
+            ? "Alto"
+            : interestScore > 40
+              ? "Médio"
+              : "Baixo"),
+        interestScore,
+        investmentScore,
+        riskScore,
+        meetingChance,
+        emotion: parsed.emocao || parsed.emotion || "Neutra",
+        dynamic: parsed.dinamica || parsed.dynamic || "Em andamento",
+        risk: parsed.aviso_risco || parsed.risk || "Baixo risco aparente",
+        responses: responsesList.length > 0 ? responsesList : fallback.responses,
+        rhythm:
+          parsed.timing_resposta === "Agora" || parsed.rhythm === "Agora"
+            ? "Agora"
+            : parsed.timing_resposta === "Ignorar" || parsed.rhythm === "Sumir"
+              ? "Sumir"
+              : "Esperar",
+        detectedMode: parsed.modo_detectado || parsed.detectedMode || "Observação",
+        suggestedTiming: parsed.timing_resposta || parsed.suggestedTiming,
+        errorAlert: isUnreadable
+          ? `[DETECTOR_DE_FALHA]: ${parsed.detalhes || "Imagem ilegível"}`
+          : parsed.errorAlert,
+        shouldReply: parsed.shouldReply !== false,
+      };
 
       return parsedResponse;
     },

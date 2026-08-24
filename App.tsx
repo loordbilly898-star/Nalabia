@@ -317,18 +317,69 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isPlansDismissed, setIsPlansDismissed] = useState(false);
-  const [showLanding, setShowLanding] = useState(false);
-  const [showQuiz, setShowQuiz] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('reset_quiz') === 'true') {
-      localStorage.removeItem('nalabia_trial_done');
-      localStorage.removeItem('nalabia_from_quiz');
-      localStorage.removeItem('nalabia_free_uses');
-      localStorage.removeItem('nalabia_profile');
-      window.history.replaceState({}, '', window.location.pathname);
-      return true;
+  const [showPlansExplicit, setShowPlansExplicit] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const path = window.location.pathname.toLowerCase();
+      return (
+        params.get("plans") === "true" ||
+        params.get("planos") === "true" ||
+        params.get("vendas") === "true" ||
+        params.get("sales") === "true" ||
+        params.get("checkout") === "true" ||
+        path === "/planos" ||
+        path === "/vendas" ||
+        path === "/plans" ||
+        path === "/checkout"
+      );
+    } catch (e) {
+      return false;
     }
-    return params.get('from') !== 'quiz' && !localStorage.getItem('nalabia_trial_done') && !localStorage.getItem('nalabia_from_quiz');
+  });
+  const [showLanding, setShowLanding] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const path = window.location.pathname.toLowerCase();
+      return params.get("landing") === "true" || path === "/landing";
+    } catch (e) {
+      return false;
+    }
+  });
+  const [showQuiz, setShowQuiz] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const path = window.location.pathname.toLowerCase();
+      if (
+        params.get("plans") === "true" ||
+        params.get("planos") === "true" ||
+        params.get("vendas") === "true" ||
+        params.get("sales") === "true" ||
+        params.get("checkout") === "true" ||
+        params.get("landing") === "true" ||
+        path === "/planos" ||
+        path === "/vendas" ||
+        path === "/plans" ||
+        path === "/checkout" ||
+        path === "/landing"
+      ) {
+        return false;
+      }
+      if (params.get("reset_quiz") === "true") {
+        localStorage.removeItem("nalabia_trial_done");
+        localStorage.removeItem("nalabia_from_quiz");
+        localStorage.removeItem("nalabia_free_uses");
+        localStorage.removeItem("nalabia_profile");
+        window.history.replaceState({}, "", window.location.pathname);
+        return true;
+      }
+      return (
+        params.get("from") !== "quiz" &&
+        !localStorage.getItem("nalabia_trial_done") &&
+        !localStorage.getItem("nalabia_from_quiz")
+      );
+    } catch (e) {
+      return false;
+    }
   });
   const [showUpsell, setShowUpsell] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1201,6 +1252,10 @@ const App: React.FC = () => {
 
   if (showUpsell) {
     return <UpsellView />;
+  }
+
+  if (showPlansExplicit) {
+    return <PlansView onClose={() => setShowPlansExplicit(false)} />;
   }
 
   // Check subscription access

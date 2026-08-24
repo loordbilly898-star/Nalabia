@@ -61,19 +61,54 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
 
     const initCheckout = async () => {
       try {
-        // 1. Fetch Stripe config
+        // 1. Resolve publishable key from server or client env
+        let publishableKey =
+          (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string)?.trim() ||
+          (import.meta.env.VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY as string)?.trim() ||
+          "";
+
+        console.group("💳 [NaLábia - Stripe Checkout Diagnostics]");
+        console.log("📍 Host:", window.location.host);
+        console.log("📍 Origin:", window.location.origin);
+        console.log("📦 Plano Solicitado:", planId);
+
         const configRes = await safeFetchJson("/api/stripe/config");
-        if (!configRes.ok || !configRes.data?.enabled || !configRes.data?.publishableKey) {
-          throw new Error(
-            configRes.error || "Stripe ainda não está totalmente habilitado no servidor.",
-          );
+        console.log("⚙️ Resposta /api/stripe/config:", configRes);
+
+        if (configRes.ok && configRes.data?.publishableKey) {
+          publishableKey = configRes.data.publishableKey;
         }
 
-        const stripeObj = await loadStripe(configRes.data.publishableKey);
+        if (!publishableKey) {
+          const errorMsg =
+            configRes.data?.missing?.publishableKey
+              ? "VITE_STRIPE_PUBLISHABLE_KEY não encontrada nas variáveis de ambiente da Vercel."
+              : configRes.data?.missing?.secretKey
+              ? "STRIPE_SECRET_KEY não encontrada nas variáveis de ambiente da Vercel."
+              : configRes.error || "Stripe não configurado no servidor. Configure as variáveis de ambiente na Vercel.";
+          
+          console.error("❌ ERRO CRÍTICO STRIPE:", errorMsg);
+          console.warn("💡 Como resolver no painel da Vercel:");
+          console.warn("1. Acesse https://vercel.com/dashboard -> Seu Projeto -> Settings -> Environment Variables");
+          console.warn("2. Adicione STRIPE_SECRET_KEY (chave secreta sk_live_... ou sk_test_...)");
+          console.warn("3. Adicione VITE_STRIPE_PUBLISHABLE_KEY (chave pública pk_live_... ou pk_test_...)");
+          console.warn("4. Faça um novo Redeploy.");
+          console.groupEnd();
+          throw new Error(errorMsg);
+        }
+
+        console.log("🔑 Chave Pública Stripe Identificada:", publishableKey.substring(0, 12) + "...");
+        const stripeObj = await loadStripe(publishableKey);
+        if (!stripeObj) {
+          console.error("❌ loadStripe retornou null com a chave fornecida.");
+          console.groupEnd();
+          throw new Error("Falha ao inicializar a biblioteca do Stripe. Verifique sua conexão e a chave pública.");
+        }
         if (isMounted) setStripePromise(stripeObj);
 
-        // 2. Create embedded checkout session
+        // 2. Create checkout session (Embedded or Direct)
         const origin = window.location.origin;
+        console.log("🚀 Criando sessão de checkout no backend /api/stripe/create-checkout-session...");
         const sessionRes = await safeFetchJson("/api/stripe/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -86,20 +121,29 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
           }),
         });
 
-        if (!sessionRes.ok || !sessionRes.data?.clientSecret) {
-          throw new Error(
-            sessionRes.error || "Não foi possível iniciar a sessão de pagamento.",
-          );
+        console.log("📄 Resposta /api/stripe/create-checkout-session:", sessionRes);
+
+        if (!sessionRes.ok || (!sessionRes.data?.clientSecret && !sessionRes.data?.url)) {
+          const failMsg =
+            sessionRes.error ||
+            sessionRes.data?.error ||
+            "Não foi possível iniciar a sessão de pagamento no servidor.";
+          console.error("❌ ERRO AO CRIAR SESSÃO STRIPE:", failMsg);
+          console.groupEnd();
+          throw new Error(failMsg);
         }
 
+        console.log("✅ Sessão Stripe gerada com sucesso!");
+        console.groupEnd();
+
         if (isMounted) {
-          setClientSecret(sessionRes.data.clientSecret);
-          setSessionId(sessionRes.data.sessionId);
+          setClientSecret(sessionRes.data.clientSecret || null);
+          setSessionId(sessionRes.data.sessionId || null);
           setFallbackUrl(sessionRes.data.url || null);
           setLoading(false);
         }
       } catch (err: any) {
-        console.error("Stripe init error:", err);
+        console.error("❌ [Stripe Init Error]:", err);
         if (isMounted) {
           setError(err.message || "Erro ao conectar com o checkout Stripe.");
           setLoading(false);
@@ -241,21 +285,53 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
               </p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-                <AlertCircle size={28} />
+            <div className="flex flex-col items-center justify-center py-8 text-center space-y-4 px-2">
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <AlertCircle size={30} />
               </div>
-              <p className="text-sm text-rose-300 max-w-md">{error}</p>
-              {fallbackUrl && (
-                <a
-                  href={fallbackUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-gold text-black font-semibold rounded-xl text-sm hover:brightness-110 transition-all flex items-center gap-2"
+              <div className="space-y-1">
+                <h4 className="text-white font-bold text-base">Falha na Conexão com o Stripe</h4>
+                <p className="text-sm text-rose-300/90 max-w-md">{error}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    setError(null);
+                    setClientSecret(null);
+                    setSessionId(null);
+                    setFallbackUrl(null);
+                    // trigger re-run
+                    const timer = setTimeout(() => {
+                      const event = new CustomEvent("retry-stripe-checkout");
+                      window.dispatchEvent(event);
+                    }, 100);
+                    return () => clearTimeout(timer);
+                  }}
+                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl text-xs sm:text-sm transition-all flex items-center gap-1.5"
                 >
-                  <CreditCard size={16} /> Abrir Checkout em Nova Janela
-                </a>
-              )}
+                  <Zap size={14} className="text-gold" /> Tentar Novamente
+                </button>
+
+                {fallbackUrl && (
+                  <a
+                    href={fallbackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2.5 bg-gradient-to-r from-gold to-yellow-500 text-black font-bold rounded-xl text-xs sm:text-sm hover:brightness-110 transition-all flex items-center gap-2 shadow-lg"
+                  >
+                    <CreditCard size={16} /> Abrir Checkout no Stripe
+                  </a>
+                )}
+              </div>
+
+              <div className="mt-4 p-3 bg-zinc-900/90 border border-zinc-800 rounded-xl text-left max-w-md w-full text-[11px] text-zinc-400 space-y-1">
+                <p className="font-semibold text-zinc-300 flex items-center gap-1">
+                  <span>🛠️</span> Diagnóstico para Desenvolvedor (F12):
+                </p>
+                <p>Abra o Console do Navegador (<kbd className="bg-zinc-800 px-1 py-0.5 rounded border border-zinc-700 text-zinc-200">F12</kbd>) para ver o relatório completo de status das chaves e da rota da Vercel.</p>
+              </div>
             </div>
           ) : clientSecret && stripePromise ? (
             <div className="w-full embedded-checkout-wrapper">

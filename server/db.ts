@@ -1,7 +1,10 @@
 import fs from "fs";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "data", "db.json");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
+const DB_PATH = isServerless 
+  ? path.join("/tmp", "db.json") 
+  : path.join(process.cwd(), "data", "db.json");
 
 interface DatabaseSchema {
   auth_users: Array<{

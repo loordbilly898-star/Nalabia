@@ -1,17 +1,25 @@
 import Stripe from "stripe";
-import { db } from "./db.js";
+import { db } from "./db";
 
 let stripeClient: Stripe | null = null;
 
 export function getStripe(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY;
+  const rawKey =
+    process.env.STRIPE_SECRET_KEY ||
+    process.env.STRIPE_API_KEY ||
+    process.env.STRIPE_KEY;
+
+  if (!rawKey) {
+    return null;
+  }
+
+  const key = rawKey.trim().replace(/^["']|["']$/g, "");
   if (!key) {
     return null;
   }
+
   if (!stripeClient) {
-    stripeClient = new Stripe(key, {
-      apiVersion: "2025-02-24.acacia" as any,
-    });
+    stripeClient = new Stripe(key);
   }
   return stripeClient;
 }

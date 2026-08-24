@@ -5,13 +5,13 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { Mistral } from "@mistralai/mistralai";
 import Stripe from "stripe";
-import { db } from "./server/db.js";
+import { db } from "./server/db";
 import {
   getStripe,
   STRIPE_PLANS,
   applyStripeAccess,
   revokeStripeAccess,
-} from "./server/stripe.js";
+} from "./server/stripe";
 
 dotenv.config();
 
@@ -301,10 +301,31 @@ app.get("/api/health", (req, res) => {
 // ==========================================
 
 app.get("/api/stripe/config", (req, res) => {
-  const isConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
+  const secretKey = (
+    process.env.STRIPE_SECRET_KEY ||
+    process.env.STRIPE_API_KEY ||
+    process.env.STRIPE_KEY ||
+    ""
+  ).trim().replace(/^["']|["']$/g, "");
+
+  const publishableKey = (
+    process.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    process.env.STRIPE_PUBLIC_KEY ||
+    ""
+  ).trim().replace(/^["']|["']$/g, "");
+
+  const isConfigured = Boolean(secretKey);
+
   res.json({
-    enabled: isConfigured,
-    publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || null,
+    enabled: isConfigured && Boolean(publishableKey),
+    publishableKey: publishableKey || null,
+    hasSecretKey: isConfigured,
+    missing: {
+      secretKey: !isConfigured,
+      publishableKey: !publishableKey,
+    },
   });
 });
 
@@ -1424,21 +1445,29 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   next(err);
 });
 
-if (process.env.NODE_ENV !== "production") {
-  setupVite().then(() => {
+const isServerlessEnv = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.NOW_REGION
+);
+
+if (!isServerlessEnv) {
+  if (process.env.NODE_ENV !== "production") {
+    setupVite().then(() => {
+      app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
+    });
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*all", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
-  });
-} else {
-  const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath));
-  app.get("*all", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  }
 }
 
 export default app;
