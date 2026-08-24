@@ -5,13 +5,13 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { Mistral } from "@mistralai/mistralai";
 import Stripe from "stripe";
-import { db } from "./server/db";
+import { db } from "./server/db.js";
 import {
   getStripe,
   STRIPE_PLANS,
   applyStripeAccess,
   revokeStripeAccess,
-} from "./server/stripe";
+} from "./server/stripe.js";
 
 dotenv.config();
 

@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { db } from "./db";
+import { db } from "./db.js";
 
 let stripeClient: Stripe | null = null;
 
