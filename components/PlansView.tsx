@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Crown, Zap, Star, Check, Loader2, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { StripeCheckoutModal } from "./StripeCheckoutModal";
 
 const PLANS = [
   {
@@ -71,57 +72,79 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
   const [trialLoading, setTrialLoading] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
-  React.useEffect(() => {
-    // Check if we just returned from Cakto
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get("status");
-    const paymentId = params.get("payment_id") || params.get("transaction_id");
+  const [loadingPortal, setLoadingPortal] = useState(false);
+  const [checkoutModal, setCheckoutModal] = useState<{
+    isOpen: boolean;
+    planId: string;
+    planTitle: string;
+    planPrice: string;
+    planDescription: string;
+  }>({
+    isOpen: false,
+    planId: "mensal",
+    planTitle: "",
+    planPrice: "",
+    planDescription: "",
+  });
 
-    if (status === "approved" || status === "authorized" || paymentId) {
+  React.useEffect(() => {
+    // Check if we just returned from Stripe or Cakto
+    const params = new URLSearchParams(window.location.search);
+    const stripeStatus = params.get("stripe_status");
+    const status = params.get("status");
+    const paymentId = params.get("payment_id") || params.get("transaction_id") || params.get("session_id");
+
+    if (stripeStatus === "success" || status === "approved" || status === "authorized" || paymentId) {
       setVerifyingPayment(true);
       // Wait a bit for the webhook to process, then redirect
       const timer = setTimeout(() => {
         if (!user) {
-           // We need them to set their password
            window.location.href = "/?signup=true&from=payment_approved";
         } else {
            window.location.href = "/dashboard";
         }
-      }, 5000);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [user]);
 
-  const handleSubscribe = async (planId: string, planName: string) => {
-    setLoadingPlan(planId);
+  const handleSubscribe = (planId: string, planName: string) => {
+    const selectedPlan = PLANS.find((p) => p.id === planId || (p.id === "monthly" && planId === "mensal"));
+    const priceStr = selectedPlan ? `${selectedPlan.price} ${selectedPlan.period}` : "R$ 19,90/mês";
+
+    setCheckoutModal({
+      isOpen: true,
+      planId: planId === "monthly" ? "mensal" : planId,
+      planTitle: `NaLábia Prime - Plano ${planName}`,
+      planPrice: priceStr,
+      planDescription: selectedPlan?.description || "Acesso completo à plataforma NaLábia Prime",
+    });
+  };
+
+  const handleOpenStripePortal = async () => {
+    if (!user) return;
+    setLoadingPortal(true);
     setError(null);
-
-    const links: Record<string, string> = {
-      "mensal": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
-      "monthly": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
-      "trimestral": "https://pay.cakto.com.br/379zopu_826386?affiliate=NAwEEUbX",
-      "anual": "https://pay.cakto.com.br/x4pha2o_826385?affiliate=NAwEEUbX"
-    };
-
-    const checkoutUrl = links[planId];
-    if (!checkoutUrl) {
-       setError("Plano inválido.");
-       setLoadingPlan(null);
-       return;
-    }
-
     try {
-      const separator = checkoutUrl.includes("?") ? "&" : "?";
-      // Se não houver user.id, não passamos src. O webhook vai usar o payer_email para criar/identificar a conta.
-      const srcParam = user?.id ? `${separator}src=${user.id}` : "";
-      const finalUrl = `${checkoutUrl}${srcParam}`;
-      window.location.href = finalUrl;
+      const res = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          userEmail: user.email,
+          returnUrl: `${window.location.origin}/dashboard`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Não foi possível abrir o portal de gerenciamento Stripe.");
+      }
     } catch (err: any) {
-      console.error("Subscription error:", err);
-      setError(
-        err.message || "Ocorreu um erro ao redirecionar para o pagamento.",
-      );
-      setLoadingPlan(null);
+      setError(err.message || "Erro ao conectar com o portal Stripe.");
+    } finally {
+      setLoadingPortal(false);
     }
   };
 
@@ -316,13 +339,26 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
             })}
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
             <button
               onClick={verifyPayment}
               className="text-sm text-gray-400 hover:text-white underline transition-colors"
             >
               Já paguei, verificar acesso
             </button>
+            {userData?.status === "ativo" && (
+              <>
+                <span className="text-gray-600 hidden sm:inline">•</span>
+                <button
+                  onClick={handleOpenStripePortal}
+                  disabled={loadingPortal}
+                  className="text-sm text-gold hover:text-gold-glow underline transition-colors flex items-center gap-1.5"
+                >
+                  {loadingPortal ? <Loader2 size={14} className="animate-spin" /> : null}
+                  Gerenciar assinatura (Stripe Portal)
+                </button>
+              </>
+            )}
           </div>
         </>
 
@@ -335,6 +371,18 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
           </button>
         </div>
       </div>
+
+      <StripeCheckoutModal
+        isOpen={checkoutModal.isOpen}
+        onClose={() => setCheckoutModal((prev) => ({ ...prev, isOpen: false }))}
+        planId={checkoutModal.planId}
+        planTitle={checkoutModal.planTitle}
+        planPrice={checkoutModal.planPrice}
+        planDescription={checkoutModal.planDescription}
+        onSuccess={() => {
+          setCheckoutModal((prev) => ({ ...prev, isOpen: false }));
+        }}
+      />
     </div>
   );
 };

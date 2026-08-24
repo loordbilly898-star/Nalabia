@@ -1,0 +1,109 @@
+{
+  "auth_users": [
+    {
+      "id": "gamerbilly898-id",
+      "email": "gamerbilly898@gmail.com",
+      "password": "mypassword",
+      "full_name": "Billy (GamerBilly)",
+      "created_at": "2026-08-24T16:40:51.982Z"
+    },
+    {
+      "id": "loordbilly898-id",
+      "email": "loordbilly898@gmail.com",
+      "password": "password",
+      "full_name": "Loord Billy",
+      "created_at": "2026-08-24T16:40:51.982Z"
+    },
+    {
+      "id": "luqin-oliiver-id",
+      "email": "luqin.oliiver@gmail.com",
+      "password": "123456",
+      "full_name": "Luqin Oliver",
+      "created_at": "2026-08-24T16:40:51.982Z"
+    },
+    {
+      "id": "williamhendler711-id",
+      "email": "williamhendler711@gmail.com",
+      "password": "password",
+      "full_name": "William Hendler",
+      "created_at": "2026-08-24T16:40:51.982Z"
+    }
+  ],
+  "users": [
+    {
+      "userID": "gamerbilly898-id",
+      "name": "Billy (GamerBilly)",
+      "email": "gamerbilly898@gmail.com",
+      "level": 10,
+      "xp": 5500,
+      "createdAt": 1787589651982,
+      "onboardingCompleted": true,
+      "status": "ativo",
+      "plano": "Mensal",
+      "nalabiaPrimeAcess": true,
+      "darkPackAccess": true,
+      "coursesAccess": true,
+      "mentoriaAccess": true,
+      "freeMessagesUsed": 0
+    },
+    {
+      "userID": "loordbilly898-id",
+      "name": "Loord Billy",
+      "email": "loordbilly898@gmail.com",
+      "level": 99,
+      "xp": 99999,
+      "createdAt": 1787589651982,
+      "onboardingCompleted": true,
+      "status": "ativo",
+      "plano": "Desenvolvedor",
+      "nalabiaPrimeAcess": true,
+      "darkPackAccess": true,
+      "coursesAccess": true,
+      "mentoriaAccess": true,
+      "freeMessagesUsed": 0
+    },
+    {
+      "userID": "luqin-oliiver-id",
+      "name": "Luqin Oliver",
+      "email": "luqin.oliiver@gmail.com",
+      "level": 5,
+      "xp": 2500,
+      "createdAt": 1787589651982,
+      "onboardingCompleted": true,
+      "status": "ativo",
+      "plano": "Mensal",
+      "nalabiaPrimeAcess": true,
+      "darkPackAccess": true,
+      "coursesAccess": true,
+      "mentoriaAccess": true,
+      "freeMessagesUsed": 0
+    },
+    {
+      "userID": "williamhendler711-id",
+      "name": "William Hendler",
+      "email": "williamhendler711@gmail.com",
+      "level": 1,
+      "xp": 0,
+      "createdAt": 1787589651982,
+      "onboardingCompleted": true,
+      "status": "ativo",
+      "plano": "Trimestral",
+      "nalabiaPrimeAcess": true,
+      "darkPackAccess": true,
+      "coursesAccess": true,
+      "mentoriaAccess": true,
+      "freeMessagesUsed": 0
+    }
+  ],
+  "user_ai_profile": [],
+  "assinaturas": [],
+  "conversations": [],
+  "saved_responses": [],
+  "sign_ins": [
+    {
+      "user_id": "gamerbilly898-id",
+      "email": "gamerbilly898@gmail.com",
+      "signed_in_at": "2026-08-24T16:41:10.537Z"
+    }
+  ]
+}

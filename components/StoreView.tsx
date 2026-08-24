@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { StripeCheckoutModal } from "./StripeCheckoutModal";
 
 interface StoreViewProps {
   onBack: () => void;
@@ -74,39 +75,30 @@ const PRODUCTS = [
 export default function StoreView({ onBack, settings }: StoreViewProps) {
   const { user, userData } = useAuth();
   const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
+  const [checkoutModal, setCheckoutModal] = useState<{
+    isOpen: boolean;
+    planId: string;
+    planTitle: string;
+    planPrice: string;
+    planDescription: string;
+  }>({
+    isOpen: false,
+    planId: "dark",
+    planTitle: "",
+    planPrice: "",
+    planDescription: "",
+  });
 
-  const handlePurchase = async (productId: string) => {
+  const handlePurchase = (productId: string) => {
     if (!user) return;
-    setLoadingProduct(productId);
-    
-    // Mapping format for fallback so users don't get stuck
-    const links: Record<string, string> = {
-      "mensal": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
-      "monthly": "https://pay.cakto.com.br/nnbqprt_825346?affiliate=NAwEEUbX",
-      "trimestral": "https://pay.cakto.com.br/379zopu_826386?affiliate=NAwEEUbX",
-      "anual": "https://pay.cakto.com.br/x4pha2o_826385?affiliate=NAwEEUbX",
-      "curso": "https://pay.cakto.com.br/exfk6pm_826428?affiliate=NAwEEUbX",
-      "dark": "https://pay.cakto.com.br/mnh4hcg_826434?affiliate=NAwEEUbX",
-      "mentoria": "https://pay.cakto.com.br/obgpnz3_874157?affiliate=43LRhHmd"
-    };
-
-    const checkoutUrl = links[productId];
-    if (!checkoutUrl) {
-       alert("Plano inválido.");
-       setLoadingProduct(null);
-       return;
-    }
-
-    try {
-      const separator = checkoutUrl.includes("?") ? "&" : "?";
-      const finalUrl = `${checkoutUrl}${separator}src=${user.id}`;
-      window.location.href = finalUrl;
-    } catch (e) {
-      console.error("Checkout error:", e);
-      alert("Erro ao redirecionar para pagamento. Tente novamente.");
-    } finally {
-      setLoadingProduct(null);
-    }
+    const prod = PRODUCTS.find((p) => p.id === productId);
+    setCheckoutModal({
+      isOpen: true,
+      planId: productId,
+      planTitle: prod?.name || "NaLábia Prime",
+      planPrice: prod?.price || "R$ 19,90",
+      planDescription: prod?.description || "Acesso vitalício ao módulo",
+    });
   };
 
   return (
@@ -243,6 +235,18 @@ export default function StoreView({ onBack, settings }: StoreViewProps) {
           </div>
         </div>
       </div>
+
+      <StripeCheckoutModal
+        isOpen={checkoutModal.isOpen}
+        onClose={() => setCheckoutModal((prev) => ({ ...prev, isOpen: false }))}
+        planId={checkoutModal.planId}
+        planTitle={checkoutModal.planTitle}
+        planPrice={checkoutModal.planPrice}
+        planDescription={checkoutModal.planDescription}
+        onSuccess={() => {
+          setCheckoutModal((prev) => ({ ...prev, isOpen: false }));
+        }}
+      />
     </div>
   );
 }

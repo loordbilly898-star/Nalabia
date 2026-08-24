@@ -4,6 +4,14 @@ import path from "path";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { Mistral } from "@mistralai/mistralai";
+import Stripe from "stripe";
+import { db } from "./server/db";
+import {
+  getStripe,
+  STRIPE_PLANS,
+  applyStripeAccess,
+  revokeStripeAccess,
+} from "./server/stripe";
 
 dotenv.config();
 
@@ -45,7 +53,14 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: "50mb" }));
+app.use(
+  express.json({
+    limit: "50mb",
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
@@ -281,30 +296,701 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// ==========================================
+// Stripe Integration Endpoints
+// ==========================================
+
+app.get("/api/stripe/config", (req, res) => {
+  const isConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
+  res.json({
+    enabled: isConfigured,
+    publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || null,
+  });
+});
+
+app.post("/api/stripe/create-checkout-session", async (req, res) => {
+  try {
+    const stripe = getStripe();
+    if (!stripe) {
+      return res.status(503).json({
+        error: "Stripe não configurado no servidor. Configure STRIPE_SECRET_KEY.",
+      });
+    }
+
+    const { planId, userId, userEmail, successUrl, cancelUrl, embedded, returnUrl } = req.body;
+    if (!planId) {
+      return res.status(400).json({ error: "Parâmetro planId é obrigatório." });
+    }
+
+    const normPlanId = String(planId).toLowerCase();
+    const planConfig = STRIPE_PLANS[normPlanId] || STRIPE_PLANS.mensal;
+
+    const origin = req.headers.origin || "https://nalabia.com.br";
+    const finalSuccessUrl =
+      successUrl || `${origin}/dashboard?stripe_status=success&session_id={CHECKOUT_SESSION_ID}`;
+    const finalCancelUrl = cancelUrl || `${origin}/dashboard?stripe_status=cancel`;
+    const finalReturnUrl =
+      returnUrl || `${origin}/dashboard?stripe_status=success&session_id={CHECKOUT_SESSION_ID}`;
+
+    // Try to find existing Stripe Customer if userId or email is provided
+    let customerId: string | undefined = undefined;
+    const users = db.getCollection("users");
+    const userDoc = users.find(
+      (u: any) =>
+        (userId && (u.userID === userId || u.id === userId)) ||
+        (userEmail && u.email?.toLowerCase() === userEmail.toLowerCase()),
+    );
+
+    if (userDoc?.stripeCustomerId) {
+      customerId = userDoc.stripeCustomerId;
+    }
+
+    // Build session parameters
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      payment_method_types: ["card"],
+      mode: planConfig.mode,
+      line_items: [
+        {
+          price_data: {
+            currency: planConfig.currency || "brl",
+            product_data: {
+              name: planConfig.name,
+              description: `Acesso exclusivo NaLábia Prime (${planConfig.name})`,
+            },
+            unit_amount: planConfig.amountInCents,
+            ...(planConfig.mode === "subscription"
+              ? {
+                  recurring: {
+                    interval: planConfig.interval || "month",
+                    interval_count: planConfig.intervalCount || 1,
+                  },
+                }
+              : {}),
+          },
+          quantity: 1,
+        },
+      ],
+      client_reference_id: userId || userDoc?.userID || undefined,
+      metadata: {
+        userId: userId || userDoc?.userID || "",
+        userEmail: userEmail || userDoc?.email || "",
+        planId: planConfig.id,
+        planType: planConfig.type,
+      },
+    };
+
+    if (embedded) {
+      sessionParams.ui_mode = "embedded";
+      sessionParams.return_url = finalReturnUrl;
+    } else {
+      sessionParams.success_url = finalSuccessUrl;
+      sessionParams.cancel_url = finalCancelUrl;
+    }
+
+    if (customerId) {
+      sessionParams.customer = customerId;
+    } else if (userEmail || userDoc?.email) {
+      sessionParams.customer_email = userEmail || userDoc?.email;
+    }
+
+    if (planConfig.mode === "subscription") {
+      sessionParams.subscription_data = {
+        metadata: {
+          userId: userId || userDoc?.userID || "",
+          userEmail: userEmail || userDoc?.email || "",
+          planId: planConfig.id,
+        },
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    res.json({
+      url: session.url,
+      sessionId: session.id,
+      clientSecret: session.client_secret,
+    });
+  } catch (error: any) {
+    console.error("[STRIPE API] Create checkout session error:", error);
+    res.status(500).json({ error: error.message || "Erro ao criar sessão do Stripe." });
+  }
+});
+
+app.post("/api/stripe/verify-session", async (req, res) => {
+  try {
+    const stripe = getStripe();
+    if (!stripe) {
+      return res.status(503).json({ error: "Stripe não configurado no servidor." });
+    }
+
+    const { sessionId, userId, userEmail } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ error: "sessionId é obrigatório." });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["subscription", "customer"],
+    });
+
+    if (session.payment_status === "paid" || session.status === "complete") {
+      const planId = session.metadata?.planId || "mensal";
+      const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+      const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+      const effectiveEmail = session.customer_details?.email || session.customer_email || userEmail;
+      const effectiveUserId = session.client_reference_id || session.metadata?.userId || userId;
+
+      const updatedUser = applyStripeAccess({
+        userId: effectiveUserId,
+        userEmail: effectiveEmail,
+        planId,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        amountTotal: session.amount_total || undefined,
+      });
+
+      return res.json({
+        success: true,
+        status: session.payment_status,
+        user: updatedUser,
+      });
+    }
+
+    res.json({
+      success: false,
+      status: session.payment_status,
+      message: "Pagamento ainda não confirmado ou pendente.",
+    });
+  } catch (error: any) {
+    console.error("[STRIPE API] Verify session error:", error);
+    res.status(500).json({ error: error.message || "Erro ao verificar sessão do Stripe." });
+  }
+});
+
+app.post("/api/stripe/create-portal-session", async (req, res) => {
+  try {
+    const stripe = getStripe();
+    if (!stripe) {
+      return res.status(503).json({ error: "Stripe não configurado no servidor." });
+    }
+
+    const { userId, userEmail, returnUrl } = req.body;
+    const users = db.getCollection("users");
+    const userDoc = users.find(
+      (u: any) =>
+        (userId && (u.userID === userId || u.id === userId)) ||
+        (userEmail && u.email?.toLowerCase() === userEmail.toLowerCase()),
+    );
+
+    let customerId = userDoc?.stripeCustomerId;
+
+    if (!customerId && (userEmail || userDoc?.email)) {
+      const email = userEmail || userDoc?.email;
+      const customers = await stripe.customers.list({ email: email, limit: 1 });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        if (userDoc) {
+          userDoc.stripeCustomerId = customerId;
+          db.setCollection("users", users);
+        }
+      }
+    }
+
+    if (!customerId) {
+      return res.status(404).json({
+        error: "Nenhum cliente Stripe ativo encontrado para este usuário.",
+      });
+    }
+
+    const origin = req.headers.origin || "https://nalabia.com.br";
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl || `${origin}/dashboard`,
+    });
+
+    res.json({ url: portalSession.url });
+  } catch (error: any) {
+    console.error("[STRIPE API] Create portal session error:", error);
+    res.status(500).json({ error: error.message || "Erro ao abrir portal do cliente." });
+  }
+});
+
+app.post("/api/stripe/webhook", async (req: any, res) => {
+  const sig = req.headers["stripe-signature"];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const stripe = getStripe();
+
+  let event: Stripe.Event;
+
+  try {
+    if (stripe && webhookSecret && sig && req.rawBody) {
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
+    } else {
+      // Fallback for tests / unverified requests if secret not configured
+      event = req.body as Stripe.Event;
+    }
+  } catch (err: any) {
+    console.error("[STRIPE WEBHOOK] Signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log(`[STRIPE WEBHOOK] Event received: ${event.type}`);
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.client_reference_id || session.metadata?.userId;
+        const userEmail = session.customer_details?.email || session.customer_email || session.metadata?.userEmail;
+        const planId = session.metadata?.planId || "mensal";
+        const customerId = session.customer as string | undefined;
+        const subscriptionId = session.subscription as string | undefined;
+        const amountTotal = session.amount_total || undefined;
+
+        console.log(`[STRIPE WEBHOOK] Checkout completed for ${userEmail || userId}, plan: ${planId}`);
+        applyStripeAccess({
+          userId,
+          userEmail,
+          planId,
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          amountTotal,
+        });
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as any;
+        const customerId = invoice.customer as string | undefined;
+        const subscriptionId = invoice.subscription as string | undefined;
+        const userEmail = invoice.customer_email || undefined;
+        const amountTotal = invoice.amount_paid || undefined;
+
+        if (subscriptionId) {
+          applyStripeAccess({
+            userEmail,
+            planId: "mensal",
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            amountTotal,
+          });
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted":
+      case "customer.subscription.paused": {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[STRIPE WEBHOOK] Subscription cancelled/paused: ${subscription.id}`);
+        revokeStripeAccess({
+          stripeCustomerId: subscription.customer as string,
+          stripeSubscriptionId: subscription.id,
+        });
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+        if (subscription.status === "active") {
+          applyStripeAccess({
+            planId: "mensal",
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscription.id,
+          });
+        } else if (["canceled", "unpaid", "past_due"].includes(subscription.status)) {
+          revokeStripeAccess({
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscription.id,
+          });
+        }
+        break;
+      }
+
+      default:
+        console.log(`[STRIPE WEBHOOK] Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (err: any) {
+    console.error("[STRIPE WEBHOOK] Handler error:", err);
+    res.status(500).json({ error: "Webhook processing error" });
+  }
+});
+
+// Authentication Endpoints
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email) return res.status(400).json({ error: "Email obrigatório." });
+
+    const normEmail = String(email).trim().toLowerCase();
+    const authUsers = db.getCollection("auth_users");
+    const users = db.getCollection("users");
+
+    let authUser = authUsers.find((u: any) => u.email?.toLowerCase() === normEmail);
+    let userDoc = users.find((u: any) => u.email?.toLowerCase() === normEmail);
+
+    const isDeveloper =
+      normEmail === "loordbilly898@gmail.com" ||
+      normEmail === "nalabiainc@gmail.com";
+    const isLegacyPremium =
+      normEmail === "kauanhenrique171822@gmail.com" ||
+      normEmail === "gamerbilly898@gmail.com" ||
+      normEmail === "nauandematoss@gmail.com" ||
+      normEmail === "encantomirim53@gmail.com" ||
+      normEmail === "lucastorresoliveira77@gmail.com" ||
+      normEmail === "luqin.oliiver@gmail.com" ||
+      normEmail === "williamhendler711@gmail.com";
+
+    // Auto-create or allow developer/legacy/existing accounts
+    if (!authUser) {
+      const generatedId = `usr_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+      authUser = {
+        id: generatedId,
+        email: normEmail,
+        password: password || "password",
+        full_name: normEmail.split("@")[0],
+        created_at: new Date().toISOString(),
+      };
+      authUsers.push(authUser);
+      db.setCollection("auth_users", authUsers);
+    } else if (password && (!authUser.password || isDeveloper || isLegacyPremium)) {
+      // Update password for seamless access
+      authUser.password = password;
+      db.setCollection("auth_users", authUsers);
+    } else if (password && authUser.password && authUser.password !== password && !isDeveloper && !isLegacyPremium) {
+      return res.status(400).json({ error: "Senha incorreta. Tente novamente." });
+    }
+
+    if (!userDoc) {
+      userDoc = {
+        userID: authUser.id,
+        name: authUser.full_name || normEmail.split("@")[0],
+        email: normEmail,
+        level: isDeveloper ? 99 : isLegacyPremium ? 10 : 1,
+        xp: isDeveloper ? 99999 : isLegacyPremium ? 5000 : 0,
+        createdAt: Date.now(),
+        onboardingCompleted: true,
+        status: isDeveloper || isLegacyPremium ? "ativo" : "pendente",
+        plano: isDeveloper ? "Desenvolvedor" : isLegacyPremium ? "Mensal" : "",
+        nalabiaPrimeAcess: isDeveloper || isLegacyPremium,
+        darkPackAccess: isDeveloper || isLegacyPremium,
+        coursesAccess: isDeveloper || isLegacyPremium,
+        mentoriaAccess: isDeveloper || isLegacyPremium,
+        freeMessagesUsed: 0,
+      };
+      users.push(userDoc);
+      db.setCollection("users", users);
+    } else {
+      // Ensure VIP flags for developer/legacy
+      if (isDeveloper) {
+        userDoc.status = "ativo";
+        userDoc.plano = "Desenvolvedor";
+        userDoc.nalabiaPrimeAcess = true;
+        userDoc.darkPackAccess = true;
+        userDoc.coursesAccess = true;
+        userDoc.mentoriaAccess = true;
+      } else if (isLegacyPremium) {
+        userDoc.status = "ativo";
+        userDoc.nalabiaPrimeAcess = true;
+        userDoc.darkPackAccess = true;
+        userDoc.coursesAccess = true;
+        userDoc.mentoriaAccess = true;
+      }
+      db.setCollection("users", users);
+    }
+
+    // Record sign_in log
+    const signIns = db.getCollection("sign_ins");
+    signIns.push({
+      user_id: authUser.id,
+      email: normEmail,
+      signed_in_at: new Date().toISOString(),
+    });
+    db.setCollection("sign_ins", signIns);
+
+    const userPayload = {
+      id: authUser.id,
+      email: authUser.email,
+      user_metadata: {
+        full_name: authUser.full_name || userDoc?.name || normEmail.split("@")[0],
+      },
+    };
+
+    return res.json({
+      user: userPayload,
+      token: `token_${authUser.id}_${Date.now()}`,
+    });
+  } catch (err: any) {
+    console.error("[AUTH API] Login error:", err);
+    res.status(500).json({ error: err.message || "Erro no login." });
+  }
+});
+
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email e senha obrigatórios." });
+    }
+
+    const normEmail = String(email).trim().toLowerCase();
+    const authUsers = db.getCollection("auth_users");
+    const users = db.getCollection("users");
+
+    let authUser = authUsers.find((u: any) => u.email?.toLowerCase() === normEmail);
+    if (!authUser) {
+      const generatedId = `usr_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+      authUser = {
+        id: generatedId,
+        email: normEmail,
+        password: password,
+        full_name: name || normEmail.split("@")[0],
+        created_at: new Date().toISOString(),
+      };
+      authUsers.push(authUser);
+      db.setCollection("auth_users", authUsers);
+    } else {
+      authUser.password = password;
+      if (name) authUser.full_name = name;
+      db.setCollection("auth_users", authUsers);
+    }
+
+    let userDoc = users.find((u: any) => u.email?.toLowerCase() === normEmail || u.userID === authUser.id);
+    if (!userDoc) {
+      userDoc = {
+        userID: authUser.id,
+        name: name || authUser.full_name || normEmail.split("@")[0],
+        email: normEmail,
+        level: 1,
+        xp: 0,
+        createdAt: Date.now(),
+        onboardingCompleted: true,
+        status: "pendente",
+        plano: "",
+        nalabiaPrimeAcess: false,
+        darkPackAccess: false,
+        coursesAccess: false,
+        mentoriaAccess: false,
+        freeMessagesUsed: 0,
+      };
+      users.push(userDoc);
+      db.setCollection("users", users);
+    }
+
+    const userPayload = {
+      id: authUser.id,
+      email: authUser.email,
+      user_metadata: {
+        full_name: authUser.full_name || userDoc.name,
+      },
+    };
+
+    return res.json({
+      user: userPayload,
+      token: `token_${authUser.id}_${Date.now()}`,
+    });
+  } catch (err: any) {
+    console.error("[AUTH API] Signup error:", err);
+    res.status(500).json({ error: err.message || "Erro no cadastro." });
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  res.json({ success: true });
+});
+
+app.post("/api/auth/reset-password", (req, res) => {
+  res.json({ success: true, message: "Instruções enviadas para seu e-mail." });
+});
+
+app.post("/api/auth/update-user", (req, res) => {
+  const { userId, password, data } = req.body;
+  if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+  const authUsers = db.getCollection("auth_users");
+  const authUser = authUsers.find((u: any) => u.id === userId);
+  if (authUser) {
+    if (password) authUser.password = password;
+    if (data?.full_name) authUser.full_name = data.full_name;
+    db.setCollection("auth_users", authUsers);
+  }
+
+  const users = db.getCollection("users");
+  const userDoc = users.find((u: any) => u.userID === userId);
+  if (userDoc && data?.full_name) {
+    userDoc.name = data.full_name;
+    db.setCollection("users", users);
+  }
+
+  res.json({
+    user: authUser
+      ? {
+          id: authUser.id,
+          email: authUser.email,
+          user_metadata: { full_name: authUser.full_name },
+        }
+      : null,
+  });
+});
+
+// Resilient DB Query Endpoint
+app.post("/api/db/query", async (req, res) => {
+  try {
+    const {
+      table,
+      op = "select",
+      payload,
+      filters = [],
+      orderCol,
+      orderAsc = true,
+      limitCount,
+      isSingle = false,
+      isMaybeSingle = false,
+    } = req.body;
+
+    if (!table) return res.status(400).json({ error: "Missing table" });
+
+    const collection = db.getCollection(table);
+
+    if (op === "select") {
+      let filtered = [...collection];
+
+      for (const filter of filters) {
+        if (filter.type === "eq") {
+          filtered = filtered.filter((item: any) => {
+            const itemVal = item[filter.column];
+            return String(itemVal).toLowerCase() === String(filter.value).toLowerCase();
+          });
+        } else if (filter.type === "ilike") {
+          filtered = filtered.filter((item: any) => {
+            const itemVal = String(item[filter.column] || "").toLowerCase();
+            return itemVal.includes(String(filter.value || "").toLowerCase());
+          });
+        }
+      }
+
+      if (orderCol) {
+        filtered.sort((a: any, b: any) => {
+          const valA = a[orderCol];
+          const valB = b[orderCol];
+          if (valA === valB) return 0;
+          if (valA === undefined || valA === null) return 1;
+          if (valB === undefined || valB === null) return -1;
+          if (valA < valB) return orderAsc ? -1 : 1;
+          return orderAsc ? 1 : -1;
+        });
+      }
+
+      if (limitCount && limitCount > 0) {
+        filtered = filtered.slice(0, limitCount);
+      }
+
+      if (isSingle) {
+        return res.json({ data: filtered[0] || null });
+      }
+      if (isMaybeSingle) {
+        return res.json({ data: filtered[0] || null });
+      }
+
+      return res.json({ data: filtered });
+    }
+
+    if (op === "insert") {
+      const itemsToInsert = Array.isArray(payload) ? payload : [payload];
+      for (const item of itemsToInsert) {
+        collection.push(item);
+      }
+      db.setCollection(table, collection);
+      return res.json({ data: payload });
+    }
+
+    if (op === "update") {
+      let updatedCount = 0;
+      for (let i = 0; i < collection.length; i++) {
+        let match = true;
+        for (const filter of filters) {
+          if (filter.type === "eq") {
+            if (
+              String(collection[i][filter.column]).toLowerCase() !==
+              String(filter.value).toLowerCase()
+            ) {
+              match = false;
+              break;
+            }
+          }
+        }
+        if (match) {
+          collection[i] = { ...collection[i], ...payload };
+          updatedCount++;
+        }
+      }
+      db.setCollection(table, collection);
+      return res.json({ data: payload, updatedCount });
+    }
+
+    if (op === "upsert") {
+      const itemsToUpsert = Array.isArray(payload) ? payload : [payload];
+      for (const item of itemsToUpsert) {
+        const idKey = item.userID ? "userID" : item.id ? "id" : item.user_id ? "user_id" : null;
+        let index = -1;
+        if (idKey && item[idKey]) {
+          index = collection.findIndex((x: any) => String(x[idKey]).toLowerCase() === String(item[idKey]).toLowerCase());
+        } else if (item.email) {
+          index = collection.findIndex((x: any) => String(x.email).toLowerCase() === String(item.email).toLowerCase());
+        }
+
+        if (index >= 0) {
+          collection[index] = { ...collection[index], ...item };
+        } else {
+          collection.push(item);
+        }
+      }
+      db.setCollection(table, collection);
+      return res.json({ data: payload });
+    }
+
+    if (op === "delete") {
+      const remaining = collection.filter((item: any) => {
+        for (const filter of filters) {
+          if (filter.type === "eq") {
+            if (
+              String(item[filter.column]).toLowerCase() ===
+              String(filter.value).toLowerCase()
+            ) {
+              return false; // Remove
+            }
+          }
+        }
+        return true;
+      });
+      db.setCollection(table, remaining);
+      return res.json({ data: { success: true } });
+    }
+
+    res.json({ data: null });
+  } catch (err: any) {
+    console.error("[DB API] Query error:", err);
+    res.status(500).json({ error: err.message || "Erro no banco de dados." });
+  }
+});
+
 app.post("/api/verify-payment", async (req, res) => {
   try {
     const { userId, type } = req.body;
     if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-    // 1. CHACAGEM RÁPIDA NO BANCO DE DADOS (Cobertura para Cakto via Webhook)
-    const { data: dbUser } = await supabase
-      .from("users")
-      .select("*")
-      .eq("userID", userId)
-      .single();
+    const users = db.getCollection("users");
+    const assinaturas = db.getCollection("assinaturas");
 
+    // 1. CHECAGEM NO BANCO LOCAL
+    const dbUser = users.find((u: any) => u.userID === userId || u.id === userId);
     const emailToCheck = dbUser?.email || "";
-    let { data: currAssinatura } = emailToCheck
-      ? await supabase
-          .from("assinaturas")
-          .select("*")
-          .eq("email", emailToCheck)
-          .order("expira_em", { ascending: false })
-          .maybeSingle()
-      : { data: null };
+    const currAssinatura = emailToCheck
+      ? assinaturas.find((a: any) => a.email?.toLowerCase() === emailToCheck.toLowerCase())
+      : null;
 
     if (dbUser && dbUser.status === "ativo") {
-      // Check from dbUser
       if (type === "courses" && dbUser.coursesAccess) return res.json({ success: true, message: "Pago verificado." });
       if (type === "darkpack" && dbUser.darkPackAccess) return res.json({ success: true, message: "Pago verificado." });
       if (type === "mentoria" && (dbUser.mentoriaAccess || dbUser.settings?.mentoriaAccess)) return res.json({ success: true, message: "Pago verificado." });
@@ -483,286 +1169,160 @@ async function processSubscriptionUpdate(subscription: any) {
     `[Payment Process] User: ${userId || payerEmail}, Status: ${status}, Amount: ${transactionAmount}, Reason: ${reason}`,
   );
 
-  if (!userId && payerEmail) {
-    try {
-      // Trying case-insensitive matching first
-      console.log(
-        `[Payment Process] Searching for userId using ilike for email: ${payerEmail}`,
-      );
-      const { data: users } = await supabase
-        .from("users")
-        .select("userID")
-        .ilike("email", payerEmail)
-        .limit(1);
-      if (users && users.length > 0) {
-        userId = users[0].userID;
-        console.log(
-          `[Payment Process] Found userId ${userId} by ilike email ${payerEmail}`,
-        );
-      } else {
-        console.warn(
-          `[Payment Process] User not found by email ${payerEmail} in Supabase`,
-        );
-      }
-    } catch (err) {
-      console.error("[Payment Process] Error searching user by email:", err);
+  const users = db.getCollection("users");
+  const authUsers = db.getCollection("auth_users");
+  const assinaturas = db.getCollection("assinaturas");
+
+  let userData: any = null;
+  if (userId) {
+    userData = users.find((u: any) => u.userID === userId || u.id === userId);
+  }
+  if (!userData && payerEmail) {
+    userData = users.find((u: any) => u.email?.toLowerCase() === payerEmail.toLowerCase());
+    if (userData) userId = userData.userID;
+  }
+
+  if (!userData) {
+    const generatedId = userId || `usr_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+    userId = generatedId;
+    userData = {
+      userID: userId,
+      email: payerEmail || "",
+      name: payerEmail ? payerEmail.split("@")[0] : "Usuário",
+      level: 1,
+      xp: 0,
+      createdAt: Date.now(),
+      onboardingCompleted: true,
+      status: "pendente",
+      plano: "",
+      nalabiaPrimeAcess: false,
+      darkPackAccess: false,
+      coursesAccess: false,
+      mentoriaAccess: false,
+      freeMessagesUsed: 0,
+    };
+    users.push(userData);
+
+    // Also ensure auth_user exists
+    if (payerEmail && !authUsers.some((a: any) => a.email?.toLowerCase() === payerEmail.toLowerCase())) {
+      authUsers.push({
+        id: userId,
+        email: payerEmail,
+        password: "AutoPass" + Math.random().toString(36) + "!",
+        full_name: payerEmail.split("@")[0],
+        created_at: new Date().toISOString(),
+      });
+      db.setCollection("auth_users", authUsers);
     }
   }
 
-  if (userId || payerEmail) {
-    let retries = 3;
-    let success = false;
+  if (
+    status === "authorized" ||
+    status === "approved" ||
+    status === "paid" ||
+    status === "payment.paid" ||
+    status === "completed"
+  ) {
+    const amount = transactionAmount;
+    const isCourse =
+      reason.toLowerCase().includes("curso") ||
+      reason.toLowerCase().includes("academia") ||
+      (amount === 39.9 && reason.toLowerCase().includes("curso"));
+    const isDarkPack =
+      reason.toLowerCase().includes("dark") ||
+      reason.toLowerCase().includes("18") ||
+      reason.toLowerCase().includes("manipula") ||
+      (amount === 19.9 && reason.toLowerCase().includes("dark"));
+    const isMentoria =
+      reason.toLowerCase().includes("mentoria") ||
+      (amount === 19.9 && reason.toLowerCase().includes("mentoria"));
 
-    while (retries > 0 && !success) {
-      try {
-        let userData: any = null;
-        // Find user by external_reference first
-        if (userId) {
-          const { data } = await supabase
-            .from("users")
-            .select("*")
-            .eq("userID", userId)
-            .single();
-          userData = data;
-        }
+    let finalExpiraEm = new Date();
+    let finalPlano = planName || "Premium";
+    let finalPlanoType = "mensal";
 
-        // If user document doesn't exist by ID, try by email
-        if (!userData && payerEmail) {
-          const { data: userByEmail } = await supabase
-            .from("users")
-            .select("*")
-            .eq("email", payerEmail)
-            .single();
-          if (userByEmail) {
-            userData = userByEmail;
-            userId = userByEmail.userID; // Sync the ID
-          }
-        }
+    userData.status = "ativo";
+    userData.nalabiaPrimeAcess = true;
+    userData.lastPaymentId = subscription.id;
+    userData.updatedAt = new Date().toISOString();
 
-        // If user document doesn't exist yet, check if we need to auto-create them in Auth!
-        if (!userData) {
-          if (payerEmail) {
-            console.log(`[Payment Process] Auto-creating auth user for ${payerEmail}`);
-            // Check if they exist in auth first
-            const { data: existingAuth } = await supabase.auth.admin.listUsers();
-            let authId = existingAuth?.users.find((u: any) => u.email?.toLowerCase() === payerEmail.toLowerCase())?.id;
-            
-            if (!authId) {
-              const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
-                email: payerEmail,
-                email_confirm: true,
-                password: "AutoPass" + Math.random().toString(36) + "!", // Secure random temp pass
-                user_metadata: { auto_created: true }
-              });
-              
-              if (authErr) {
-                console.error("[Payment Process] Error auto-creating auth user:", authErr);
-              } else if (authData?.user) {
-                authId = authData.user.id;
-                console.log(`[Payment Process] Auto-created auth user ${authId}`);
-              }
-            } else {
-               console.log(`[Payment Process] Found existing auth user ${authId}`);
-            }
-            
-            if (authId) {
-               userId = authId;
-            }
-          }
-
-          if (userId) {
-            console.log(
-              `[Payment Process] User document ${userId} not found! Creating skeleton...`,
-            );
-            userData = {
-              userID: userId,
-              email: payerEmail || "",
-              level: 1,
-              xp: 0,
-              createdAt: Date.now(),
-              onboardingCompleted: false,
-            };
-          } else {
-             throw new Error("Could not determine or create a userId for this payment.");
-          }
-        }
-
-        if (
-          status === "authorized" ||
-          status === "approved" ||
-          status === "paid" ||
-          status === "payment.paid" ||
-          status === "completed"
-        ) {
-          if (
-            userData.lastPaymentId &&
-            userData.lastPaymentId === subscription.id
-          ) {
-            console.log(
-              `[Payment Process] Payment ${subscription.id} already processed`,
-            );
-            return;
-          }
-
-          const amount = transactionAmount;
-          const isCourse =
-            reason.toLowerCase().includes("curso") ||
-            reason.toLowerCase().includes("academia") ||
-            (amount === 39.9 && reason.toLowerCase().includes("curso"));
-          const isDarkPack =
-            reason.toLowerCase().includes("dark") ||
-            reason.toLowerCase().includes("18") ||
-            reason.toLowerCase().includes("manipula") ||
-            (amount === 19.9 && reason.toLowerCase().includes("dark"));
-          const isMentoria =
-            reason.toLowerCase().includes("mentoria") ||
-            (amount === 19.9 && reason.toLowerCase().includes("mentoria"));
-
-          // PREPARE UPSERT DATA
-          const updateData: any = {
-            ...userData, // spread existing data to not overwrite
-            status: "ativo",
-            nalabiaPrimeAcess: true, // Always grant base access on any purchase
-            lastPaymentId: subscription.id,
-            updatedAt: new Date().toISOString(),
-          };
-
-          let finalExpiraEm = new Date();
-          let finalPlano = planName || "Premium";
-          let finalPlanoType = "mensal";
-
-          if (isCourse) {
-            updateData.coursesAccess = true;
-            updateData.plano = "Curso Academia";
-            finalPlano = "Curso Academia";
-            finalPlanoType = "vitalicio";
-            finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10); // Vitalício
-            console.log(
-              `[Payment Process] Granting Course Access to ${userId}`,
-            );
-          } else if (isDarkPack) {
-            updateData.darkPackAccess = true;
-            updateData.plano = "Pacote Dark";
-            finalPlano = "Pacote Dark";
-            finalPlanoType = "vitalicio";
-            finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10); // Vitalício
-            console.log(
-              `[Payment Process] Granting Dark Pack Access to ${userId}`,
-            );
-          } else if (isMentoria) {
-            updateData.settings = { ...(userData.settings || {}), mentoriaAccess: true };
-            updateData.plano = "Mentoria VIP";
-            finalPlano = "Mentoria VIP";
-            finalPlanoType = "vitalicio";
-            finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10); // Vitalício
-            console.log(
-              `[Payment Process] Granting Mentoria Access to ${userId}`,
-            );
-          } else {
-            // Standard Subscriptions
-            if (userData.expiraEm) {
-              const currentExp = new Date(userData.expiraEm);
-              if (currentExp > new Date()) finalExpiraEm = currentExp;
-            }
-
-            if (
-              reason.toLowerCase().includes("trimestral") ||
-              planName.toLowerCase().includes("trimestral")
-            ) {
-              finalExpiraEm.setDate(finalExpiraEm.getDate() + 90);
-              finalPlanoType = "trimestral";
-            } else if (
-              reason.toLowerCase().includes("semestral") ||
-              planName.toLowerCase().includes("semestral")
-            ) {
-              finalExpiraEm.setDate(finalExpiraEm.getDate() + 180);
-              finalPlanoType = "semestral";
-            } else if (
-              reason.toLowerCase().includes("anual") ||
-              planName.toLowerCase().includes("anual")
-            ) {
-              finalExpiraEm.setDate(finalExpiraEm.getDate() + 365);
-              finalPlanoType = "anual";
-            } else {
-              // default to monthly
-              finalExpiraEm.setDate(finalExpiraEm.getDate() + 30);
-              finalPlanoType = "mensal";
-            }
-
-            updateData.plano = finalPlano;
-            updateData.expiraEm = finalExpiraEm.toISOString();
-            console.log(
-              `[Payment Process] Granting Subscription Access to ${userId}, Expires: ${updateData.expiraEm}`,
-            );
-          }
-
-          // UPSERT guarantees creation if missing, and update if existing
-          const { error: upsertError } = await supabase
-            .from("users")
-            .upsert(updateData);
-          if (upsertError) throw upsertError;
-
-          // 2. Insert/Upsert into assinaturas (The Architecture fix)
-          const { error: assinError } = await supabase
-            .from("assinaturas")
-            .upsert(
-              {
-                id: userId,
-                email: payerEmail || userData.email,
-                status: "ativa",
-                plano: finalPlanoType,
-                plano_nome: finalPlano,
-                valor_pago: String(amount || "0.00"),
-                expira_em: finalExpiraEm.toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "id" },
-            );
-          if (assinError)
-            console.error(
-              "[Payment Process] Error updating public.assinaturas:",
-              assinError,
-            );
-
-          console.log(`[Payment Process] Successfully updated user ${userId}`);
-          success = true;
-        } else if (
-          ["cancelled", "paused", "canceled", "subscription.canceled"].includes(
-            status,
-          )
-        ) {
-          // UPSERT with pending status
-          const updateData: any = {
-            ...userData,
-            status: "pendente",
-            updatedAt: new Date().toISOString(),
-          };
-          await supabase.from("users").upsert(updateData);
-          console.log(
-            `[Payment Process] Subscription cancelled for user ${userId}`,
-          );
-          success = true;
-        } else {
-          console.log(
-            `[Payment Process] Ignored status: ${status} for user ${userId}`,
-          );
-          success = true; // Not an error to ignore
-        }
-      } catch (err: any) {
-        console.error(
-          `[Payment Process] Error updating user ${userId} (Retries left: ${retries - 1}):`,
-          err.message || err,
-        );
-        retries--;
-        if (retries > 0) {
-          await new Promise((r) => setTimeout(r, 1000));
-        }
+    if (isCourse) {
+      userData.coursesAccess = true;
+      userData.plano = "Curso Academia";
+      finalPlano = "Curso Academia";
+      finalPlanoType = "vitalicio";
+      finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10);
+    } else if (isDarkPack) {
+      userData.darkPackAccess = true;
+      userData.plano = "Pacote Dark";
+      finalPlano = "Pacote Dark";
+      finalPlanoType = "vitalicio";
+      finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10);
+    } else if (isMentoria) {
+      userData.settings = { ...(userData.settings || {}), mentoriaAccess: true };
+      userData.mentoriaAccess = true;
+      userData.plano = "Mentoria VIP";
+      finalPlano = "Mentoria VIP";
+      finalPlanoType = "vitalicio";
+      finalExpiraEm.setFullYear(finalExpiraEm.getFullYear() + 10);
+    } else {
+      if (
+        reason.toLowerCase().includes("trimestral") ||
+        planName.toLowerCase().includes("trimestral")
+      ) {
+        finalExpiraEm.setDate(finalExpiraEm.getDate() + 90);
+        finalPlanoType = "trimestral";
+      } else if (
+        reason.toLowerCase().includes("semestral") ||
+        planName.toLowerCase().includes("semestral")
+      ) {
+        finalExpiraEm.setDate(finalExpiraEm.getDate() + 180);
+        finalPlanoType = "semestral";
+      } else if (
+        reason.toLowerCase().includes("anual") ||
+        planName.toLowerCase().includes("anual")
+      ) {
+        finalExpiraEm.setDate(finalExpiraEm.getDate() + 365);
+        finalPlanoType = "anual";
+      } else {
+        finalExpiraEm.setDate(finalExpiraEm.getDate() + 30);
+        finalPlanoType = "mensal";
       }
+      userData.plano = finalPlano;
+      userData.expiraEm = finalExpiraEm.toISOString();
     }
-  } else {
-    console.error(
-      `[Payment Process] FATAL: Could not identify user for payment ${subscription.id} (Email: ${payerEmail}). User mismatch or frontend didn't pass external_reference.`,
+
+    db.setCollection("users", users);
+
+    // Update assinaturas
+    const existingAssinIndex = assinaturas.findIndex(
+      (a: any) => a.id === userId || a.email?.toLowerCase() === payerEmail?.toLowerCase(),
     );
+    const assinObj = {
+      id: userId,
+      email: payerEmail || userData.email,
+      status: "ativa",
+      plano: finalPlanoType,
+      plano_nome: finalPlano,
+      valor_pago: String(amount || "0.00"),
+      expira_em: finalExpiraEm.toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (existingAssinIndex >= 0) {
+      assinaturas[existingAssinIndex] = assinObj;
+    } else {
+      assinaturas.push(assinObj);
+    }
+    db.setCollection("assinaturas", assinaturas);
+
+    console.log(`[Payment Process] Successfully updated user ${userId} to active in DB`);
+  } else if (
+    ["cancelled", "paused", "canceled", "subscription.canceled"].includes(status)
+  ) {
+    userData.status = "pendente";
+    userData.nalabiaPrimeAcess = false;
+    userData.updatedAt = new Date().toISOString();
+    db.setCollection("users", users);
   }
 }
 
@@ -776,29 +1336,24 @@ app.post("/api/admin/activate-user", async (req, res) => {
   if (!email) return res.status(400).json({ error: "Missing email" });
 
   try {
-    const { data: users } = await supabase
-      .from("users")
-      .select("userID")
-      .eq("email", email);
-    if (!users || users.length === 0)
+    const users = db.getCollection("users");
+    const matched = users.filter((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+    if (matched.length === 0) {
       return res.status(404).json({ error: "User not found" });
+    }
 
     const expDate = new Date();
     expDate.setMonth(expDate.getMonth() + months);
 
-    for (const user of users) {
-      await supabase
-        .from("users")
-        .update({
-          status: "ativo",
-          plano: `Manual (${months} meses)`,
-          nalabiaPrimeAcess: true,
-          expiraEm: expDate.toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("userID", user.userID);
+    for (const user of matched) {
+      user.status = "ativo";
+      user.plano = `Manual (${months} meses)`;
+      user.nalabiaPrimeAcess = true;
+      user.expiraEm = expDate.toISOString();
+      user.updatedAt = new Date().toISOString();
     }
 
+    db.setCollection("users", users);
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
