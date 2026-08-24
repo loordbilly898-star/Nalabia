@@ -16,6 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { safeFetchJson } from "../utils/apiHelper";
 
 interface StripeCheckoutModalProps {
   isOpen: boolean;
@@ -61,21 +62,19 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
     const initCheckout = async () => {
       try {
         // 1. Fetch Stripe config
-        const configRes = await fetch("/api/stripe/config");
-        const configData = await configRes.json();
-
-        if (!configData.enabled || !configData.publishableKey) {
+        const configRes = await safeFetchJson("/api/stripe/config");
+        if (!configRes.ok || !configRes.data?.enabled || !configRes.data?.publishableKey) {
           throw new Error(
-            "Stripe ainda não está totalmente habilitado no servidor.",
+            configRes.error || "Stripe ainda não está totalmente habilitado no servidor.",
           );
         }
 
-        const stripeObj = await loadStripe(configData.publishableKey);
+        const stripeObj = await loadStripe(configRes.data.publishableKey);
         if (isMounted) setStripePromise(stripeObj);
 
         // 2. Create embedded checkout session
         const origin = window.location.origin;
-        const sessionRes = await fetch("/api/stripe/create-checkout-session", {
+        const sessionRes = await safeFetchJson("/api/stripe/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -87,17 +86,16 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
           }),
         });
 
-        const sessionData = await sessionRes.json();
-        if (!sessionRes.ok || !sessionData.clientSecret) {
+        if (!sessionRes.ok || !sessionRes.data?.clientSecret) {
           throw new Error(
-            sessionData.error || "Não foi possível iniciar a sessão de pagamento.",
+            sessionRes.error || "Não foi possível iniciar a sessão de pagamento.",
           );
         }
 
         if (isMounted) {
-          setClientSecret(sessionData.clientSecret);
-          setSessionId(sessionData.sessionId);
-          setFallbackUrl(sessionData.url || null);
+          setClientSecret(sessionRes.data.clientSecret);
+          setSessionId(sessionRes.data.sessionId);
+          setFallbackUrl(sessionRes.data.url || null);
           setLoading(false);
         }
       } catch (err: any) {
@@ -120,7 +118,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
     if (!sessionId) return;
     setVerifying(true);
     try {
-      const res = await fetch("/api/stripe/verify-session", {
+      const res = await safeFetchJson("/api/stripe/verify-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -129,13 +127,12 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
           userEmail: user?.email || userData?.email,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.ok && res.data?.success) {
         setIsSuccess(true);
         if (refreshUser) await refreshUser();
         if (onSuccess) onSuccess();
       } else {
-        setError(data.message || "Pagamento ainda em processamento.");
+        setError(res.error || res.data?.message || "Pagamento ainda em processamento.");
       }
     } catch (e: any) {
       setError(e.message || "Erro ao verificar status.");
@@ -148,7 +145,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
     setIsSuccess(true);
     if (sessionId) {
       try {
-        await fetch("/api/stripe/verify-session", {
+        await safeFetchJson("/api/stripe/verify-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

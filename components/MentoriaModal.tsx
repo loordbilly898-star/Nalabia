@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { StripeCheckoutModal } from "./StripeCheckoutModal";
+import { safeFetchJson } from "../utils/apiHelper";
 
 interface MentoriaModalProps {
   isOpen: boolean;
@@ -46,14 +47,13 @@ export const MentoriaModal: React.FC<MentoriaModalProps> = ({
     setError(null);
     setIsSuccess(false);
     try {
-      const response = await fetch("/api/verify-payment", {
+      const response = await safeFetchJson("/api/verify-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, type: "mentoria" }),
       });
-      const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && response.data?.success) {
         setError(null);
         setIsSuccess(true);
         setTimeout(() => {
@@ -61,7 +61,8 @@ export const MentoriaModal: React.FC<MentoriaModalProps> = ({
         }, 1500);
       } else {
         setError(
-          data.message ||
+          response.error ||
+          response.data?.message ||
             "Pagamento ainda não aprovado. Tente novamente em instantes.",
         );
       }

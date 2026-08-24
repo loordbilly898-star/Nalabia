@@ -567,22 +567,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (error && error.message?.toLowerCase().includes("user already registered")) {
         // Tentativa de "Claim" para contas auto-criadas pelo webhook
-        const claimRes = await fetch("/api/auth/claim-account", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-        const claimData = await claimRes.json();
-        
-        if (claimRes.ok && claimData.success) {
-           // Success! The password was updated. Let's log in instead of throwing error.
-           const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
-           if (loginErr) throw loginErr;
-           data = loginData;
-           error = null as any;
-        } else {
-           // Some other error or it was conventionally registered
-           throw new Error(claimData.error || "Este e-mail já está em uso.");
+        try {
+          const claimRes = await fetch("/api/auth/claim-account", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          const rawClaimText = await claimRes.text();
+          let claimData: any = {};
+          try {
+            claimData = JSON.parse(rawClaimText);
+          } catch {
+            claimData = { error: rawClaimText || "Erro no servidor" };
+          }
+          
+          if (claimRes.ok && claimData.success) {
+             // Success! The password was updated. Let's log in instead of throwing error.
+             const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+             if (loginErr) throw loginErr;
+             data = loginData;
+             error = null as any;
+          } else {
+             // Some other error or it was conventionally registered
+             throw new Error(claimData.error || "Este e-mail já está em uso.");
+          }
+        } catch (claimErr: any) {
+          throw new Error(claimErr.message || "Este e-mail já está em uso.");
         }
     }
 

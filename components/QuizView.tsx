@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ChevronRight, Camera, MessageSquare, BriefcaseMedical, CheckCircle2 } from "lucide-react";
+import { safeFetchJson } from "../utils/apiHelper";
 
 interface QuizViewProps {
   onFinish: () => void;
@@ -166,7 +167,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
         content.push({ type: "image_url", imageUrl: { url: trialImage } });
       }
 
-      const response = await fetch("/api/ai/complete", {
+      const response = await safeFetchJson("/api/ai/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -175,10 +176,11 @@ export const QuizView: React.FC<QuizViewProps> = ({ onFinish, onGoToLogin }) => 
         }),
       });
 
-      if (!response.ok) throw new Error("Erro na API.");
-      const data = await response.json();
+      if (!response.ok || !response.data?.choices?.[0]?.message?.content) {
+        throw new Error(response.error || "Erro na API.");
+      }
       
-      const reply = data.choices[0].message.content;
+      const reply = response.data.choices[0].message.content;
 
       setTrialChat("done");
       setChatResponse(reply);

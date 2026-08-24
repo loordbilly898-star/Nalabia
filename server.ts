@@ -1393,6 +1393,11 @@ app.post("/api/auth/claim-account", async (req, res) => {
   }
 });
 
+// Global API 404 & error handler to ensure JSON response instead of HTML
+app.use("/api/*all", (req, res) => {
+  res.status(404).json({ error: `Rota da API não encontrada: ${req.originalUrl}` });
+});
+
 // Vite middleware for development
 async function setupVite() {
   try {
@@ -1407,6 +1412,17 @@ async function setupVite() {
     console.log("Vite not found, skipping dev server setup");
   }
 }
+
+// Global Express error handler returning JSON for /api
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.path.startsWith("/api")) {
+    console.error("[API Error Handler]", err);
+    return res.status(err.status || 500).json({
+      error: err.message || "Ocorreu um erro interno no servidor.",
+    });
+  }
+  next(err);
+});
 
 if (process.env.NODE_ENV !== "production") {
   setupVite().then(() => {

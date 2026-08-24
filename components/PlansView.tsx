@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Crown, Zap, Star, Check, Loader2, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { StripeCheckoutModal } from "./StripeCheckoutModal";
+import { safeFetchJson } from "../utils/apiHelper";
 
 const PLANS = [
   {
@@ -126,7 +127,7 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
     setLoadingPortal(true);
     setError(null);
     try {
-      const res = await fetch("/api/stripe/create-portal-session", {
+      const res = await safeFetchJson("/api/stripe/create-portal-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -135,11 +136,10 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
           returnUrl: `${window.location.origin}/dashboard`,
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.url) {
-        window.location.href = data.url;
+      if (res.ok && res.data?.url) {
+        window.location.href = res.data.url;
       } else {
-        setError(data.error || "Não foi possível abrir o portal de gerenciamento Stripe.");
+        setError(res.error || res.data?.error || "Não foi possível abrir o portal de gerenciamento Stripe.");
       }
     } catch (err: any) {
       setError(err.message || "Erro ao conectar com o portal Stripe.");
@@ -166,18 +166,18 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
     setVerifyingPayment(true);
     setError(null);
     try {
-      const response = await fetch("/api/verify-payment", {
+      const response = await safeFetchJson("/api/verify-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
       });
-      const data = await response.json();
-      if (data.success) {
+      if (response.ok && response.data?.success) {
         // Reload page to get new user data
         window.location.href = "/dashboard";
       } else {
         setError(
-          data.message ||
+          response.error ||
+          response.data?.message ||
             "Nenhum pagamento aprovado encontrado ainda. Tente novamente em alguns instantes.",
         );
         setVerifyingPayment(false);
