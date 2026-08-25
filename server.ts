@@ -401,7 +401,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     };
 
     if (embedded) {
-      sessionParams.ui_mode = "embedded";
+      (sessionParams as any).ui_mode = "embedded_page";
       sessionParams.return_url = finalReturnUrl;
     } else {
       sessionParams.success_url = finalSuccessUrl;
