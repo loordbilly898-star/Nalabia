@@ -4,6 +4,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api"
+    },
+    {
+      "source": "/((?!api/|sw\\.js|manifest\\.json|assets/|favicon\\.ico|quiz\\.html|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ]
 }
