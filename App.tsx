@@ -78,6 +78,8 @@ import {
   ChevronRight,
   BrainCircuit,
   Trophy,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import { checkDeviceUsage, incrementDeviceUsage } from "./services/antiFraud";
@@ -768,6 +770,96 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRegenerateWithStyle = async (
+    messageId: string,
+    customStyle?: string,
+    customFlirt?: number,
+    customWitty?: number,
+    customDominance?: number,
+    customMystery?: number,
+    customSpeed?: ConversationSpeed,
+  ) => {
+    if (needsSubscription) {
+      setIsPlansDismissed(false);
+      return;
+    }
+
+    const msgIndex = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    ).findIndex((m) => m.id === messageId);
+    if (msgIndex === -1) return;
+
+    const targetMsg = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    )[msgIndex];
+    if (!targetMsg.analysis) return;
+
+    const currentModeMessages = (
+      Array.isArray(activeProfile?.messages) ? activeProfile.messages : []
+    ).filter(
+      (m) => m.mode === activeTab || (!m.mode && activeTab === "STORY_REPLY"),
+    );
+    const msgIndexInMode = currentModeMessages.findIndex(
+      (m) => m.id === messageId,
+    );
+    const contextMsg = currentModeMessages[msgIndexInMode - 1];
+    if (!contextMsg) return;
+
+    const contextText = contextMsg.content || "";
+    const contextImage = contextMsg.image;
+
+    const usedFlirt = customFlirt ?? flirtLevel;
+    const usedWitty = customWitty ?? wittyLevel;
+    const usedDominance = customDominance ?? dominanceLevel;
+    const usedMystery = customMystery ?? mysteryLevel;
+    const usedSpeed = customSpeed ?? speed;
+    const usedStyle = customStyle ?? activeProfileStyle;
+
+    setStatus(ProcessingState.REGENERATING);
+    try {
+      const result = await regenerateContent(
+        contextText,
+        contextImage,
+        (contextMsg.mode as AnalysisMode) || activeTab,
+        {
+          flirt: usedFlirt,
+          witty: usedWitty,
+          dominance: usedDominance,
+          mystery: usedMystery,
+        },
+        usedSpeed,
+        settings,
+        activeProfile,
+        userAIProfile,
+        usedStyle,
+      );
+
+      const newMessages = [
+        ...(Array.isArray(activeProfile?.messages)
+          ? activeProfile.messages
+          : []),
+      ];
+      newMessages[msgIndex] = {
+        ...targetMsg,
+        analysis: {
+          ...targetMsg.analysis,
+          responses: result.responses,
+        },
+      };
+      updateActiveProfileMessages(newMessages);
+
+      if (settings.notifications?.push) {
+        sendNotification("Regeneração Concluída", {
+          body: "Novas respostas adaptadas ao estilo selecionado.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Regeneration with style failed", error);
+    } finally {
+      setStatus(ProcessingState.IDLE);
+    }
+  };
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop =
@@ -914,6 +1006,7 @@ const App: React.FC = () => {
         userAIProfile,
         currentModeMessages,
         memories,
+        activeProfileStyle,
       );
 
       clearTimeout(stateTimer1);
@@ -1195,6 +1288,7 @@ const App: React.FC = () => {
         settings,
         activeProfile,
         userAIProfile,
+        activeProfileStyle,
       );
 
       // Update the message with new responses

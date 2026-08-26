@@ -176,9 +176,7 @@ const normalizeMistralContent = (content: any): string => {
   } else {
     result = String(content);
   }
-  
-  // Clean up markdown specifically asked by the user (asterisks, hashtags)
-  return result.replace(/[*#]/g, "");
+  return result;
 };
 
 const getQuizProfilePrompt = () => {
@@ -202,13 +200,73 @@ const getQuizProfilePrompt = () => {
   }
 };
 
+// Robust JSON extraction and repair from AI response
+const repairIncompleteJson = (jsonStr: string): string => {
+  let text = jsonStr.trim();
+  if (!text.startsWith("{") && !text.startsWith("[")) return text;
+
+  // Track open brackets and quotes
+  let inString = false;
+  let isEscaped = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (char === "\\") {
+        isEscaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+      } else if (char === "{" || char === "[") {
+        stack.push(char);
+      } else if (char === "}") {
+        if (stack.length > 0 && stack[stack.length - 1] === "{") {
+          stack.pop();
+        }
+      } else if (char === "]") {
+        if (stack.length > 0 && stack[stack.length - 1] === "[") {
+          stack.pop();
+        }
+      }
+    }
+  }
+
+  // If we ended while inside an unclosed string, close the string
+  if (inString) {
+    text += '"';
+  }
+
+  // Remove any trailing commas or partial property keys at the end
+  text = text.replace(/,\s*$/, "");
+  text = text.replace(/,\s*([}\]])/g, "$1");
+
+  // Close remaining unclosed brackets in reverse order
+  while (stack.length > 0) {
+    const unclosed = stack.pop();
+    if (unclosed === "{") {
+      text += "}";
+    } else if (unclosed === "[") {
+      text += "]";
+    }
+  }
+
+  // Final cleanup of trailing commas before closing braces
+  text = text.replace(/,\s*([}\]])/g, "$1");
+  return text;
+};
+
 // Robust JSON extraction from AI response
 const extractJson = (text: string): string => {
   if (!text) return "{}";
   let cleaned = text.trim();
 
   // Remove markdown code blocks if present (e.g. ```json ... ```)
-  // Handles multiline blocks and case-insensitive 'json' tag
   cleaned = cleaned.replace(/```(?:json|JSON)?\s*([\s\S]*?)```/g, "$1").trim();
 
   // If it still has backticks (sometimes they aren't closed properly)
@@ -219,18 +277,29 @@ const extractJson = (text: string): string => {
       .trim();
   }
 
-  // Find first '{' and last '}' to handle chatter around the JSON
+  // Find first '{'
   const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-
-  if (start !== -1 && end !== -1 && end > start) {
-    let jsonContent = cleaned.substring(start, end + 1);
-
-    // Attempt to fix common LLM JSON errors
-    // 1. Remove trailing commas before closing braces/brackets
-    jsonContent = jsonContent.replace(/,\s*([}\]])/g, "$1");
-
-    return jsonContent;
+  if (start !== -1) {
+    let jsonCandidate = cleaned.substring(start);
+    const end = jsonCandidate.lastIndexOf("}");
+    if (end !== -1) {
+      jsonCandidate = jsonCandidate.substring(0, end + 1);
+    }
+    
+    // Quick test if already valid
+    try {
+      JSON.parse(jsonCandidate);
+      return jsonCandidate;
+    } catch {
+      // Try repair
+      const repaired = repairIncompleteJson(jsonCandidate);
+      try {
+        JSON.parse(repaired);
+        return repaired;
+      } catch {
+        return jsonCandidate;
+      }
+    }
   }
 
   return cleaned;
@@ -493,6 +562,54 @@ export const generateCustomChatResponse = async (
   );
 };
 
+export const formatStyleAndSlidersInstruction = (
+  styleId: string | undefined,
+  flirtLevel: number,
+  wittyLevel: number,
+  dominanceLevel: number,
+  mysteryLevel: number,
+  speed: ConversationSpeed,
+): string => {
+  let styleName = "CALMO (Zen & Não-Reativo)";
+  let styleGuidance =
+    "Tom sereno, descontraído, sem afobação ou necessidade de validação. Transmita paz e alto valor com naturalidade.";
+
+  if (styleId === "IRONIC") {
+    styleName = "IRÔNICO (Sarcástico & Debochado)";
+    styleGuidance =
+      "Humor afiado, ironia fina, sarcasmo elegante, tirar sarro dela de forma leve (busting chops) e quebra de expectativa cômica.";
+  } else if (styleId === "DOMINANT") {
+    styleName = "LÍDER (Dominante & Alfa)";
+    styleGuidance =
+      "Frame inabalável, postura de comando sutil, lidera a conversa sem hesitação, sem pedir desculpas ou permissão, seguro de sua posição.";
+  } else if (styleId === "BOLD") {
+    styleName = "OUSADO (Audacioso & Tensão Sexual)";
+    styleGuidance =
+      "Flerte de alto impacto, polarização, duplo sentido inteligente, acelera o clima e quebra a zona de conforto com coragem.";
+  }
+
+  const speedGuidance =
+    speed === "short"
+      ? "CURTA (MÁXIMO 3 a 7 palavras! Mensagens extremamente curtas e cirúrgicas)"
+      : speed === "fluid"
+        ? "FLUIDA (1 a 2 frases estruturadas com charme)"
+        : "NORMAL (1 frase de 8 a 15 palavras no ritmo ideal)";
+
+  return `
+🎯 ESTILO DE PERSONALIDADE DA IA: ${styleName}
+Diretiva de Tom: ${styleGuidance}
+
+📊 REGULAGEM DOS SLIDERS (INSTRUÇÃO OBRIGATÓRIA):
+- NÍVEL DE FLERTE: ${flirtLevel}/10 -> ${flirtLevel >= 7 ? "ALTO (Injete charme marcante, duplo sentido e sedução explícita)" : flirtLevel <= 3 ? "BAIXO (Tom amigável, leve e casual, zero pressão romântica)" : "MÉDIO (Charme sutil e despretensioso)"}
+- NÍVEL DE DOMINÂNCIA: ${dominanceLevel}/10 -> ${dominanceLevel >= 7 ? "ALTO (Liderança total do frame, não busque validação)" : dominanceLevel <= 3 ? "BAIXO (Receptivo, calmo e acolhedor)" : "MÉDIO (Equilibrado e seguro)"}
+- NÍVEL DE MISTÉRIO: ${mysteryLevel}/10 -> ${mysteryLevel >= 7 ? "ALTO (Gere curiosidade irresistível, deixe perguntas no ar, seja enigmático)" : mysteryLevel <= 3 ? "BAIXO (Direto, transparente e sem rodeios)" : "MÉDIO (Pequenas lacunas de curiosidade)"}
+- NÍVEL DE SAGACIDADE (WITTY): ${wittyLevel}/10 -> ${wittyLevel >= 7 ? "ALTO (Sacadas rápidas, ironia perspicaz, punchlines inteligentes)" : "MÉDIO (Natural e bem colocado)"}
+- VELOCIDADE / EXTENSÃO: ${speedGuidance}
+
+🚨 REQUISITO DE SAÍDA: AS 3 OPÇÕES DE RESPOSTA NO ARRAY 'responses' DEVEM INCORPORAR COM CLAREZA O ESTILO "${styleName}" E OS NÍVEIS ACIMA!
+`;
+};
+
 export const analyzeContent = async (
   text: string,
   imageBase64: string | undefined,
@@ -507,6 +624,7 @@ export const analyzeContent = async (
   userAIProfile?: any,
   messageHistory?: Message[],
   memories?: any[],
+  profileStyle?: string,
 ): Promise<NalabiaResponse> => {
   const fallback: NalabiaResponse = {
     momentReading:
@@ -604,45 +722,50 @@ export const analyzeContent = async (
       const getModeInstructions = (mode: AnalysisMode): string => {
         switch (mode) {
           case "FIRST_CONTACT":
-            return "MANDATO: Criar impacto instantâneo. NÃO seja o cara que diz 'Oi'. Use ganchos psicológicos (Cold Reading) ou perguntas de 'Frame'. O objetivo é fazer ela sentir que você a 'leu' em segundos. TEM QUE SER CURTO, CASUAL E NÃO-BRUXENTO. Respeite as configurações (sliders) enviadas.";
+            return "MANDATO (Abertura Fria & Elicitação): Criar impacto instantâneo. Proibido dizer 'Oi' ou bajular. Use Cold Reading (afirmação presumida sobre a vibe dela do FBI/Kahneman) ou quebra de padrão situacional. Gere curiosidade e faça parecer que você a leu em segundos. Máximo 1 a 2 frases, estilo WhatsApp/Instagram.";
           case "FLOWING":
-            return "MANDATO: Manter a tensão sexual e intelectual. Evite interrogatórios. Transforme perguntas em afirmações provocativas. MENSAGENS CURTAS E CASUAIS. Respeite as configurações (sliders) enviadas.";
+            return "MANDATO (Engajamento & Push-Pull): Manter tensão emocional e atração. Evite interrogatórios (regra Carnegie/FBI). Transforme perguntas em afirmações provocativas e use desqualificação lúdica. Frases curtas e casuais.";
           case "STORY_REPLY":
-            return `MANDATO — STORY FLIRT & LÁBIA:
-          O objetivo é gerar muita curiosidade e uma resposta imediata dela. Saia do padrão de "elogiador comum", seja criativo mas MANTENHA-SE CASUAL.
-          - Se for de biquíni/corpo: NÃO elogie direto. Use algo como "Injusto aparecer no meu feed a essa hora."
-          - OBRIGATÓRIO: A resposta tem que ter "Lábia" MAS NÃO PODE SER ESOTÉRICA OU ASSUSTADORA. Escreva como um cara extremamente confiante e normal de 2026.
-          - Use no MÁXIMO 1 linha / frase curta. Respeite fielmente os níveis dos sliders (Flerte, Mistério, etc). Se estiverem baixos, responda natural. Sem 'textão'.`;
+            return `MANDATO — STORY FLIRT & LÁBIA (Robert Greene / Kahneman):
+          O objetivo é gerar curiosidade intensa e quebrar o padrão dos outros 50 caras.
+          - Se for foto de corpo/biquíni: NÃO elogie a estética óbvia. Comente algo de fundo ou provoque ("Injusto aparecer no meu feed a essa hora.").
+          - OBRIGATÓRIO: Lábia afiada, carisma natural, zero desespero.
+          - Use no MÁXIMO 1 linha / frase curta. Respeite fielmente os níveis dos sliders.`;
           case "VALUE_TEST":
-            return "MANDATO: Detecção de testes. Use 'Excesso de Confiança' (Amplify) ou 'Indiferença Superior'. Seja casual, curto e não force. Respeite as configurações (sliders).";
+            return "MANDATO (Frame Control & Anti-Shit Test): O homem é o prêmio. Se houver teste ou provocação dela, NUNCA se justifique. Use Agree & Amplify (concordar e amplificar com humor absurdo) ou Reframe.";
           case "COLD_RESPONSE":
-            return "MANDATO: Choque de escassez. Mensagens MUITO CURTAS, demoradas e sem justificativa. Respeite as configurações (sliders).";
+            return "MANDATO (Assimetria & Escassez - Greene/Skinner): Choque de escassez e retirada de atenção. Resposta ultra-curta, indiferente ou com ironia fina sem cobrança.";
           case "REACTIVATION":
-            return "MANDATO: Ressuscitar sem parecer carente. Use ganchos de estilo de vida de forma rápida e desapegada. Respeite as configurações (sliders).";
+            return "MANDATO (Ressurreição / Ghosting Recovery): Proibido cobrar ('sumiu?'). Use quebra de padrão inusitada, curiosidade inacabada ou comentário de estilo de vida com desapego total.";
           case "NSFW":
-            return "MANDATO: Dominação e escalação. Duplo sentido curto. Sem textão. Respeite as configurações (sliders).";
+            return "MANDATO (Tensão & Escalação Íntima): Duplo sentido sofisticado, condução sensorial do Sistema 1, sem ser vulgar ou desesperado. Máximo 1 a 2 frases.";
           case "MANIPULATION":
-            return "MANDATO: Psicologia reversa e gatilhos de elite. Respeite as configurações (sliders).";
+            return "MANDATO (Psicologia Social Reversa): Inversão de papéis (fazer parecer que ela está te conquistando), vácuo de informação e desafios de qualificação.";
           case "RED_FLAG_DETECTOR":
-            return "MANDATO: Diagnóstico de toxicidade. Instrua o usuário. Seja direto.";
+            return "MANDATO: Diagnóstico cirúrgico de interesse, manipulação ou desrespeito de limites. Dite a postura de proteção de valor do homem.";
           default:
-            return "MANDATO: Estratégia geral NaLábia. Resposta curta, casual, não bruxenta e respeitando os níveis (sliders) atuais passados.";
+            return "MANDATO: Estratégia geral NaLábia. Resposta curta, casual, espirituosa, respeitando rigorosamente os sliders ativos.";
         }
       };
+
+      const styleAndSlidersPrompt = formatStyleAndSlidersInstruction(
+        profileStyle,
+        flirtLevel,
+        wittyLevel,
+        dominanceLevel,
+        mysteryLevel,
+        speed,
+      );
 
       const prompt = `
 ${SYSTEM_PROMPT}
 
 ${getQuizProfilePrompt()}
 
-⚙️ CONFIGURAÇÃO DE SLIDERS & ESTILO SELECIONADO:
+${styleAndSlidersPrompt}
+
 - MODO ATIVO: ${mode}
 - INSTRUÇÃO DO MODO: ${getModeInstructions(mode)}
-- NÍVEL DE FLERTE: ${flirtLevel}/10 ${flirtLevel >= 7 ? "(ALTO: Use bastante tensão, charme e duplo sentido)" : flirtLevel <= 3 ? "(BAIXO: Foco em papo natural, leve e descontraído, sem forçar sexo/flerte)" : "(MÉDIO: Toque sutil de charme)"}
-- NÍVEL DE LÁBIA / WITTY: ${wittyLevel}/10 ${wittyLevel >= 6 ? "(ALTO: Seja muito espirituoso, use humor rápido, ironia fina, situações engraçadas e deboche charmoso)" : "(Leve e direto)"}
-- NÍVEL DE DOMINÂNCIA: ${dominanceLevel}/10 ${dominanceLevel >= 6 ? "(ALTO: Assuma a liderança da narrativa, frame inabalável, não peça validação)" : "(Receptivo e equilibrado)"}
-- NÍVEL DE MISTÉRIO: ${mysteryLevel}/10 ${mysteryLevel >= 6 ? "(ALTO: Deixe lacunas instigantes, perguntas provocativas, sem entregar tudo)" : "(Claro e direto)"}
-- RITMO: ${speed}
 
 🚨 DOGMA DE ATRIBUIÇÃO DE LADOS (LEITURA VISUAL CRÍTICA):
 - LADO DIREITO (Right / Alinhado à margem direita) = HOMEM (O USUÁRIO).
@@ -687,7 +810,7 @@ Gere a análise tática e 3 opções de respostas de altíssima lábia, carisma 
         messages: messages,
         responseFormat: { type: "json_object" },
         temperature: 0.75,
-        maxTokens: 2000,
+        maxTokens: 3000,
       });
 
       const rawContent =
@@ -807,6 +930,7 @@ export const regenerateContent = async (
   settings: AppSettings,
   profileContext?: Profile,
   userAIProfile?: any,
+  profileStyle?: string,
 ): Promise<{ responses: { type: string; text: string }[] }> => {
   const fallback = {
     responses: [
@@ -836,6 +960,15 @@ export const regenerateContent = async (
       `;
       }
 
+      const styleAndSlidersPrompt = formatStyleAndSlidersInstruction(
+        profileStyle,
+        sliders.flirt,
+        sliders.witty,
+        sliders.dominance,
+        sliders.mystery,
+        speed,
+      );
+
       const contextInstruction = `
     INPUT ORIGINAL:
     "${originalText}"
@@ -843,12 +976,7 @@ export const regenerateContent = async (
     MODO: ${mode}
     ${userAIProfileInstruction}
     
-    ⚙️ SLIDERS:
-    - Flerte: ${sliders.flirt}/10
-    - Sagacidade: ${sliders.witty}/10
-    - Dominância: ${sliders.dominance}/10
-    - Mistério: ${sliders.mystery}/10
-    - Velocidade: ${speed}
+    ${styleAndSlidersPrompt}
 
     ⚙️ CONFIGS:
     - Respostas Curtas: ${settings?.ai?.shortResponses ? "ON" : "OFF"}
@@ -1049,8 +1177,23 @@ export const generateChatStream = async (
   activeProfile?: Profile,
   userAIProfile?: any,
   memories?: Memory[],
+  styleId?: string,
+  sliders?: { flirt: number; witty: number; dominance: number; mystery: number },
+  speed?: ConversationSpeed,
 ) => {
   const client = getMistralAI(settings);
+
+  let styleInstruction = "";
+  if (styleId || sliders) {
+    styleInstruction = formatStyleAndSlidersInstruction(
+      styleId,
+      sliders?.flirt ?? 5,
+      sliders?.witty ?? 5,
+      sliders?.dominance ?? 5,
+      sliders?.mystery ?? 5,
+      speed ?? "normal",
+    );
+  }
 
   let profileInstruction = "";
   if (activeProfile && activeProfile.id !== "general") {
@@ -1100,30 +1243,23 @@ export const generateChatStream = async (
   const fullSystemPrompt = `
   ${COACH_SYSTEM_PROMPT}
 
-  🚨 DOGMA DE IDENTIDADE VISUAL (NÃO INTERPRETE TEXTOS, APENAS OBEDEÇA A POSIÇÃO DOS BALÕES):
-  - POSIÇÃO DIREITA (CANTO DIREITO DA TELA >>): SEMPRE O HOMEM (USUÁRIO / ME). É A MENSAGEM QUE ELE DIGITOU E ENVIOU. Pronomes: ELE / DELE.
-  - POSIÇÃO ESQUERDA (CANTO ESQUERDO DA TELA <<) / TEM FOTO DE PERFIL AO LADO: SEMPRE A MULHER. É A MENSAGEM QUE ELA MANDOU PARA ELE. Pronomes: ELA / DELA.
-  - REGRAS INQUEBRÁVEIS:
-    1. IGNORE AS CORES! No Instagram e no WhatsApp, temas mudam as cores dos balões. A cor NÃO DEVE ser usada para identificar ninguém.
-    2. CITAÇÕES: Se houver a frase "fulana respondeu a você", o balão de texto logo abaixo dela é O QUE A MULHER HAVIA DITO ANTES, e a resposta que O HOMEM ESCREVEU AGORA é o balão que fica LOGO EM SEGUIDA.
-    3. Se a mensagem está na ESQUERDA (Alinhada da Esquerda e Geralmente com Foto), FOI A MULHER QUE ESCREVEU.
-    4. NUNCA diga para o homem: "sua resposta 'X' foi...", se 'X' estiver no balão ESQUERDO. O balão ESQUERDO é a resposta DELA.
-    5. Se você chamar o da DIREITA de "ela", você falhou criticamente.
-  
-  [TRANSCRIÇÃO OBRIGATÓRIA]
-  Antes de iniciar a análise, TRANSCREVA mentalmente as 4 últimas linhas do print lido, para NÃO ERRAR quem disse o quê.
-  Exemplo do raciocínio obrigatório interno: 
-  - Mulher (Esquerda): "Oi, tudo bem?"
-  - Homem (Direita): "Opa, tranquilo"
-  Não invente falas que não estão lá. Use O CONTEXTO CORRETO.
+  ${styleInstruction}
 
-  - SE O ÚLTIMO BALÃO DA IMAGEM ESTIVER NA DIREITA: O homem é o último a ter falado. A ação correta normalmente é aguardar a resposta DELA (no balão Esquerdo).
+  🚨 PROTOCOLO DE DELIBERAÇÃO COGNITIVA & IDENTIDADE VISUAL:
+  1. ANCORAGEM VISUAL DE MARGENS:
+     - LADO DIREITO (Margem Direita >> / Sem foto de perfil ao lado): SEMPRE O HOMEM (Usuário / Aluno / Dono do celular).
+     - LADO ESQUERDO (Margem Esquerda << / Foto de perfil da mulher ao lado): SEMPRE A MULHER (Interlocutora).
+     - NUNCA inverta os papéis! Se uma frase está na direita, foi o homem que enviou. Se está na esquerda, foi a mulher.
+
+  2. ANÁLISE DE PSICOLOGIA FEMININA & SUBTEXTO (SISTEMA 1):
+     - Pense com cuidado no subtexto real da última mensagem dela antes de ditar a resposta.
+     - Decodifique o estado emocional dela: se ela usou risadas ("kkk", "😂", piadas), ela está engajada e receptiva a humor audacioso e liderança de narrativa. Se ela foi monossilábica, ela está testando investimento. Se ela provocou, é teste de congruência.
+     - Rejeite qualquer resposta robótica ou genérica de ChatGPT. Use nuance, sagacidade e linguagem real brasileira.
+
+  3. ESTRUTURAÇÃO OBRIGATÓRIA DA RESPOSTA:
+     ${CHAT_RESPONSE_STRUCTURE}
   
-  ⚠️ GERENCIAMENTO DE MEMÓRIA E CONTEXTO:
-  - Se o perfil selecionado for 'Geral' ou 'NaLábia', trate cada print como uma pessoa diferente.
-  - Se o perfil tiver um nome específico, você deve considerar o histórico e as memórias para evoluir a sua 'lábia' especificamente para esta mulher. Aprenda o que ela gosta e o que a faz investir.
-  
-  CONTEXTO:
+  CONTEXTO ATIVO:
   ${profileInstruction}
   ${userAIProfileInstruction}
   ${memoryInstruction}
@@ -1332,27 +1468,25 @@ ${SYSTEM_PROMPT}
 
 ${getQuizProfilePrompt()}
 
-Você é um estrategista social focado em RESULTADOS PRÁTICOS. 
-Analise as imagens e a bio no MODO RAIO-X (Realista e Útil). 
+Você é um estrategista social de elite focado em DECODIFICAÇÃO DE SUBTEXTO e RESULTADOS PRÁTICOS. 
+Analise as imagens e a bio no MODO RAIO-X PSICOLÓGICO. 
 
 ${userContext}
 
-DIRETRIZES DO RAIO-X:
-1. DADOS BRUTOS: O que aparece nas fotos? (Selfies no espelho, viagens ostentação, fotos de academia, bio com regras).
-2. TIPO DE PERFIL: Como ela se apresenta ao mundo? (Ex: Visual Padrão, Mais Lifestyle, Focada em Status).
-3. ESTRATÉGIA DE CAMPO: 
-   - O QUE EVITAR: Não elogie o óbvio. Não seja reativo se a bio for exigente.
-   - O QUE FUNCIONA: Use o contraste. Se o perfil é muito luxuoso, seja simples e provocador com algo mundano.
-4. ABORDAGENS: 3 exemplos de abridores curtos, naturais e que gerem curiosidade imediata sobre a 'vibe' visual dela.
-
-PROIBIDO: Diagnósticos psicológicos, falar de traumas, inseguranças ou interpretar intenções ocultas.
+DIRETRIZES DO RAIO-X PSICOLÓGICO:
+1. DADOS BRUTOS & ELEMENTOS DE CENA: O que aparece nas fotos e no perfil? (Cenário, estilo de vida, contradições entre bio e fotos, detalhes periféricos).
+2. ARQUÉTIPO & PSICOLOGIA DO PERFIL: Qual a identidade social que ela projeta e qual a necessidade subjacente de validação/experiência?
+3. ESTRATÉGIA DE CAMPO & NUANCE: 
+   - O QUE EVITAR: Não elogie a beleza óbvia nem caia em clichês de bajulação.
+   - O QUE FUNCIONA: Use o contraste de valor e curiosidade. Se ela aparenta ser inalcançável, use humor despretensioso ou um detalhe engraçado do cenário.
+4. ARSENAL DE ABERTURA: 3 opções de abridores curtos, naturais, magnéticos (estilo WhatsApp/Instagram real), que gerem curiosidade imediata e zero impressão de IA.
 
 Retorne APENAS um JSON válido:
 {
-  "vibe": "Descrição prática e realista do perfil.",
-  "redFlags": ["Sinais de que a conversa pode ser difícil ou exigir muito investimento inicial"],
-  "greenFlags": ["Sinais de que ela é receptiva a humor ou simplicidade"],
-  "icebreakers": ["3 abridores do mundo real que não pareçam scripts de IA."]
+  "vibe": "Descrição perspicaz e psicológica da personalidade e energia projetada pelo perfil.",
+  "redFlags": ["Sinais comportamentais sutis de exigência de validação ou baixa reciprocidade"],
+  "greenFlags": ["Gatilhos autênticos de conexão, humor ou afinidade"],
+  "icebreakers": ["3 abridores de alto impacto com nuances psicológicas reais."]
 }`;
 
       const contentParts: any[] = [
