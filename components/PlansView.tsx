@@ -230,7 +230,19 @@ const PlansView: React.FC<PlansViewProps> = ({ onClose }) => {
             inteligência social mais avançada do mercado.
           </p>
 
-          {userData?.status === "pendente" && (
+          {userData?.trialAbuseDetected && (
+            <div className="inline-block mt-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-sm font-medium">
+              🔒 O teste grátis de 24 horas deste dispositivo já foi utilizado. Escolha um plano abaixo para continuar com acesso ilimitado.
+            </div>
+          )}
+
+          {!userData?.trialAbuseDetected && userData?.status === "expirado" && (
+            <div className="inline-block mt-4 px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-300 text-sm font-medium">
+              ⏳ Seu teste grátis de 24 horas encerrou. Escolha um plano abaixo para manter acesso ilimitado a todas as ferramentas.
+            </div>
+          )}
+
+          {userData?.status === "pendente" && !userData?.trialAbuseDetected && (
             <div className="inline-block mt-4 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-sm font-medium">
               Sua assinatura está pendente ou expirou. Escolha um plano para
               continuar.

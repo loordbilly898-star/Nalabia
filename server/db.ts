@@ -22,6 +22,17 @@ interface DatabaseSchema {
   conversations: Array<any>;
   saved_responses: Array<any>;
   sign_ins: Array<any>;
+  device_trials: Array<{
+    id: string; // device_hash or hwid
+    device_hash?: string;
+    hwid?: string;
+    ip?: string;
+    first_trial_start: number;
+    trial_expires_at: number;
+    registered_emails: string[];
+    is_expired?: boolean;
+    created_at: string;
+  }>;
 }
 
 const DEFAULT_USERS = [
@@ -140,6 +151,7 @@ function initDB(): DatabaseSchema {
         conversations: parsed.conversations || [],
         saved_responses: parsed.saved_responses || [],
         sign_ins: parsed.sign_ins || [],
+        device_trials: parsed.device_trials || [],
       };
     }
   } catch (err) {
@@ -154,6 +166,7 @@ function initDB(): DatabaseSchema {
     conversations: [],
     saved_responses: [],
     sign_ins: [],
+    device_trials: [],
   };
 
   saveDB(initial);
@@ -184,6 +197,7 @@ export function getCollection(name: string): any[] {
   if (norm === "saved_responses" || norm === "vault") return dbMemory.saved_responses;
   if (norm === "sign_ins" || norm === "sign-ins") return dbMemory.sign_ins;
   if (norm === "auth_users" || norm === "auth") return dbMemory.auth_users;
+  if (norm === "device_trials" || norm === "trials" || norm === "device_usage") return dbMemory.device_trials;
   
   if (!(dbMemory as any)[norm]) {
     (dbMemory as any)[norm] = [];
@@ -200,6 +214,7 @@ export function setCollection(name: string, items: any[]) {
   else if (norm === "saved_responses" || norm === "vault") dbMemory.saved_responses = items;
   else if (norm === "sign_ins" || norm === "sign-ins") dbMemory.sign_ins = items;
   else if (norm === "auth_users" || norm === "auth") dbMemory.auth_users = items;
+  else if (norm === "device_trials" || norm === "trials" || norm === "device_usage") dbMemory.device_trials = items;
   else (dbMemory as any)[norm] = items;
 
   saveDB();

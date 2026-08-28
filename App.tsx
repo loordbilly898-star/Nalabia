@@ -27,6 +27,9 @@ import VaultView from "./components/VaultView";
 import ProfileAnalyzerView from "./components/ProfileAnalyzerView";
 import RedFlagDetectorView from "./components/RedFlagDetectorView";
 import PlansView from "./components/PlansView";
+import { FreeTrialWelcomeModal } from "./components/FreeTrialWelcomeModal";
+import { FreeTrialExpiredModal } from "./components/FreeTrialExpiredModal";
+import { formatTrialRemainingTime } from "./services/antiFraud";
 import { LoginView } from "./components/LoginView";
 import { LandingView } from "./components/LandingView";
 import { QuizView } from "./components/QuizView";
@@ -259,11 +262,74 @@ const App: React.FC = () => {
     incrementUsage,
     loading,
   } = useAuth();
-  const needsSubscription =
-    user &&
-    userData &&
-    userData.status === "pendente" &&
-    !userData.nalabiaPrimeAcess;
+
+  const isDeveloper =
+    user?.email === "loordbilly898@gmail.com" ||
+    user?.email === "nalabiainc@gmail.com";
+  const isLegacyPremium =
+    user?.email === "kauanhenrique171822@gmail.com" ||
+    user?.email === "gamerbilly898@gmail.com" ||
+    user?.email === "nauandematoss@gmail.com" ||
+    user?.email === "encantomirim53@gmail.com" ||
+    user?.email === "lucastorresoliveira77@gmail.com" ||
+    user?.email === "luqin.oliiver@gmail.com" ||
+    user?.email === "williamhendler711@gmail.com";
+
+  const isPaidSubscriber =
+    Boolean(userData?.nalabiaPrimeAcess) ||
+    userData?.status === "ativo" ||
+    isDeveloper ||
+    isLegacyPremium;
+
+  // 24-Hour Free Trial State
+  const [trialTimeRemaining, setTrialTimeRemaining] = useState<number>(() => {
+    if (!userData?.trialExpiresAt) return 0;
+    return Math.max(0, userData.trialExpiresAt - Date.now());
+  });
+
+  useEffect(() => {
+    if (!userData?.trialExpiresAt || isPaidSubscriber) return;
+
+    const calculateRemaining = () => {
+      const remaining = Math.max(0, userData.trialExpiresAt! - Date.now());
+      setTrialTimeRemaining(remaining);
+    };
+
+    calculateRemaining();
+    const interval = setInterval(calculateRemaining, 1000);
+    return () => clearInterval(interval);
+  }, [userData?.trialExpiresAt, isPaidSubscriber]);
+
+  const isTrialActive =
+    !isPaidSubscriber &&
+    Boolean(userData?.trialExpiresAt && trialTimeRemaining > 0);
+
+  const isTrialExpired =
+    !isPaidSubscriber &&
+    (!userData?.trialExpiresAt || trialTimeRemaining <= 0 || userData?.status === "expirado");
+
+  const needsSubscription = Boolean(
+    user && userData && !isPaidSubscriber && isTrialExpired,
+  );
+
+  const [showTrialWelcomeModal, setShowTrialWelcomeModal] = useState(false);
+
+  useEffect(() => {
+    if (user && userData && isTrialActive) {
+      const welcomeSeenKey = `nalabia_trial_welcome_seen_${user.id}`;
+      const hasSeenWelcome = localStorage.getItem(welcomeSeenKey);
+      if (!hasSeenWelcome) {
+        setShowTrialWelcomeModal(true);
+      }
+    }
+  }, [user?.id, userData?.trialExpiresAt, isTrialActive]);
+
+  const handleCloseTrialWelcome = () => {
+    if (user) {
+      localStorage.setItem(`nalabia_trial_welcome_seen_${user.id}`, "true");
+    }
+    setShowTrialWelcomeModal(false);
+  };
 
   // Global State
   const [profiles, setProfiles] = useState<Profile[]>(() => {
@@ -1612,6 +1678,19 @@ const App: React.FC = () => {
         />
       )}
 
+      {showTrialWelcomeModal && (
+        <FreeTrialWelcomeModal
+          isOpen={showTrialWelcomeModal}
+          onClose={handleCloseTrialWelcome}
+          onViewPlans={() => {
+            setShowTrialWelcomeModal(false);
+            setShowPlansExplicit(true);
+          }}
+          trialExpiresAt={userData?.trialExpiresAt}
+          userName={userData?.name}
+        />
+      )}
+
       {/* HEADER */}
       <header
         className={`flex-none ${getThemeHeaderBg()} z-20 pt-4 pb-2 px-4 flex justify-between items-center border-b border-nalabia-800`}
@@ -1680,6 +1759,19 @@ const App: React.FC = () => {
             );
           })()}
           
+          {isTrialActive && (
+            <button
+              onClick={() => setShowTrialWelcomeModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/40 hover:border-amber-400 rounded-full text-xs font-bold text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all mr-1 cursor-pointer"
+              title="Clique para ver detalhes do seu Teste Grátis de 24h"
+            >
+              <Sparkles size={14} className="text-yellow-400 animate-pulse" />
+              <span className="font-mono text-[11px] whitespace-nowrap">
+                {formatTrialRemainingTime(trialTimeRemaining)}
+              </span>
+            </button>
+          )}
+
           <div className="flex items-center space-x-1">
             <button
               onClick={() => handleTabChange("STORE")}

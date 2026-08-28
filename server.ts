@@ -638,15 +638,96 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
   }
 });
 
+// Trial & Anti-Abuse Endpoints
+app.post("/api/trial/status", async (req, res) => {
+  try {
+    const { hwid, deviceHash, email, userId } = req.body;
+    const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "");
+    const deviceTrials = db.getCollection("device_trials");
+    const normEmail = email ? String(email).trim().toLowerCase() : "";
+
+    // Search for existing record by hwid, deviceHash, or email
+    let existing = deviceTrials.find(
+      (t: any) =>
+        (hwid && (t.hwid === hwid || t.id === hwid)) ||
+        (deviceHash && (t.device_hash === deviceHash || t.id === deviceHash)) ||
+        (normEmail && Array.isArray(t.registered_emails) && t.registered_emails.includes(normEmail)),
+    );
+
+    const now = Date.now();
+
+    if (existing) {
+      // If email provided and not yet registered under this device, track it for multi-account anti-abuse
+      if (normEmail && Array.isArray(existing.registered_emails) && !existing.registered_emails.includes(normEmail)) {
+        existing.registered_emails.push(normEmail);
+        db.setCollection("device_trials", deviceTrials);
+      }
+
+      const remainingMs = Math.max(0, existing.trial_expires_at - now);
+      const isExpired = remainingMs <= 0;
+      existing.is_expired = isExpired;
+      db.setCollection("device_trials", deviceTrials);
+
+      return res.json({
+        isEligible: false,
+        isActive: !isExpired,
+        isExpired: isExpired,
+        trialStartedAt: existing.first_trial_start,
+        trialExpiresAt: existing.trial_expires_at,
+        remainingMs: remainingMs,
+        registeredEmailsCount: existing.registered_emails?.length || 1,
+        isAbuseBlocked: isExpired && (existing.registered_emails?.length || 1) > 1,
+        message: isExpired
+          ? "O período de teste grátis de 24 horas deste dispositivo já encerrou."
+          : "Teste grátis de 24 horas ativo no dispositivo.",
+      });
+    }
+
+    // Brand new device/browser claiming their initial 24h trial
+    const firstTrialStart = now;
+    const trialExpiresAt = firstTrialStart + 24 * 60 * 60 * 1000;
+    const newEntry = {
+      id: hwid || deviceHash || `dev_${Date.now()}`,
+      device_hash: deviceHash || "",
+      hwid: hwid || "",
+      ip: clientIp,
+      first_trial_start: firstTrialStart,
+      trial_expires_at: trialExpiresAt,
+      registered_emails: normEmail ? [normEmail] : [],
+      is_expired: false,
+      created_at: new Date().toISOString(),
+    };
+
+    deviceTrials.push(newEntry);
+    db.setCollection("device_trials", deviceTrials);
+
+    return res.json({
+      isEligible: true,
+      isActive: true,
+      isExpired: false,
+      trialStartedAt: firstTrialStart,
+      trialExpiresAt: trialExpiresAt,
+      remainingMs: 24 * 60 * 60 * 1000,
+      registeredEmailsCount: 1,
+      isAbuseBlocked: false,
+      message: "Você ganhou um dia de teste grátis para utilizar o NaLábia!",
+    });
+  } catch (err: any) {
+    console.error("[TRIAL API] Error checking trial status:", err);
+    res.status(500).json({ error: err.message || "Erro ao verificar teste grátis." });
+  }
+});
+
 // Authentication Endpoints
 app.post("/api/auth/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, hwid, deviceHash } = req.body;
     if (!email) return res.status(400).json({ error: "Email obrigatório." });
 
     const normEmail = String(email).trim().toLowerCase();
     const authUsers = db.getCollection("auth_users");
     const users = db.getCollection("users");
+    const deviceTrials = db.getCollection("device_trials");
 
     let authUser = authUsers.find((u: any) => u.email?.toLowerCase() === normEmail);
     let userDoc = users.find((u: any) => u.email?.toLowerCase() === normEmail);
@@ -683,6 +764,44 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(400).json({ error: "Senha incorreta. Tente novamente." });
     }
 
+    // Device trial anti-abuse lookup
+    let deviceEntry = deviceTrials.find(
+      (t: any) =>
+        (hwid && (t.hwid === hwid || t.id === hwid)) ||
+        (deviceHash && (t.device_hash === deviceHash || t.id === deviceHash)) ||
+        (Array.isArray(t.registered_emails) && t.registered_emails.includes(normEmail)),
+    );
+
+    const now = Date.now();
+    let trialStart = now;
+    let trialExpires = now + 24 * 60 * 60 * 1000;
+    let isTrialExpired = false;
+
+    if (deviceEntry) {
+      trialStart = deviceEntry.first_trial_start;
+      trialExpires = deviceEntry.trial_expires_at;
+      isTrialExpired = now >= trialExpires;
+      if (!deviceEntry.registered_emails.includes(normEmail)) {
+        deviceEntry.registered_emails.push(normEmail);
+        db.setCollection("device_trials", deviceTrials);
+      }
+    } else if (!isDeveloper && !isLegacyPremium) {
+      // Create trial entry for new device
+      deviceEntry = {
+        id: hwid || deviceHash || `dev_${Date.now()}`,
+        device_hash: deviceHash || "",
+        hwid: hwid || "",
+        ip: String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || ""),
+        first_trial_start: trialStart,
+        trial_expires_at: trialExpires,
+        registered_emails: [normEmail],
+        is_expired: false,
+        created_at: new Date().toISOString(),
+      };
+      deviceTrials.push(deviceEntry);
+      db.setCollection("device_trials", deviceTrials);
+    }
+
     if (!userDoc) {
       userDoc = {
         userID: authUser.id,
@@ -690,14 +809,17 @@ app.post("/api/auth/login", async (req, res) => {
         email: normEmail,
         level: isDeveloper ? 99 : isLegacyPremium ? 10 : 1,
         xp: isDeveloper ? 99999 : isLegacyPremium ? 5000 : 0,
-        createdAt: Date.now(),
+        createdAt: now,
         onboardingCompleted: true,
-        status: isDeveloper || isLegacyPremium ? "ativo" : "pendente",
+        status: isDeveloper || isLegacyPremium ? "ativo" : isTrialExpired ? "expirado" : "ativo_trial",
         plano: isDeveloper ? "Desenvolvedor" : isLegacyPremium ? "Mensal" : "",
         nalabiaPrimeAcess: isDeveloper || isLegacyPremium,
         darkPackAccess: isDeveloper || isLegacyPremium,
         coursesAccess: isDeveloper || isLegacyPremium,
         mentoriaAccess: isDeveloper || isLegacyPremium,
+        trialStartedAt: trialStart,
+        trialExpiresAt: trialExpires,
+        trialAbuseDetected: isTrialExpired && (deviceEntry?.registered_emails?.length || 1) > 1,
         freeMessagesUsed: 0,
       };
       users.push(userDoc);
@@ -717,6 +839,13 @@ app.post("/api/auth/login", async (req, res) => {
         userDoc.darkPackAccess = true;
         userDoc.coursesAccess = true;
         userDoc.mentoriaAccess = true;
+      } else {
+        // Sync trial timestamps from device entry
+        userDoc.trialStartedAt = trialStart;
+        userDoc.trialExpiresAt = trialExpires;
+        if (userDoc.status !== "ativo") {
+          userDoc.status = isTrialExpired ? "expirado" : "ativo_trial";
+        }
       }
       db.setCollection("users", users);
     }
@@ -750,7 +879,7 @@ app.post("/api/auth/login", async (req, res) => {
 
 app.post("/api/auth/signup", async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, hwid, deviceHash } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: "Email e senha obrigatórios." });
     }
@@ -758,6 +887,7 @@ app.post("/api/auth/signup", async (req, res) => {
     const normEmail = String(email).trim().toLowerCase();
     const authUsers = db.getCollection("auth_users");
     const users = db.getCollection("users");
+    const deviceTrials = db.getCollection("device_trials");
 
     let authUser = authUsers.find((u: any) => u.email?.toLowerCase() === normEmail);
     if (!authUser) {
@@ -777,6 +907,47 @@ app.post("/api/auth/signup", async (req, res) => {
       db.setCollection("auth_users", authUsers);
     }
 
+    // Anti-Abuse Device Check: Has this device already started a 24-hour trial before?
+    const now = Date.now();
+    let deviceEntry = deviceTrials.find(
+      (t: any) =>
+        (hwid && (t.hwid === hwid || t.id === hwid)) ||
+        (deviceHash && (t.device_hash === deviceHash || t.id === deviceHash)),
+    );
+
+    let trialStart = now;
+    let trialExpires = now + 24 * 60 * 60 * 1000;
+    let isTrialExpired = false;
+    let isAbuseAttempt = false;
+
+    if (deviceEntry) {
+      // Device already claimed trial in the past! Anchor to original device start date.
+      trialStart = deviceEntry.first_trial_start;
+      trialExpires = deviceEntry.trial_expires_at;
+      isTrialExpired = now >= trialExpires;
+      isAbuseAttempt = !deviceEntry.registered_emails.includes(normEmail);
+
+      if (isAbuseAttempt) {
+        deviceEntry.registered_emails.push(normEmail);
+        db.setCollection("device_trials", deviceTrials);
+      }
+    } else {
+      // First time device: Grant full 24h trial
+      deviceEntry = {
+        id: hwid || deviceHash || `dev_${Date.now()}`,
+        device_hash: deviceHash || "",
+        hwid: hwid || "",
+        ip: String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || ""),
+        first_trial_start: trialStart,
+        trial_expires_at: trialExpires,
+        registered_emails: [normEmail],
+        is_expired: false,
+        created_at: new Date().toISOString(),
+      };
+      deviceTrials.push(deviceEntry);
+      db.setCollection("device_trials", deviceTrials);
+    }
+
     let userDoc = users.find((u: any) => u.email?.toLowerCase() === normEmail || u.userID === authUser.id);
     if (!userDoc) {
       userDoc = {
@@ -785,17 +956,27 @@ app.post("/api/auth/signup", async (req, res) => {
         email: normEmail,
         level: 1,
         xp: 0,
-        createdAt: Date.now(),
+        createdAt: now,
         onboardingCompleted: true,
-        status: "pendente",
+        status: isTrialExpired ? "expirado" : "ativo_trial",
         plano: "",
         nalabiaPrimeAcess: false,
         darkPackAccess: false,
         coursesAccess: false,
         mentoriaAccess: false,
+        trialStartedAt: trialStart,
+        trialExpiresAt: trialExpires,
+        trialAbuseDetected: isAbuseAttempt && isTrialExpired,
         freeMessagesUsed: 0,
       };
       users.push(userDoc);
+      db.setCollection("users", users);
+    } else {
+      userDoc.trialStartedAt = trialStart;
+      userDoc.trialExpiresAt = trialExpires;
+      if (userDoc.status !== "ativo") {
+        userDoc.status = isTrialExpired ? "expirado" : "ativo_trial";
+      }
       db.setCollection("users", users);
     }
 
@@ -810,6 +991,9 @@ app.post("/api/auth/signup", async (req, res) => {
     return res.json({
       user: userPayload,
       token: `token_${authUser.id}_${Date.now()}`,
+      trialExpiresAt: trialExpires,
+      isTrialActive: !isTrialExpired,
+      isAbuseDetected: isAbuseAttempt && isTrialExpired,
     });
   } catch (err: any) {
     console.error("[AUTH API] Signup error:", err);

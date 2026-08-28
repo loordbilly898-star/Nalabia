@@ -9,6 +9,7 @@ import { supabase } from "../services/supabase";
 import { User } from "@supabase/supabase-js";
 import { SavedResponse, Memory } from "../types";
 import { logEvent } from "../services/logger";
+import { verifyDeviceTrial } from "../services/antiFraud";
 
 export interface UserAIProfile {
   userID: string;
@@ -35,7 +36,7 @@ interface UserData {
   profiles?: any[];
   memories?: Memory[];
   plano?: string; // Nome do plano (ex: 'Plano Mensal', 'Vitalício')
-  status?: string; // 'ativo', 'pendente', 'expirado'
+  status?: string; // 'ativo', 'pendente', 'expirado', 'ativo_trial'
   expiraEm?: string; // Data de expiração ISO
   nalabiaPrimeAcess?: boolean;
   darkPackAccess?: boolean;
@@ -45,6 +46,9 @@ interface UserData {
   freeMessagesUsed?: number;
   dailyRequests?: number;
   lastRequestDate?: string;
+  trialStartedAt?: number;
+  trialExpiresAt?: number;
+  trialAbuseDetected?: boolean;
 }
 
 interface AuthContextType {
@@ -319,6 +323,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           data.nalabiaPrimeAcess = true;
           data.status = "ativo";
           data.plano = "Mensal";
+        }
+
+        // --- 24-HOUR FREE TRIAL CHECK ---
+        if (!data.nalabiaPrimeAcess && data.status !== "ativo") {
+          try {
+            const trialInfo = await verifyDeviceTrial(
+              currentUser.email || undefined,
+              currentUser.id,
+            );
+            data.trialStartedAt = trialInfo.trialStartedAt;
+            data.trialExpiresAt = trialInfo.trialExpiresAt;
+            data.trialAbuseDetected = trialInfo.isAbuseBlocked;
+            if (trialInfo.isActive) {
+              data.status = "ativo_trial";
+            } else if (trialInfo.isExpired) {
+              data.status = "expirado";
+            }
+          } catch (e) {
+            console.warn("Trial check warning:", e);
+          }
         }
 
         setUserData(data);
