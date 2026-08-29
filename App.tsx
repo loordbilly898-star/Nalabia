@@ -29,10 +29,11 @@ import RedFlagDetectorView from "./components/RedFlagDetectorView";
 import PlansView from "./components/PlansView";
 import { FreeTrialWelcomeModal } from "./components/FreeTrialWelcomeModal";
 import { FreeTrialExpiredModal } from "./components/FreeTrialExpiredModal";
+import { LegalTermsModal } from "./components/LegalTermsModal";
+import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { formatTrialRemainingTime } from "./services/antiFraud";
 import { LoginView } from "./components/LoginView";
 import { LandingView } from "./components/LandingView";
-import { QuizView } from "./components/QuizView";
 import HelpModal from "./components/HelpModal";
 import { HomeView } from "./components/HomeView";
 import { TutorialModal } from "./components/TutorialModal";
@@ -413,42 +414,20 @@ const App: React.FC = () => {
       return false;
     }
   });
-  const [showQuiz, setShowQuiz] = useState(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const path = window.location.pathname.toLowerCase();
-      if (
-        params.get("plans") === "true" ||
-        params.get("planos") === "true" ||
-        params.get("vendas") === "true" ||
-        params.get("sales") === "true" ||
-        params.get("checkout") === "true" ||
-        params.get("landing") === "true" ||
-        path === "/planos" ||
-        path === "/vendas" ||
-        path === "/plans" ||
-        path === "/checkout" ||
-        path === "/landing"
-      ) {
-        return false;
-      }
-      if (params.get("reset_quiz") === "true") {
-        localStorage.removeItem("nalabia_trial_done");
-        localStorage.removeItem("nalabia_from_quiz");
-        localStorage.removeItem("nalabia_free_uses");
-        localStorage.removeItem("nalabia_profile");
-        window.history.replaceState({}, "", window.location.pathname);
-        return true;
-      }
-      return (
-        params.get("from") !== "quiz" &&
-        !localStorage.getItem("nalabia_trial_done") &&
-        !localStorage.getItem("nalabia_from_quiz")
-      );
-    } catch (e) {
-      return false;
-    }
+  const [legalModalConfig, setLegalModalConfig] = useState<{
+    isOpen: boolean;
+    defaultTab: "terms" | "privacy" | "cookies";
+  }>({
+    isOpen: false,
+    defaultTab: "terms",
   });
+
+  const handleOpenTerms = (tab: "terms" | "privacy" | "cookies" = "terms") => {
+    setLegalModalConfig({
+      isOpen: true,
+      defaultTab: tab,
+    });
+  };
   const [showUpsell, setShowUpsell] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("upsell") === "true";
@@ -1420,31 +1399,38 @@ const App: React.FC = () => {
 
   // Check subscription access
   if (!user) {
-    if (showQuiz) {
+    if (showLanding) {
       return (
-        <QuizView 
-          onFinish={() => {
-            setShowQuiz(false);
-            setShowLanding(false);
-            setIsPlansDismissed(false); // Make sure PlansView is shown
-          }} 
-          onGoToLogin={() => {
-            setShowQuiz(false);
-            setShowLanding(false);
-          }} 
-        />
+        <>
+          <LandingView
+            onGetStarted={() => setShowLanding(false)}
+            onOpenTerms={handleOpenTerms}
+          />
+          <LegalTermsModal
+            isOpen={legalModalConfig.isOpen}
+            onClose={() =>
+              setLegalModalConfig((prev) => ({ ...prev, isOpen: false }))
+            }
+            defaultTab={legalModalConfig.defaultTab}
+          />
+          <CookieConsentBanner onOpenLegal={handleOpenTerms} />
+        </>
       );
     }
 
-    if (showLanding) {
-      return <LandingView onGetStarted={() => setShowQuiz(true)} />;
-    }
-    
-    if (!isPlansDismissed) {
-      return <PlansView onClose={() => setIsPlansDismissed(true)} />;
-    }
-
-    return <LoginView />;
+    return (
+      <>
+        <LoginView onOpenTerms={handleOpenTerms} />
+        <LegalTermsModal
+          isOpen={legalModalConfig.isOpen}
+          onClose={() =>
+            setLegalModalConfig((prev) => ({ ...prev, isOpen: false }))
+          }
+          defaultTab={legalModalConfig.defaultTab}
+        />
+        <CookieConsentBanner onOpenLegal={handleOpenTerms} />
+      </>
+    );
   }
 
   if (!userData) {
@@ -1456,19 +1442,41 @@ const App: React.FC = () => {
   }
 
   if (needsSubscription && !isPlansDismissed) {
-    return <PlansView onClose={() => setIsPlansDismissed(true)} />;
+    return (
+      <>
+        <PlansView onClose={() => setIsPlansDismissed(true)} />
+        <LegalTermsModal
+          isOpen={legalModalConfig.isOpen}
+          onClose={() =>
+            setLegalModalConfig((prev) => ({ ...prev, isOpen: false }))
+          }
+          defaultTab={legalModalConfig.defaultTab}
+        />
+        <CookieConsentBanner onOpenLegal={handleOpenTerms} />
+      </>
+    );
   }
 
   if (isSettingsOpen) {
     return (
-      <SettingsView
-        settings={settings}
-        updateSettings={handleUpdateSettings}
-        onClose={() => setIsSettingsOpen(false)}
-        accentColor={settings.accentColor}
-        profiles={profiles}
-        setProfiles={setProfiles}
-      />
+      <>
+        <SettingsView
+          settings={settings}
+          updateSettings={handleUpdateSettings}
+          onClose={() => setIsSettingsOpen(false)}
+          accentColor={settings.accentColor}
+          profiles={profiles}
+          setProfiles={setProfiles}
+          onOpenTerms={handleOpenTerms}
+        />
+        <LegalTermsModal
+          isOpen={legalModalConfig.isOpen}
+          onClose={() =>
+            setLegalModalConfig((prev) => ({ ...prev, isOpen: false }))
+          }
+          defaultTab={legalModalConfig.defaultTab}
+        />
+      </>
     );
   }
 
@@ -1690,6 +1698,15 @@ const App: React.FC = () => {
           userName={userData?.name}
         />
       )}
+
+      <LegalTermsModal
+        isOpen={legalModalConfig.isOpen}
+        onClose={() =>
+          setLegalModalConfig((prev) => ({ ...prev, isOpen: false }))
+        }
+        defaultTab={legalModalConfig.defaultTab}
+      />
+      <CookieConsentBanner onOpenLegal={handleOpenTerms} />
 
       {/* HEADER */}
       <header

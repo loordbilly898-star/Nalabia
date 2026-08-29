@@ -38,6 +38,7 @@ interface SettingsViewProps {
   accentColor: string;
   profiles: Profile[];
   setProfiles: React.Dispatch<React.SetStateAction<Profile[]>>;
+  onOpenTerms?: (tab?: "terms" | "privacy" | "cookies") => void;
 }
 
 type SettingsSection =
@@ -56,6 +57,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   accentColor,
   profiles,
   setProfiles,
+  onOpenTerms,
 }) => {
   const {
     user,
@@ -465,6 +467,28 @@ const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       <div className="pt-4 space-y-3">
+        {onOpenTerms && (
+          <button
+            onClick={() => onOpenTerms("terms")}
+            className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl p-4 flex items-center justify-between hover:bg-gray-800/50 transition-all text-left"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gray-800 rounded-lg text-gold">
+                <Shield size={18} />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-200">
+                  Termos de Uso, Privacidade & Cookies
+                </div>
+                <div className="text-[10px] text-gray-500">
+                  Políticas legais em conformidade com LGPD
+                </div>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-600" />
+          </button>
+        )}
+
         <a
           href="mailto:nalabiainc@gmail.com"
           className="w-full bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-blue-500/20 transition-all font-sans"
