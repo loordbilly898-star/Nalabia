@@ -409,9 +409,18 @@ const App: React.FC = () => {
     try {
       const params = new URLSearchParams(window.location.search);
       const path = window.location.pathname.toLowerCase();
-      return params.get("landing") === "true" || path === "/landing";
+      if (
+        params.get("login") === "true" ||
+        params.get("entrar") === "true" ||
+        params.get("from") === "payment_approved" ||
+        path === "/login" ||
+        path === "/entrar"
+      ) {
+        return false;
+      }
+      return true;
     } catch (e) {
-      return false;
+      return true;
     }
   });
   const [legalModalConfig, setLegalModalConfig] = useState<{
@@ -1420,7 +1429,10 @@ const App: React.FC = () => {
 
     return (
       <>
-        <LoginView onOpenTerms={handleOpenTerms} />
+        <LoginView
+          onOpenTerms={handleOpenTerms}
+          onBackToLanding={() => setShowLanding(true)}
+        />
         <LegalTermsModal
           isOpen={legalModalConfig.isOpen}
           onClose={() =>

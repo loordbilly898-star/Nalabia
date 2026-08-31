@@ -5,9 +5,10 @@ import { useAuth, UserAIProfile } from "../contexts/AuthContext";
 export interface LoginViewProps {
   onboardingData?: Omit<UserAIProfile, "userID">;
   onOpenTerms?: (tab?: "terms" | "privacy" | "cookies") => void;
+  onBackToLanding?: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onboardingData, onOpenTerms }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onboardingData, onOpenTerms, onBackToLanding }) => {
   const { loginWithEmail, registerWithEmail } = useAuth();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -179,7 +180,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData, onOpenTerm
           </button>
         </form>
 
-        <div className="mt-5 text-center">
+        <div className="mt-5 text-center flex flex-col items-center gap-2.5">
           <button
             onClick={() => setIsRegistering(!isRegistering)}
             className="text-xs text-gold hover:underline font-semibold cursor-pointer"
@@ -188,6 +189,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onboardingData, onOpenTerm
               ? "Já tem uma conta? Entrar"
               : "Não tem uma conta? Criar conta e ganhar 24h grátis"}
           </button>
+
+          {onBackToLanding && (
+            <button
+              onClick={onBackToLanding}
+              className="text-[11px] text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
+            >
+              ← Voltar para a apresentação
+            </button>
+          )}
         </div>
 
         {/* Legal & Cookie notice */}

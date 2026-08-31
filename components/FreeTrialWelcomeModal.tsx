@@ -127,6 +127,9 @@ export const FreeTrialWelcomeModal: React.FC<FreeTrialWelcomeModalProps> = ({
                 <span className="text-[10px] text-gray-400 font-sans tracking-wide">SEG</span>
               </div>
             </div>
+            <p className="text-[10px] text-gray-400 mt-2 font-mono">
+              * O tempo corre continuamente em tempo real (24h ininterruptas).
+            </p>
           </div>
 
           {/* Features Grid */}
