@@ -12,12 +12,12 @@
 <meta name="netlify-deploy" content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=7817b022-9a81-446b-9245-ed78a34e9a8d">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NaLábia — Receba o poder de um mestre.</title>
-<meta name="description" content="Manda o print da conversa e recebe a resposta certa em segundos. 3 análises grátis.">
+<meta name="description" content="Manda o print da conversa e recebe a resposta certa em segundos. 1 dia grátis.">
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.nalabia.com.br/">
 <meta property="og:title" content="Ela não espera você pensar.">
-<meta property="og:description" content="Manda o print. A resposta certa volta antes da conversa esfriar. 3 análises grátis.">
+<meta property="og:description" content="Manda o print. A resposta certa volta antes da conversa esfriar. 1 dia grátis.">
 <meta property="og:image" content="https://www.nalabia.com.br/assets/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -330,8 +330,9 @@ strong{font-weight:600;color:var(--branco)}
 .grupos{display:flex;flex-direction:column;gap:var(--s6)}
 .grupo-rot{font-family:var(--dado);font-size:.63rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cinza-2);margin-bottom:var(--s3);display:flex;align-items:center;gap:10px}
 .grupo-rot::after{content:'';height:1px;flex:1;background:var(--borda)}
-.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s2)}
-@media(min-width:640px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s3)}
+@media(min-width:768px){.tiles{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:480px){.tiles{grid-template-columns:1fr}}
 .tile{background:var(--sup);border:1px solid var(--borda);border-radius:14px;padding:var(--s3);text-align:left;display:flex;flex-direction:column;gap:10px;min-height:132px;position:relative;overflow:hidden;transition:transform .3s,border-color .3s,background .3s}
 .tile::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none;background:radial-gradient(circle at 22% 12%,rgba(255,255,255,.05),transparent 55%)}
 .tile:hover,.tile:focus-visible{transform:translateY(-4px);background:var(--sup2)}
@@ -421,44 +422,45 @@ strong{font-weight:600;color:var(--branco)}
       <p class="lead">Manda o print. A resposta certa volta antes da conversa esfriar.</p>
     </div>
 
-    <div class="painel" id="painel" style="scroll-margin-top:76px"><span id="analisar" aria-hidden="true"></span>
-      <p class="aviso-demo" id="aviso-demo" hidden>Modo demonstração</p>
+    <div class="painel card-acesso-gratis" id="painel" style="scroll-margin-top:76px;padding:32px 28px;background:linear-gradient(180deg, rgba(23,23,28,0.95) 0%, rgba(13,13,16,0.98) 100%);border:1px solid rgba(223,184,90,0.35);border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.6), 0 0 25px rgba(223,184,90,0.08);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(223,184,90,0.12);border:1px solid rgba(223,184,90,0.4);color:var(--ouro);font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:6px 14px;border-radius:999px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--ouro);box-shadow:0 0 8px var(--ouro);"></span>
+          1 Dia de Acesso Grátis
+        </span>
+        <span style="font-size:0.75rem;color:var(--cinza-2);font-family:var(--dado);letter-spacing:0.06em;">100% LIBERADO</span>
+      </div>
 
-      <button class="zona" id="zona" type="button" aria-describedby="privacidade">
-        <span class="zona-icone" aria-hidden="true">↑</span>
-        <strong>Manda o print da conversa</strong>
-        <span class="badge-gratis">3 análises grátis</span>
-        <span class="zona-nota">sem cadastro</span>
-      </button>
-      <input type="file" id="arquivo" accept="image/png,image/jpeg,image/webp,image/heic" class="oculto">
+      <h3 style="font-size:1.45rem;font-weight:700;line-height:1.25;margin-bottom:12px;color:#fff;">
+        Experimente todo o poder do <span class="c-ouro">NaLábia</span> sem pagar nada hoje
+      </h3>
 
-      <button class="link-exemplo" id="ver-exemplo" type="button">sem print agora? ver um exemplo →</button>
-
-      <p class="privacidade" id="privacidade">
-        <span aria-hidden="true">🔒</span>
-        <span>Seu print é usado apenas para gerar esta resposta.</span>
+      <p style="font-size:0.92rem;color:var(--cinza);line-height:1.55;margin-bottom:20px;">
+        Tenha a resposta certa para qualquer conversa antes que ela esfrie. Acesse as melhores ferramentas durante 24 horas grátis.
       </p>
 
-      <div class="thread anima" id="thread" aria-live="polite"></div>
+      <ul style="list-style:none;padding:0;margin:0 0 22px 0;display:flex;flex-direction:column;gap:12px;">
+        <li style="display:flex;align-items:flex-start;gap:10px;font-size:0.88rem;color:var(--texto);">
+          <span style="color:var(--ouro);font-weight:bold;font-size:1rem;line-height:1;">✓</span>
+          <span><strong>Análise Ilimitada de Prints:</strong> Envie conversas e receba a resposta exata.</span>
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;font-size:0.88rem;color:var(--texto);">
+          <span style="color:var(--ouro);font-weight:bold;font-size:1rem;line-height:1;">✓</span>
+          <span><strong>As 5 Melhores Estratégias:</strong> Raio-X, Flow, Primeiro Contato, Story e Teste de Valor.</span>
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;font-size:0.88rem;color:var(--texto);">
+          <span style="color:var(--ouro);font-weight:bold;font-size:1rem;line-height:1;">✓</span>
+          <span><strong>Sem Risco ou Compromisso:</strong> Cancele quando quiser em 1 clique.</span>
+        </li>
+      </ul>
 
-      <div class="tons" id="tons" hidden>
-        <p class="tons-rot" id="rot-tom">Escolha o tom</p>
-        <div class="tons-lista" role="group" aria-labelledby="rot-tom">
-          <button class="tom" type="button" aria-pressed="false" data-tom="engraçada">Engraçada</button>
-          <button class="tom" type="button" aria-pressed="false" data-tom="espontânea">Espontânea</button>
-          <button class="tom" type="button" aria-pressed="false" data-tom="ousada">Ousada</button>
-          <button class="tom" type="button" aria-pressed="false" data-tom="provocante">Provocante</button>
-        </div>
-      </div>
+      <button type="button" class="btn btn-vip btn-cheio" onclick="iniciarFluxoNaLabia();return false;" style="width:100%;font-size:1.05rem;padding:16px 20px;font-weight:700;border-radius:12px;letter-spacing:0.02em;box-shadow:0 8px 24px rgba(223,184,90,0.25);cursor:pointer;display:block;text-align:center;">
+        Começar Meu Dia Grátis Agora →
+      </button>
 
-      <p class="erro" id="erro" role="alert" hidden></p>
-      <p class="contador" id="contador">3 de 3 análises grátis</p>
-
-      <div class="paywall" id="paywall" hidden>
-        <p>Essa foi a terceira. <strong>Continue sem limite.</strong></p>
-        <a href="#preco" class="btn btn-vip btn-cheio" id="cta-paywall" data-cta="paywall">Desbloquear o Modo Mestre</a>
-        <p class="selo">R$ 0,66 por dia · cancela em 1 clique</p>
-      </div>
+      <p style="text-align:center;font-size:0.75rem;color:var(--cinza-2);margin-top:12px;margin-bottom:0;">
+        1 dia grátis · depois apenas R$ 19,90/mês · cancela em 1 clique
+      </p>
     </div>
   </div>
 </section>
@@ -642,47 +644,12 @@ strong{font-weight:600;color:var(--branco)}
     <h2>E não é só<br>o print.</h2>
   </div>
 
-  <div class="grupos">
-    <div>
-      <p class="grupo-rot">antes de falar</p>
-      <div class="tiles">
-        <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-scan"/></svg></i><span><b>Raio-X de Perfil</b><small>abridor a partir das fotos e da bio</small></span></button>
-        <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-send"/></svg></i><span><b>Primeiro Contato</b><small>a primeira mensagem do zero</small></span></button>
-        <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-story"/></svg></i><span><b>Reação a Story</b><small>responde o gancho em segundos</small></span></button>
-        <button class="tile" data-cat="vip" type="button"><i><svg><use href="#i-alvo"/></svg></i><span><b>Simulador</b><small>treina contra personas de IA</small></span></button>
-      </div>
-    </div>
-
-    <div>
-      <p class="grupo-rot">durante a conversa</p>
-      <div class="tiles">
-        <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-bolt"/></svg></i><span><b>Flow</b><small>recupera a conversa que está morrendo</small></span></button>
-        <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-linha"/></svg></i><span><b>1 Linha</b><small>resposta curta que quebra o padrão</small></span></button>
-        <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-escudo"/></svg></i><span><b>Teste de Valor</b><small>devolve o teste sem perder o frame</small></span></button>
-        <!-- TODO: uma linha. Apagar este tile se preferir não citar +18 na página. -->
-        <button class="tile" data-cat="vip" type="button"><i><svg><use href="#i-chama"/></svg></i><span><b>Modo +18</b><small>escala a tensão no tempo certo</small></span></button>
-      </div>
-    </div>
-
-    <div>
-      <p class="grupo-rot">quando dá errado</p>
-      <div class="tiles">
-        <button class="tile" data-cat="risco" type="button"><i><svg><use href="#i-flag"/></svg></i><span><b>Detector de Red Flags</b><small>lê o histórico e aponta os sinais</small></span></button>
-        <button class="tile" data-cat="risco" type="button"><i><svg><use href="#i-termo"/></svg></i><span><b>Resposta Fria</b><small>responde o seco sem cobrar</small></span></button>
-        <button class="tile" data-cat="risco" type="button"><i><svg><use href="#i-fantasma"/></svg></i><span><b>Vácuo Estratégico</b><small>quando esperar, quando voltar</small></span></button>
-        <button class="tile" data-cat="risco" type="button"><i><svg><use href="#i-reviver"/></svg></i><span><b>Reviver Contato</b><small>reabre o que esfriou há meses</small></span></button>
-      </div>
-    </div>
-
-    <div>
-      <p class="grupo-rot">evolução</p>
-      <div class="tiles">
-        <button class="tile" data-cat="vip" type="button"><i><svg><use href="#i-cofre"/></svg></i><span><b>Cofre</b><small>suas melhores respostas salvas</small></span></button>
-        <button class="tile" data-cat="academia" type="button"><i><svg><use href="#i-stats"/></svg></i><span><b>Notoriedade</b><small>XP, nível e evolução</small></span></button>
-        <button class="tile" data-cat="academia" type="button"><i><svg><use href="#i-livro"/></svg></i><span><b>Academia</b><small>cursos e material de estudo</small></span></button>
-        <button class="tile" data-cat="academia" type="button"><i><svg><use href="#i-mentor"/></svg></i><span><b>Mentoria</b><small>leitura de situação e estratégia</small></span></button>
-      </div>
-    </div>
+  <div class="tiles" style="margin-bottom:var(--s5)">
+    <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-scan"/></svg></i><span><b>Raio-X de Perfil</b><small>abridor a partir das fotos e da bio</small></span></button>
+    <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-send"/></svg></i><span><b>Primeiro Contato</b><small>a primeira mensagem do zero</small></span></button>
+    <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-story"/></svg></i><span><b>Reação a Story</b><small>responde o gancho em segundos</small></span></button>
+    <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-bolt"/></svg></i><span><b>Flow</b><small>recupera a conversa que está morrendo</small></span></button>
+    <button class="tile" data-cat="conversa" type="button"><i><svg><use href="#i-escudo"/></svg></i><span><b>Teste de Valor</b><small>devolve o teste sem perder o frame</small></span></button>
   </div>
 
   <div class="cta-faixa">
@@ -728,8 +695,8 @@ strong{font-weight:600;color:var(--branco)}
 </footer>
 
 <div class="barra" id="barra">
-  <div class="barra-txt" id="barra-txt"><b id="barra-b">3 análises grátis</b><small>sem cadastro</small></div>
-  <a href="#analisar" class="btn btn-vip" id="barra-btn" data-cta="barra">Analisar meu print</a>
+  <div class="barra-txt" id="barra-txt"><b id="barra-b">1 dia grátis</b><small>tudo liberado sem compromisso</small></div>
+  <a href="#" onclick="iniciarFluxoNaLabia();return false;" class="btn btn-vip" id="barra-btn" data-cta="barra">Começar 1 dia grátis →</a>
 </div>
 
 <script>
@@ -778,32 +745,32 @@ const painel=$('painel'),zona=$('zona'),arquivo=$('arquivo'),thread=$('thread'),
       contador=$('contador'),erro=$('erro'),paywall=$('paywall'),privacidade=$('privacidade'),
       linkExemplo=$('ver-exemplo');
 
-if(!CFG.ENDPOINT_IA)$('aviso-demo').hidden=false;
-if(CFG.URL_CHECKOUT){['cta-paywall','cta-oferta','cta-arsenal','cta-fecho'].forEach(id=>$(id).href=CFG.URL_CHECKOUT);}
-else{console.warn('[NaLábia] CFG.URL_CHECKOUT vazio: CTAs sem destino e InitiateCheckout não dispara.');}
+if(CFG.URL_CHECKOUT){['cta-paywall','cta-oferta','cta-arsenal','cta-fecho'].forEach(id=>{const el=$(id);if(el)el.href=CFG.URL_CHECKOUT;});}
 
 function evento(n,x){
   if(typeof fbq==='function'){['PageView','InitiateCheckout'].includes(n)?fbq('track',n,x):fbq('trackCustom',n,x);}
   (window.dataLayer=window.dataLayer||[]).push({event:n,...x});
 }
 (window.dataLayer=window.dataLayer||[]).push({event:'page_view'});
-const mostrarErro=m=>{erro.textContent=m;erro.hidden=false;evento('erro_analise');};
-const limparErro=()=>{erro.hidden=true;};
+const mostrarErro=m=>{if(erro){erro.textContent=m;erro.hidden=false;}evento('erro_analise');};
+const limparErro=()=>{if(erro)erro.hidden=true;};
 
 /* ═══════ ENTRADA DE IMAGEM ═══════ */
-zona.addEventListener('click',()=>{if(S.travado)return;evento('upload_iniciado');arquivo.click();});
-arquivo.addEventListener('change',e=>{if(e.target.files[0])receber(e.target.files[0]);});
+if(zona && arquivo){
+  zona.addEventListener('click',()=>{if(S.travado)return;evento('upload_iniciado');arquivo.click();});
+  arquivo.addEventListener('change',e=>{if(e.target.files[0])receber(e.target.files[0]);});
+  ['dragenter','dragover'].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();if(!S.travado)zona.classList.add('sobre');}));
+  ['dragleave','drop'].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.remove('sobre');}));
+  zona.addEventListener('drop',e=>{
+    if(S.travado)return;
+    const f=e.dataTransfer?.files[0];
+    if(f&&f.type.startsWith('image/')){evento('upload_iniciado');receber(f);}
+  });
+}
 document.addEventListener('paste',e=>{
-  if(S.travado)return;
+  if(S.travado||!zona)return;
   const i=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'));
   if(i){evento('upload_iniciado');receber(i.getAsFile());}
-});
-['dragenter','dragover'].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();if(!S.travado)zona.classList.add('sobre');}));
-['dragleave','drop'].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.remove('sobre');}));
-zona.addEventListener('drop',e=>{
-  if(S.travado)return;
-  const f=e.dataTransfer?.files[0];
-  if(f&&f.type.startsWith('image/')){evento('upload_iniciado');receber(f);}
 });
 
 function comprimir(file){
@@ -897,54 +864,55 @@ const EXEMPLO={
   leitura:'voltou testando se você ficou chateado. aceitar rápido demais entrega o jogo. cobrar te elimina.',
   resposta:'imagina, nem tinha notado. mas agora que você voltou, me conta uma coisa boa dessa semana corrida. desculpa não conta'
 };
-linkExemplo.addEventListener('click',async()=>{
-  if(S.travado||S.ocupado)return;
-  S.ocupado=true;evento('exemplo_visto');
-  thread.innerHTML='';tons.hidden=true;limparErro();
-  const selo=document.createElement('span');
-  selo.className='selo-exemplo';selo.textContent='exemplo';
-  thread.appendChild(selo);
-  const ctx=document.createElement('span');
-  ctx.className='ctx-exemplo';ctx.textContent=EXEMPLO.contexto;
-  thread.appendChild(ctx);
-  const d=document.createElement('div');
-  d.className='bolha b-dela';d.textContent=EXEMPLO.dela;
-  thread.appendChild(d);
-  const sc=montarScanner();
-  thread.appendChild(sc);rodarScanner(sc);
-  await new Promise(r=>setTimeout(r,2100));
-  sc.remove();
-  const li=document.createElement('div');
-  li.className='leitura-ia';
-  li.innerHTML='<b>leitura</b>';
-  const sp=document.createElement('span');sp.textContent=EXEMPLO.leitura;
-  li.appendChild(sp);
-  thread.appendChild(li);
-  await new Promise(r=>setTimeout(r,900));
-  const b=document.createElement('div');
-  b.className='bolha b-ia';
-  b.innerHTML='<span class="etiqueta">NaLábia · espontânea</span>';
-  b.appendChild(document.createTextNode(EXEMPLO.resposta));
-  thread.appendChild(b);
-  const p=document.createElement('p');
-  p.className='pos-exemplo';p.textContent='agora faz isso com a sua conversa ↑';
-  thread.appendChild(p);
-  painel.classList.add('ativo');
-  S.ocupado=false;
-});
+if(linkExemplo){
+  linkExemplo.addEventListener('click',async()=>{
+    if(S.travado||S.ocupado)return;
+    S.ocupado=true;evento('exemplo_visto');
+    thread.innerHTML='';if(tons)tons.hidden=true;limparErro();
+    const selo=document.createElement('span');
+    selo.className='selo-exemplo';selo.textContent='exemplo';
+    thread.appendChild(selo);
+    const ctx=document.createElement('span');
+    ctx.className='ctx-exemplo';ctx.textContent=EXEMPLO.contexto;
+    thread.appendChild(ctx);
+    const d=document.createElement('div');
+    d.className='bolha b-dela';d.textContent=EXEMPLO.dela;
+    thread.appendChild(d);
+    const sc=montarScanner();
+    thread.appendChild(sc);rodarScanner(sc);
+    await new Promise(r=>setTimeout(r,2100));
+    sc.remove();
+    const li=document.createElement('div');
+    li.className='leitura-ia';
+    li.innerHTML='<b>leitura</b>';
+    const sp=document.createElement('span');sp.textContent=EXEMPLO.leitura;
+    li.appendChild(sp);
+    thread.appendChild(li);
+    await new Promise(r=>setTimeout(r,900));
+    const b=document.createElement('div');
+    b.className='bolha b-ia';
+    b.innerHTML='<span class="etiqueta">NaLábia · espontânea</span>';
+    b.appendChild(document.createTextNode(EXEMPLO.resposta));
+    thread.appendChild(b);
+    const p=document.createElement('p');
+    p.className='pos-exemplo';p.textContent='agora faz isso com a sua conversa ↑';
+    thread.appendChild(p);
+    painel.classList.add('ativo');
+    S.ocupado=false;
+  });
+}
 
 /* ═══════ PAYWALL ═══════ */
 function atualizar(){
   const r=CFG.GRATIS-S.usos;
-  if(r>0){contador.textContent=r===1?'1 análise grátis restante':r+' de '+CFG.GRATIS+' análises grátis';return;}
+  if(r>0){contador.textContent='Demonstração ao vivo · 1 dia de teste grátis no app';return;}
   S.travado=true;arquivo.disabled=true;
   contador.hidden=true;zona.hidden=true;tons.hidden=true;
   privacidade.hidden=true;linkExemplo.hidden=true;
   paywall.hidden=false;
   evento('paywall_view');
   $('barra-txt').innerHTML='<b>1 dia grátis</b><small>depois R$ 19,90/mês · cancela em 1 clique</small>';
-  $('barra-btn').textContent='Modo Mestre';
-  $('barra-btn').setAttribute('href',CFG.URL_CHECKOUT||'#preco');
+  $('barra-btn').textContent='Começar 1 dia grátis →';
 }
 
 document.querySelectorAll('[data-cta]').forEach(el=>{
